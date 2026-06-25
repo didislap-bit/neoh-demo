@@ -247,6 +247,36 @@ tbody tr:hover{background:#f8fbff}
 /* HIDDEN */
 .hidden{display:none!important}
 
+/* MENU DROPDOWN DO GRID */
+.row-menu-wrap{position:relative;display:inline-block}
+.row-menu-btn{background:none;border:1px solid #dee2e6;border-radius:4px;padding:4px 8px;cursor:pointer;color:#555;font-size:13px;transition:.15s}
+.row-menu-btn:hover{background:#f0f4f8;border-color:#2E7FB8;color:#2E7FB8}
+.row-menu-dropdown{position:fixed;background:#fff;border:1px solid #dee2e6;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:8000;min-width:200px;padding:6px 0;display:none}
+.row-menu-dropdown.open{display:block}
+.row-menu-item{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:#333;cursor:pointer;transition:.1s;white-space:nowrap}
+.row-menu-item:hover{background:#f0f4f8;color:#2E7FB8}
+.row-menu-item i{width:16px;text-align:center;color:#888}
+.row-menu-item:hover i{color:#2E7FB8}
+.row-menu-divider{border:none;border-top:1px solid #f0f0f0;margin:4px 0}
+
+/* INDICADOR WHATSAPP NO GRID */
+.wa-ok{color:#25D366;font-size:14px}
+.wa-fail{color:#DC3545;font-size:14px}
+.wa-none{color:#ccc;font-size:14px}
+.wa-badge-fail{background:#fff0f0;border:1px solid #ffcccc;color:#DC3545;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap}
+
+/* MODAL TROCA DE FASE */
+.troca-fase-modal{max-width:680px}
+.tf-section{margin-bottom:18px}
+.tf-section-title{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #eee;padding-bottom:8px;margin-bottom:14px}
+.tf-dados-box{background:#f8f9fa;border-radius:8px;padding:14px 16px;font-size:13px;line-height:2;margin-bottom:16px}
+.tf-dados-box strong{color:#555}
+.notif-field{display:flex;align-items:center;gap:8px}
+.notif-field i{color:#aaa;font-size:16px;flex-shrink:0}
+.notif-field input{flex:1;border:1px solid #dee2e6;border-radius:6px;padding:8px 12px;font-size:13px;outline:none}
+.notif-field input:focus{border-color:#2E7FB8}
+
+
 .field-popup{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;z-index:4000;display:flex;align-items:center;gap:10px;box-shadow:0 4px 16px #0004;animation:popIn .25s ease}
 @keyframes popIn{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}to{transform:translateY(0);opacity:1}}
 
@@ -352,7 +382,25 @@ function checkLockPwd(){
     </div>
 
     <!-- METRICS -->
-    <div class="metrics">
+    <!-- ALERTA PACIENTES SEM WA -->
+<div id="waAlertPanel" style="display:none;background:#fff5f5;border:1.5px solid #ffcccc;border-radius:8px;padding:14px 18px;margin-bottom:16px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <i class="fab fa-whatsapp" style="font-size:20px;color:#DC3545"></i>
+    <strong style="color:#DC3545;font-size:14px">Pacientes com problema no WhatsApp</strong>
+    <span id="waAlertCount" style="background:#DC3545;color:#fff;border-radius:10px;padding:2px 10px;font-size:12px;font-weight:700"></span>
+  </div>
+  <table style="width:100%;font-size:12px;border-collapse:collapse" id="waAlertTable">
+    <thead><tr style="background:#fff0f0">
+      <th style="padding:6px 10px;text-align:left;border-bottom:1px solid #ffcccc">Pedido</th>
+      <th style="padding:6px 10px;text-align:left;border-bottom:1px solid #ffcccc">Paciente</th>
+      <th style="padding:6px 10px;text-align:left;border-bottom:1px solid #ffcccc">Problema</th>
+      <th style="padding:6px 10px;text-align:left;border-bottom:1px solid #ffcccc">Data</th>
+      <th style="padding:6px 10px;border-bottom:1px solid #ffcccc">Ação</th>
+    </tr></thead>
+    <tbody id="waAlertBody"></tbody>
+  </table>
+</div>
+<div class="metrics">
       <div class="metric-card">
         <div class="mc-val" id="metTotal">0</div>
         <div class="mc-label">Total de Pedidos</div>
@@ -1360,31 +1408,78 @@ function checkLockPwd(){
 
 <!-- FASE TROCA MODAL -->
 <div class="modal-overlay hidden" id="modalTrocaFase">
-  <div class="modal-box" style="max-width:420px">
+  <div class="modal-box troca-fase-modal">
     <div class="modal-header">
-      <h4><i class="fa fa-exchange-alt"></i> Trocar Fase</h4>
+      <h4><i class="fa fa-exchange-alt" style="color:#2E7FB8;margin-right:8px"></i> Troca de fase</h4>
       <button class="modal-close" onclick="document.getElementById('modalTrocaFase').classList.add('hidden')">×</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label>Selecione a nova fase <span class="req">*</span></label>
-        <select id="novaFaseSelect" style="font-size:14px;padding:10px">
-          <option value="">SELECIONE</option>
-          <option>SOLICITADO</option><option>EM CONFERÊNCIA</option><option>REVISADO</option><option>AGENDADO</option>
-          <option>PRÉ-AGENDADO</option><option>REVISÃO AGENDAMENTO</option><option>EM COTAÇÃO</option>
-          <option>MATERIAL AUTORIZADO</option><option>AGUARDANDO OPERADORA</option><option>AUTORIZADO</option>
-          <option>LIBERADO</option><option>VALIDAÇÃO MÉDICA</option><option>AUT. PARCIALMENTE</option>
-          <option>NEGADO</option><option>REALIZADO</option><option>CANCELADO</option>
+      <div style="border-bottom:2px solid #2E7FB8;margin-bottom:16px"></div>
+      <div class="tf-section">
+        <div class="tf-section-title">Dados do pedido</div>
+        <div class="tf-dados-box">
+          <div><strong>Número do pedido:</strong> <span id="tfNumPedido">—</span> &nbsp;&nbsp; <strong>Paciente:</strong> <span id="tfPaciente">—</span></div>
+          <div><strong>Médico:</strong> <span id="tfMedico">BARBARA GONCALVES RODRIGUES</span> &nbsp;&nbsp; <strong>Convênio:</strong> <span id="tfConvenio">—</span></div>
+        </div>
+      </div>
+      <div class="tf-section">
+        <div class="form-row">
+          <div class="form-group w-half">
+            <label>Fase atual</label>
+            <input type="text" id="tfFaseAtual" disabled style="background:#f0f0f0;font-weight:700;color:#555">
+          </div>
+          <div class="form-group w-half">
+            <label>Nova fase <span class="req">*</span></label>
+            <select id="novaFaseSelect" style="font-size:13px;padding:8px">
+              <option value="">SELECIONE...</option>
+              <option>SOLICITADO</option><option>EM CONFERÊNCIA</option><option>REVISADO</option><option>AGENDADO</option>
+              <option>PRÉ-AGENDADO</option><option>REVISÃO AGENDAMENTO</option><option>EM COTAÇÃO</option>
+              <option>MATERIAL AUTORIZADO</option><option>AGUARDANDO OPERADORA</option><option>AUTORIZADO</option>
+              <option>LIBERADO</option><option>VALIDAÇÃO MÉDICA</option><option>AUT. PARCIALMENTE</option>
+              <option>NEGADO</option><option>EM NEGOCIAÇÃO PARTICULAR</option><option>NEGOCIAÇÃO PARTICULAR APROVADA</option>
+              <option>AUTORIZADO PARTICULAR</option><option>SOL. AGENDAMENTO MÉDICO</option>
+              <option>REALIZADO</option><option>CANCELADO</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="tf-section">
+        <label style="font-size:13px;font-weight:600;color:#555;display:block;margin-bottom:6px">Observações</label>
+        <textarea id="trocaFaseObs" rows="3" placeholder="Informe o motivo da troca de fase..." style="width:100%;border:1px solid #dee2e6;border-radius:6px;padding:10px;font-size:13px;resize:vertical;outline:none"></textarea>
+      </div>
+      <div class="tf-section">
+        <label style="font-size:13px;font-weight:600;color:#555;display:block;margin-bottom:6px">Responsável do pedido</label>
+        <select style="font-size:13px;padding:8px;border:1px solid #dee2e6;border-radius:6px;width:100%">
+          <option>DESATRIBUIR RESPONSÁVEL ATUAL</option>
+          <option>DIOGO CABRAL</option><option>BARBARA GONCALVES RODRIGUES</option>
         </select>
       </div>
-      <div class="form-group" style="margin-top:12px">
-        <label>Observação (opcional)</label>
-        <textarea id="trocaFaseObs" rows="3" placeholder="Informe o motivo da troca de fase..."></textarea>
+      <div style="border-top:1px solid #eee;margin:16px 0"></div>
+      <div class="tf-section">
+        <div class="tf-section-title">Notificações</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div>
+            <label style="font-size:12px;color:#888;margin-bottom:4px;display:block">E-mail do médico(a)</label>
+            <div class="notif-field"><i class="fa fa-ban" style="color:#DC3545"></i><input type="email" id="tfEmailMedico" placeholder="email@hospital.com"></div>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#888;margin-bottom:4px;display:block">E-mail do paciente</label>
+            <div class="notif-field"><i class="fa fa-ban" style="color:#DC3545"></i><input type="email" id="tfEmailPaciente" placeholder="email@paciente.com"></div>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#888;margin-bottom:4px;display:block">Celular do médico(a)</label>
+            <div class="notif-field"><i class="fa fa-ban" style="color:#DC3545"></i><input type="text" id="tfCelMedico" placeholder="(00) 00000-0000"></div>
+          </div>
+          <div>
+            <label style="font-size:12px;color:#888;margin-bottom:4px;display:block">Celular do paciente <span style="color:#25D366;font-size:11px"><i class="fab fa-whatsapp"></i> WhatsApp</span></label>
+            <div class="notif-field"><i class="fab fa-whatsapp" style="color:#25D366"></i><input type="text" id="tfCelPaciente" placeholder="(00) 00000-0000"></div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="document.getElementById('modalTrocaFase').classList.add('hidden')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarTrocaFase()"><i class="fa fa-check"></i> Confirmar</button>
+      <button class="btn btn-secondary" onclick="document.getElementById('modalTrocaFase').classList.add('hidden')">Fechar</button>
+      <button class="btn btn-primary" onclick="confirmarTrocaFase()"><i class="fa fa-save"></i> Salvar</button>
     </div>
   </div>
 </div>
@@ -1578,8 +1673,18 @@ function renderGrid(search=''){
   document.getElementById('sfTodos').textContent=list.length;
   tbody.innerHTML=list.map(p=>{
     const rowBg=p.urgencia==='emergencia'?'background:#FFF0F0;':p.urgencia==='urgencia'?'background:#FFF8F0;':'';
-    return `<tr style="${rowBg}cursor:pointer" onclick="openTracking('${p.id}')">
-      <td><a class="link-blue" onclick="event.stopPropagation();openTracking('${p.id}')">${p.aviso}</a></td>
+    // WhatsApp status deste pedido
+    const waLogs=waLog.filter(l=>l.pedidoId===p.id);
+    const lastWa=waLogs[0];
+    let waIcon='<i class="fab fa-whatsapp wa-none" title="Sem envio registrado"></i>';
+    let waTitle='Sem envio';
+    if(lastWa){
+      if(lastWa.status==='ENVIADO'){waIcon=`<i class="fab fa-whatsapp wa-ok" title="Enviado: ${lastWa.dt}"></i>`;waTitle='Enviado';}
+      else if(lastWa.status==='SEM NÚMERO'){waIcon=`<i class="fab fa-whatsapp wa-fail" title="Sem número cadastrado"></i> <span class="wa-badge-fail">Sem nº</span>`;waTitle='Sem número';}
+      else if(lastWa.status==='DUPLICADO'){waIcon=`<i class="fab fa-whatsapp" style="color:#FFC107;font-size:14px" title="Duplicado evitado"></i>`;waTitle='Duplicado';}
+    }
+    return `<tr style="${rowBg}" id="row_${p.id}">
+      <td><a class="link-blue" onclick="openTracking('${p.id}')">${p.aviso}</a></td>
       <td>—</td>
       <td>${p.dt}</td>
       <td>${p.bloco}</td>
@@ -1593,8 +1698,29 @@ function renderGrid(search=''){
       <td><i class="fa fa-user" style="color:#888"></i></td>
       <td><span class="${getBadgeClass(p.fase)}">${p.fase}</span></td>
       <td><span class="st-circle">A</span></td>
-      <td><i class="fa fa-check" style="color:#28A745"></i></td>
-      <td><i class="fa fa-lock" style="color:#888;margin-right:6px"></i><i class="fa fa-bars" style="color:#888"></i></td>
+      <td title="${waTitle}">${waIcon}</td>
+      <td>
+        <div class="row-menu-wrap">
+          <button class="row-menu-btn" onclick="event.stopPropagation();toggleRowMenu('${p.id}',this)" title="Ações">
+            <i class="fa fa-bars"></i>
+          </button>
+          <div class="row-menu-dropdown" id="menu_${p.id}">
+            <div class="row-menu-item" onclick="closeAllMenus();openTracking('${p.id}')">
+              <i class="fa fa-route"></i> Rastrear Pedido
+            </div>
+            <div class="row-menu-item" onclick="closeAllMenus();openTrocaFaseModal('${p.id}')">
+              <i class="fa fa-exchange-alt"></i> Trocar fase
+            </div>
+            <hr class="row-menu-divider">
+            <div class="row-menu-item" onclick="closeAllMenus();openTracking('${p.id}')">
+              <i class="fa fa-search"></i> Consultar Pedido
+            </div>
+            <div class="row-menu-item" onclick="closeAllMenus();reenviarWhatsApp('${p.id}')">
+              <i class="fab fa-whatsapp" style="color:#25D366"></i> Reenviar WhatsApp
+            </div>
+          </div>
+        </div>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -2224,31 +2350,37 @@ function openTrocaFase(){
 
 function confirmarTrocaFase(){
   const novaFase=document.getElementById('novaFaseSelect').value;
-  if(!novaFase){showToast('Selecione uma fase','error');return;}
+  if(!novaFase){showToast('Selecione a nova fase','error');return;}
   const p=pedidos.find(x=>x.id===currentTrackingId)||(currentPedido);
   if(!p){showToast('Pedido não encontrado','error');return;}
-  // Cenário 3 - duplicate check
+  // Atualizar celular se foi editado no modal
+  const celModal=document.getElementById('tfCelPaciente');
+  if(celModal&&celModal.value.trim()){
+    p.celular=celModal.value.trim().replace(/\D/g,'');
+  }
+  // Verificar duplicata
   const lastEntry=waLog.find(l=>l.pedidoId===p.id&&l.fase===novaFase&&l.status==='ENVIADO');
-  if(lastEntry){showToast('⚠️ Paciente já notificado sobre fase '+novaFase+'. Envio duplicado evitado.','warning');
-    waLog.unshift({dt:new Date().toLocaleString('pt-BR'),pedidoId:p.id,paciente:p.paciente,fase:novaFase,numero:p.celular?'+55'+p.celular:'—',msg:'DUPLICADO',status:'DUPLICADO'});
+  if(lastEntry){
+    showToast('⚠️ Paciente já notificado sobre esta fase. Duplicata evitada.','warning');
+    waLog.unshift({dt:now(),pedidoId:p.id,paciente:p.paciente,fase:novaFase,numero:p.celular?'+55'+p.celular:'—',msg:'DUPLICADO',status:'DUPLICADO'});
     saveStorage();
     document.getElementById('modalTrocaFase').classList.add('hidden');
     return;
   }
   p.fase=novaFase;
-  p.fases.push({fase:novaFase,dt:new Date().toLocaleString('pt-BR')});
+  p.fases.push({fase:novaFase,dt:now()});
   saveStorage();
   document.getElementById('modalTrocaFase').classList.add('hidden');
-  // Send WhatsApp
   if(p.celular){
     sendWhatsAppUpdate(p,novaFase);
   } else {
-    waLog.unshift({dt:new Date().toLocaleString('pt-BR'),pedidoId:p.id,paciente:p.paciente,fase:novaFase,numero:'SEM NÚMERO',msg:'Paciente sem celular',status:'SEM NÚMERO'});
+    waLog.unshift({dt:now(),pedidoId:p.id,paciente:p.paciente,fase:novaFase,numero:'SEM NÚMERO',msg:'Sem celular cadastrado',status:'SEM NÚMERO'});
     saveStorage();
-    showToast('Paciente sem WhatsApp. Envio não realizado. Registrado no log.','warning');
+    showToast('⚠️ Paciente sem WhatsApp. Registrado no log.','warning');
   }
   renderGrid();
   updateMetrics();
+  updateWaAlertPanel();
   showToast('Fase atualizada para: '+novaFase,'success');
 }
 
@@ -2456,6 +2588,89 @@ function verificarValidade(){
     }
     btn.disabled=true;
   },800);
+}
+
+
+// ===== MENU DROPDOWN DO GRID =====
+function toggleRowMenu(id, btn){
+  closeAllMenus();
+  const menu = document.getElementById('menu_'+id);
+  if(!menu) return;
+  const rect = btn.getBoundingClientRect();
+  menu.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  menu.style.right = (window.innerWidth - rect.right) + 'px';
+  menu.style.left = 'auto';
+  menu.classList.add('open');
+  // Fechar ao clicar fora
+  setTimeout(()=>{
+    document.addEventListener('click', closeAllMenus, {once:true});
+  },50);
+}
+
+function closeAllMenus(){
+  document.querySelectorAll('.row-menu-dropdown.open').forEach(m=>m.classList.remove('open'));
+}
+
+// ===== ABRIR MODAL TROCA DE FASE COM DADOS DO PEDIDO =====
+function openTrocaFaseModal(id){
+  const p = pedidos.find(x=>x.id===id);
+  if(!p){ showToast('Pedido não encontrado','error'); return; }
+  currentTrackingId = id;
+  // Preencher dados do pedido
+  document.getElementById('tfNumPedido').textContent = p.id;
+  document.getElementById('tfPaciente').textContent = p.paciente;
+  document.getElementById('tfConvenio').textContent = p.convenio;
+  document.getElementById('tfFaseAtual').value = p.fase;
+  document.getElementById('novaFaseSelect').value = '';
+  document.getElementById('trocaFaseObs').value = '';
+  // Preencher celular do paciente
+  document.getElementById('tfCelPaciente').value = p.celular ? fmtPhone(p.celular) : '';
+  document.getElementById('tfEmailPaciente').value = '';
+  document.getElementById('tfCelMedico').value = '';
+  document.getElementById('tfEmailMedico').value = '';
+  document.getElementById('modalTrocaFase').classList.remove('hidden');
+}
+
+// ===== REENVIAR WHATSAPP MANUALMENTE =====
+function reenviarWhatsApp(id){
+  const p = pedidos.find(x=>x.id===id);
+  if(!p){ showToast('Pedido não encontrado','error'); return; }
+  if(!p.celular){ showToast('Paciente sem celular cadastrado. Não é possível enviar.','warning'); return; }
+  sendWhatsAppUpdate(p, p.fase);
+  showToast('WhatsApp reenviado para '+p.paciente,'success');
+}
+
+
+function updateWaAlertPanel(){
+  // Pacientes com problema: SEM NÚMERO ou sem log algum
+  const problems = [];
+  pedidos.forEach(p=>{
+    const logs = waLog.filter(l=>l.pedidoId===p.id);
+    if(!logs.length && !p.celular){
+      problems.push({id:p.id,pac:p.paciente,problema:'Sem número cadastrado',dt:'—'});
+    } else {
+      const semNum = logs.find(l=>l.status==='SEM NÚMERO');
+      if(semNum) problems.push({id:p.id,pac:p.paciente,problema:'Número inválido/ausente',dt:semNum.dt});
+    }
+  });
+  const panel = document.getElementById('waAlertPanel');
+  const body = document.getElementById('waAlertBody');
+  const count = document.getElementById('waAlertCount');
+  if(!problems.length){ panel.style.display='none'; return; }
+  panel.style.display='block';
+  count.textContent = problems.length + ' paciente'+(problems.length>1?'s':'');
+  body.innerHTML = problems.map(pr=>`
+    <tr style="border-bottom:1px solid #ffeeee">
+      <td style="padding:7px 10px;font-size:12px;color:#2E7FB8;font-weight:600">${pr.id}</td>
+      <td style="padding:7px 10px;font-size:12px">${pr.pac}</td>
+      <td style="padding:7px 10px;font-size:12px"><span style="background:#fff0f0;color:#DC3545;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">${pr.problema}</span></td>
+      <td style="padding:7px 10px;font-size:12px;color:#888">${pr.dt}</td>
+      <td style="padding:7px 10px">
+        <button class="btn btn-sm" style="font-size:11px;padding:3px 10px;background:#2E7FB8;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="openTrocaFaseModal('${pr.id}')">
+          <i class="fab fa-whatsapp"></i> Corrigir
+        </button>
+      </td>
+    </tr>`).join('');
 }
 
 // ============ INIT ============
