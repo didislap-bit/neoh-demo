@@ -1691,7 +1691,7 @@ function renderGrid(search=''){
                 <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-check-square"></i> Pendência</div>
                 <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-user"></i> Tomar nota</div>
                 <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-comment"></i> Chat</div>
-                <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();setTimeout(()=>openTrocaFaseModal('${p.id}'),50)"><i class="fa fa-exchange-alt" style="color:#2E7FB8"></i> Trocar fase</div>
+                <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();openTrocaFaseModal('${p.id}')"><i class="fa fa-exchange-alt" style="color:#2E7FB8"></i> Trocar fase</div>
                 <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-file"></i> Guias de solicitação</div>
               </div>
             </div>
@@ -2729,8 +2729,11 @@ function closeAllMenus(){
 
 // ===== ABRIR MODAL TROCA DE FASE COM DADOS DO PEDIDO =====
 function openTrocaFaseModal(id){
-  const p = pedidos.find(x=>x.id===id);
-  if(!p){ showToast('Pedido não encontrado','error'); return; }
+  console.log('openTrocaFaseModal called with id:', id);
+  const p = pedidos.find(x=>x.id===id) || pedidos.find(x=>x.aviso===id);
+  console.log('pedido found:', p ? p.paciente : 'NOT FOUND');
+  console.log('total pedidos:', pedidos.length);
+  if(!p){ showToast('Pedido não encontrado: '+id,'error'); return; }
   currentTrackingId = id;
 
   // Remover modal anterior se existir
@@ -2987,6 +2990,21 @@ function fecharModal() {
 }
 
 // ============ INIT ============
+// Limpar localStorage antigo para garantir dados frescos com formato correto
+(function(){
+  try{
+    // Se a chave antiga existir sem aviso separado, limpar
+    const old = localStorage.getItem('neoh_pedidos');
+    if(old){
+      const data = JSON.parse(old);
+      if(data && data[0] && data[0].id === data[0].aviso){
+        localStorage.removeItem('neoh_pedidos');
+        localStorage.removeItem('neoh_walog');
+        console.log('Cleared old localStorage data');
+      }
+    }
+  }catch(e){}
+})();
 // Mover todos os modais para body para garantir stacking context
 (function(){
   setTimeout(function(){
