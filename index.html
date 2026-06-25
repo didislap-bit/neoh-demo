@@ -1,0 +1,2514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neoh - Hospital Adventista de Belém</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --blue:#2E7FB8;--blue-dark:#1a5f8a;--blue-light:#e8f4fc;
+  --green:#28A745;--red:#DC3545;--orange:#F47920;--yellow:#FFC107;
+  --gray-bg:#F0F2F5;--white:#fff;--gray-light:#e9ecef;--gray-mid:#6c757d;
+  --text:#333;--border:#ced4da;
+  --sidebar-bg:#1A2B3C;--topbar-bg:#2E7FB8;
+}
+body{font-family:'Segoe UI',Roboto,sans-serif;font-size:14px;color:var(--text);background:var(--gray-bg);overflow-x:hidden}
+
+/* TOPBAR */
+.topbar{position:fixed;top:0;left:0;right:0;height:50px;background:var(--topbar-bg);z-index:1000;display:flex;align-items:center;padding:0 16px;gap:12px;color:#fff}
+.topbar .logo{width:36px;height:36px;background:var(--orange);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:bold;color:#fff;cursor:pointer}
+.topbar .hospital-name{flex:1;font-size:15px;font-weight:600;text-align:center}
+.topbar .topbar-right{display:flex;align-items:center;gap:12px}
+.topbar .avatar{width:34px;height:34px;background:#fff3;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.topbar .user-name{font-size:13px}
+.topbar .msg-icon{cursor:pointer;font-size:18px;opacity:.85}
+
+/* SIDEBAR */
+.sidebar{position:fixed;top:50px;left:0;bottom:0;width:55px;background:var(--sidebar-bg);z-index:999;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px}
+.sidebar .si{width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#8fa8bf;cursor:pointer;font-size:18px;transition:.2s}
+.sidebar .si:hover,.sidebar .si.active{background:#ffffff18;color:#fff}
+
+/* MAIN CONTENT */
+.main{margin-top:50px;margin-left:55px;padding:24px;min-height:calc(100vh - 50px)}
+
+/* CARDS / SECTIONS */
+.card{background:#fff;border-radius:6px;box-shadow:0 1px 4px #0001;margin-bottom:20px}
+.card-header{padding:14px 20px;border-bottom:1px solid var(--gray-light);display:flex;align-items:center;justify-content:space-between}
+.card-header h3{font-size:15px;font-weight:600;color:var(--text)}
+.card-body{padding:20px}
+
+/* SECTION HEADERS (inside forms) */
+.section-hdr{background:#E8EEF3;padding:10px 16px;border-radius:4px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-hdr span{font-size:14px;font-weight:600;color:var(--blue)}
+
+/* FORM ELEMENTS */
+.form-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:4px;flex:1;min-width:140px}
+.form-group.w-full{flex:0 0 100%}
+.form-group.w-half{flex:0 0 calc(50% - 6px)}
+.form-group.w-third{flex:0 0 calc(33.333% - 8px)}
+.form-group.w-quarter{flex:0 0 calc(25% - 9px)}
+label{font-size:12px;font-weight:600;color:#555}
+label .req{color:var(--red);margin-left:2px}
+input[type=text],input[type=email],input[type=date],input[type=number],select,textarea{
+  width:100%;border:1px solid var(--border);border-radius:4px;padding:7px 10px;font-size:13px;color:var(--text);background:#fff;outline:none;transition:.2s
+}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 2px #2E7FB820}
+input:disabled,select:disabled{background:#f8f9fa;color:#999;cursor:not-allowed}
+textarea{resize:vertical;min-height:80px}
+.input-invalid{border-color:var(--red)!important}
+.err-msg{color:var(--red);font-size:11px;margin-top:2px;display:none}
+.err-msg.show{display:block}
+
+/* SELECT WITH TAG */
+.select-tag{display:flex;align-items:center;border:1px solid var(--border);border-radius:4px;padding:2px 8px;background:#fff;gap:6px;min-height:34px}
+.select-tag .tag{background:var(--blue-light);color:var(--blue);border-radius:3px;padding:2px 8px;font-size:12px;display:flex;align-items:center;gap:4px}
+.select-tag .tag .rm{cursor:pointer;font-size:10px;opacity:.7}
+.select-tag input{border:none;outline:none;flex:1;font-size:13px;min-width:60px;padding:4px 0}
+
+/* BUTTONS */
+.btn{padding:7px 18px;border-radius:4px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:var(--blue-dark)}
+.btn-success{background:var(--green);color:#fff}.btn-success:hover{background:#218838}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#c82333}
+.btn-secondary{background:#6c757d;color:#fff}.btn-secondary:hover{background:#5a6268}
+.btn-outline{background:#fff;color:var(--blue);border:1px solid var(--blue)}.btn-outline:hover{background:var(--blue-light)}
+.btn-sm{padding:4px 12px;font-size:12px}
+.btn-icon{padding:6px 10px}
+
+/* BADGES / PILLS */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap}
+.badge-solicitado{background:#2E7FB8}
+.badge-conferencia{background:#F47920}
+.badge-revisado{background:#9B59B6}
+.badge-agendado{background:#28A745}
+.badge-pre-agendado{background:#17A2B8}
+.badge-cotacao{background:#8B4513}
+.badge-autorizado{background:#155724}
+.badge-liberado{background:#6610F2}
+.badge-negado{background:#000}
+.badge-realizado{background:#28A745}
+.badge-cancelado{background:#DC3545}
+.badge-uti{background:#E040FB;color:#fff}
+.badge-sim{background:#28A745}
+.badge-nao{background:#DC3545}
+.badge-enviado{background:#28A745}
+.badge-sem-numero{background:#DC3545}
+.badge-duplicado{background:#FFC107;color:#333}
+.badge-pendente{background:#6c757d}
+
+/* GRID / TABLE */
+.table-wrapper{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
+thead th{background:#f8f9fa;border-bottom:2px solid var(--border);padding:9px 10px;text-align:left;font-size:11px;font-weight:700;color:#555;white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{background:#e9ecef}
+tbody td{padding:9px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+tbody tr:hover{background:#f8fbff}
+.link-blue{color:var(--blue);cursor:pointer;text-decoration:none;font-weight:600}
+.link-blue:hover{text-decoration:underline}
+
+/* METRIC CARDS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.metric-card{background:#fff;border-radius:8px;padding:18px;box-shadow:0 1px 4px #0001;text-align:center}
+.metric-card .mc-val{font-size:32px;font-weight:700;color:var(--blue)}
+.metric-card .mc-label{font-size:12px;color:var(--gray-mid);margin-top:4px}
+.metric-card.green .mc-val{color:var(--green)}
+.metric-card.red .mc-val{color:var(--red)}
+.metric-card.orange .mc-val{color:var(--orange)}
+
+/* TABS */
+.tabs{display:flex;border-bottom:2px solid var(--border);margin-bottom:20px;gap:0}
+.tab{padding:10px 20px;cursor:pointer;font-size:13px;font-weight:600;color:var(--gray-mid);border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab:hover{color:var(--blue)}
+
+/* WIZARD TABS */
+.wizard-bar{display:flex;background:#fff;border-radius:6px;margin-bottom:20px;overflow:hidden;box-shadow:0 1px 4px #0001}
+.wizard-step{flex:1;padding:12px 8px;text-align:center;font-size:13px;font-weight:600;color:#888;cursor:pointer;border-right:1px solid var(--gray-light);transition:.15s}
+.wizard-step:last-child{border-right:none}
+.wizard-step.active{background:var(--blue);color:#fff}
+.wizard-step.done{background:#e8f4fc;color:var(--blue)}
+
+/* CONTEXT BOX */
+.context-box{background:#EAF3FD;border:1px solid #b8d9f0;border-radius:6px;padding:12px 16px;font-size:12px;line-height:1.8}
+.context-box strong{color:#555}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:#0006;z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#fff;border-radius:8px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px #0003}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--gray-light)}
+.modal-header h4{font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;cursor:pointer;font-size:20px;color:#888;line-height:1}
+.modal-body{padding:20px}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--gray-light);display:flex;justify-content:flex-end;gap:8px}
+
+/* SEARCH RESULT TABLE */
+.search-results{margin-top:16px}
+.search-results table{min-width:500px;font-size:12px}
+
+/* TOAST */
+.toast-container{position:fixed;top:64px;right:16px;z-index:3000;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 20px;border-radius:6px;color:#fff;font-size:13px;font-weight:600;min-width:280px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 12px #0003;animation:slideIn .3s ease}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.success{background:#28A745}
+.toast.error{background:#DC3545}
+.toast.warning{background:#FFC107;color:#333}
+.toast.info{background:#17A2B8}
+
+/* CONFIRM MODAL */
+.confirm-modal{max-width:400px}
+
+/* PAGE TITLE */
+.page-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:20px}
+
+/* FILTERS */
+.filters-card{background:#fff;border-radius:6px;box-shadow:0 1px 4px #0001;margin-bottom:20px}
+.filters-header{padding:12px 20px;border-bottom:1px solid var(--gray-light);display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.filters-header h3{font-size:15px;font-weight:700}
+.filters-body{padding:20px}
+
+/* QUICK ACTIONS */
+.quick-actions{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.qa-btn{width:36px;height:36px;border:2px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#fff;position:relative;color:var(--blue);font-size:16px;transition:.15s}
+.qa-btn:hover{border-color:var(--blue)}
+.qa-btn .qa-badge{position:absolute;top:-6px;right:-6px;background:var(--green);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 5px;min-width:16px;text-align:center}
+.qa-btn.red{color:var(--red)}
+
+/* SUBFILTER PILLS */
+.subfilters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.sf-pill{padding:5px 14px;border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;background:#fff;font-weight:600;color:#555;transition:.15s;display:flex;align-items:center;gap:5px}
+.sf-pill:hover{border-color:var(--blue);color:var(--blue)}
+.sf-pill.active{border-color:var(--blue);color:var(--blue);background:var(--blue-light)}
+.sf-count{background:var(--orange);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px}
+
+/* PAGINATION */
+.pagination{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:12px}
+.page-btn{padding:5px 12px;border:1px solid var(--border);border-radius:4px;background:#fff;cursor:pointer;font-size:12px;font-weight:600}
+.page-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.page-btn:hover:not(.active){background:var(--gray-light)}
+
+/* LEGEND */
+.legend{display:flex;gap:16px;align-items:center;margin-bottom:8px;font-size:12px}
+.legend-dot{width:16px;height:16px;border-radius:3px;display:inline-block}
+
+/* WIZARD FOOTER */
+.wizard-footer{display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding-top:20px;border-top:1px solid var(--gray-light)}
+
+/* SUCCESS PAGE */
+.success-card{background:#fff;border-radius:8px;padding:30px;max-width:800px;margin:0 auto;box-shadow:0 2px 8px #0001}
+.success-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.success-actions .btn{font-size:12px;padding:8px 14px}
+
+/* TRACKING MODAL */
+.tracking-timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;position:relative}
+.tl-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;z-index:1}
+.tl-icon.done{background:#28A745;color:#fff}
+.tl-icon.current{background:#F47920;color:#fff}
+.tl-icon.pending{background:#e9ecef;color:#aaa;border:2px solid #ccc}
+.tl-line{position:absolute;left:15px;top:32px;width:2px;height:calc(100% - 12px);background:#e0e0e0;z-index:0}
+.tl-line.done{background:#28A745}
+.tl-content{flex:1;padding-top:6px}
+.tl-label{font-size:13px;font-weight:700;color:#333}
+.tl-time{font-size:11px;color:#888;margin-top:2px}
+
+/* WHATSAPP PREVIEW */
+.wa-preview{background:#ECE5DD;border-radius:8px;padding:16px;margin-top:16px}
+.wa-header{background:#075E54;color:#fff;padding:10px 14px;border-radius:6px 6px 0 0;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.wa-bubble{background:#fff;border-radius:0 8px 8px 8px;padding:10px 14px;margin-top:2px;font-size:13px;line-height:1.6;position:relative;max-width:85%;box-shadow:0 1px 3px #0001}
+.wa-time{font-size:10px;color:#999;text-align:right;margin-top:4px}
+.wa-link{color:#128C7E;font-size:12px;word-break:break-all}
+
+/* LOG TABLE */
+.log-section{margin-top:24px}
+.log-section h3{font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text)}
+
+/* RESUME */
+.resume-section{margin-bottom:20px}
+.resume-section h4{font-size:15px;font-weight:700;border-bottom:1px solid var(--gray-light);padding-bottom:8px;margin-bottom:12px}
+.resume-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px}
+.resume-field{font-size:13px}
+.resume-field strong{color:#555}
+.resume-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+/* ITEMS PER PAGE */
+.items-select{display:flex;align-items:center;gap:6px;font-size:12px}
+.items-select select{width:70px;padding:4px 6px}
+
+/* RESPONSIVE ADJUSTMENTS */
+@media(max-width:900px){
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .form-group.w-quarter{flex:0 0 calc(50% - 6px)}
+}
+
+/* HIDDEN */
+.hidden{display:none!important}
+
+.field-popup{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;z-index:4000;display:flex;align-items:center;gap:10px;box-shadow:0 4px 16px #0004;animation:popIn .25s ease}
+@keyframes popIn{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}to{transform:translateY(0);opacity:1}}
+
+
+/* ATTACHMENT LIST */
+.attach-row{display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid #f0f0f0;gap:12px}
+.attach-row:hover{background:#f8fbff}
+.attach-name{flex:1;font-size:13px;color:var(--blue);cursor:pointer}
+.attach-name:hover{text-decoration:underline}
+.attach-req{width:50px;text-align:center}
+.attach-btn{padding:4px 8px}
+
+/* PROCEDURE TABLE */
+.proc-table th,.proc-table td{white-space:nowrap}
+
+/* TAG REMOVABLE */
+.removable-tag{display:inline-flex;align-items:center;gap:4px;background:var(--blue-light);color:var(--blue);border-radius:4px;padding:3px 8px;font-size:12px}
+.removable-tag .rm{cursor:pointer;color:var(--blue);font-weight:700}
+
+/* SECTION DIVIDER */
+.section-divider{border:none;border-top:1px solid var(--gray-light);margin:20px 0}
+
+/* LOADING SPINNER */
+.spinner{width:20px;height:20px;border:3px solid #fff3;border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* CHAT ICON */
+.chat-bubble{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#e9ecef;border-radius:50%;font-size:12px;color:#666;font-weight:700;cursor:pointer}
+
+/* STATUS CIRCLE */
+.st-circle{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;background:var(--blue)}
+
+/* OPME DISABLED */
+input.opme-disabled{background:#f5f5f5;pointer-events:none}
+
+/* BLOOD CHECK */
+.blood-section{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:13px}
+
+/* SUMMARY TABLE */
+.summary-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+.summary-table th{background:#f0f4f8;padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:#555}
+.summary-table td{padding:7px 12px;border-bottom:1px solid #f0f0f0}
+
+/* WHATSAPP SEND BUTTON */
+.wa-send-indicator{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#e8f8ed;border-radius:6px;margin-top:12px;font-size:13px;color:#155724;border:1px solid #c3e6cb}
+</style>
+</head>
+<body>
+<div id="lockScreen" style="position:fixed;inset:0;background:linear-gradient(135deg,#1A2B3C 0%,#2E7FB8 100%);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:'Segoe UI',sans-serif">
+  <div style="background:#fff;border-radius:12px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="width:56px;height:56px;background:#F47920;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;color:#fff;margin:0 auto 20px">h</div>
+    <div style="font-size:18px;font-weight:700;color:#1A2B3C;margin-bottom:4px">Neoh — Demonstração</div>
+    <div style="font-size:13px;color:#888;margin-bottom:24px">Hospital Adventista de Belém<br>Acesso restrito</div>
+    <input style="width:100%;border:2px solid #e0e0e0;border-radius:8px;padding:12px 16px;font-size:15px;outline:none;text-align:center;letter-spacing:3px;box-sizing:border-box;transition:.2s" type="password" id="lockPwd" placeholder="••••••••" maxlength="20" onkeydown="if(event.key==='Enter')checkLockPwd()" onfocus="this.style.borderColor='#2E7FB8'">
+    <button style="width:100%;background:#2E7FB8;color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;margin-top:12px;transition:.2s" onmouseover="this.style.background='#1a5f8a'" onmouseout="this.style.background='#2E7FB8'" onclick="checkLockPwd()">🔐 Entrar</button>
+    <div id="lockErr" style="color:#DC3545;font-size:13px;margin-top:10px;display:none;padding:8px;background:#fff5f5;border-radius:6px">Senha incorreta. Tente novamente.</div>
+    <div style="font-size:11px;color:#ccc;margin-top:20px">Sistema de Pedidos Cirúrgicos · HML</div>
+  </div>
+</div>
+<script>
+function checkLockPwd(){
+  const SENHA='NEOH2026';
+  const v=document.getElementById('lockPwd').value;
+  if(v===SENHA){
+    document.getElementById('lockScreen').style.display='none';
+    try{sessionStorage.setItem('neoh_auth','1');}catch(e){}
+  } else {
+    const err=document.getElementById('lockErr');
+    err.style.display='block';
+    document.getElementById('lockPwd').value='';
+    document.getElementById('lockPwd').focus();
+    setTimeout(()=>{err.style.display='none';},3000);
+  }
+}
+try{if(sessionStorage.getItem('neoh_auth')==='1')document.getElementById('lockScreen').style.display='none';}catch(e){}
+</script>
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">h</div>
+  <div class="hospital-name">ADVENTISTA DE BELEM - HML</div>
+  <div class="topbar-right">
+    <i class="fa fa-comment msg-icon"></i>
+    <div class="avatar"><i class="fa fa-user" style="color:#fff;font-size:14px"></i></div>
+    <span class="user-name">DIOGO CABRAL</span>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="si active" title="Pedidos"><i class="fa fa-file-medical"></i></div>
+  <div class="si" title="Hospital"><i class="fa fa-hospital"></i></div>
+  <div class="si" title="Gráficos"><i class="fa fa-chart-bar"></i></div>
+  <div class="si" title="Agenda"><i class="fa fa-calendar"></i></div>
+  <div class="si" title="Módulos"><i class="fa fa-th-large"></i></div>
+  <div class="si" title="Equipe"><i class="fa fa-users"></i></div>
+  <div class="si" title="Relatórios"><i class="fa fa-chart-line"></i></div>
+  <div class="si" title="Monitor"><i class="fa fa-desktop"></i></div>
+  <div class="si" title="Configurações" style="margin-top:auto"><i class="fa fa-cog"></i></div>
+  <div class="si" title="Admin"><i class="fa fa-tools"></i></div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- MAIN -->
+<div class="main" id="mainContent">
+  <!-- DASHBOARD PAGE -->
+  <div id="pageDashboard">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h1 class="page-title" style="margin-bottom:0">Pedidos</h1>
+      <button class="btn btn-primary" onclick="goToNewPedido()"><i class="fa fa-plus"></i> Novo Pedido</button>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="mc-val" id="metTotal">0</div>
+        <div class="mc-label">Total de Pedidos</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-val" id="metSolicitado">0</div>
+        <div class="mc-label">Solicitados</div>
+      </div>
+      <div class="metric-card green">
+        <div class="mc-val" id="metAgendado">0</div>
+        <div class="mc-label">Agendados</div>
+      </div>
+      <div class="metric-card orange">
+        <div class="mc-val" id="metWa">0</div>
+        <div class="mc-label"><i class="fab fa-whatsapp"></i> WhatsApp Enviados</div>
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters-card">
+      <div class="filters-header" onclick="toggleFilters()">
+        <h3>Filtros</h3>
+        <i class="fa fa-minus" id="filterToggleIcon"></i>
+      </div>
+      <div class="filters-body" id="filtersBody">
+        <div class="form-row">
+          <div class="form-group w-quarter">
+            <label>Fases</label>
+            <select id="fFases"><option>TODOS</option><option>SOLICITADO</option><option>EM CONFERÊNCIA</option><option>REVISADO</option><option>AGENDADO</option><option>CANCELADO</option></select>
+          </div>
+          <div class="form-group w-quarter">
+            <label>Status</label>
+            <select id="fStatus"><option>TODOS</option><option>ATIVO</option><option>CANCELADO</option></select>
+          </div>
+          <div class="form-group w-quarter">
+            <label>Nº Pedido/Aviso</label>
+            <input type="text" id="fNumero" placeholder="">
+          </div>
+          <div class="form-group w-quarter">
+            <label>Paciente</label>
+            <input type="text" id="fPaciente" placeholder="">
+          </div>
+          <div class="form-group w-quarter">
+            <label>Período</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <button class="btn btn-outline btn-sm" onclick="setToday()">Hoje</button>
+              <input type="date" id="fPeriodo" value="2026-06-25" style="flex:1">
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group w-third">
+            <label>Médico</label>
+            <select id="fMedico"><option value="">INFORME</option><option>BARBARA GONCALVES RODRIGUES</option><option>ANTONIO JORGE FERREIRA DA SILVA JUNIOR</option><option>CARLOS AUGUSTO MENDES</option></select>
+          </div>
+          <div class="form-group w-third">
+            <label>Clínica</label>
+            <select id="fClinica"><option value="">INFORME</option><option>CENTRO CIRURGICO</option><option>BLOCO OBSTÉTRICO</option></select>
+          </div>
+          <div class="form-group w-third">
+            <label>Responsável</label>
+            <select id="fResp"><option value="">INFORME</option><option>DIOGO CABRAL</option></select>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="quick-actions">
+            <div class="qa-btn" title="Importar"><i class="fa fa-upload"></i><span class="qa-badge">1</span></div>
+            <div class="qa-btn" title="Transferir"><i class="fa fa-exchange-alt"></i><span class="qa-badge">0</span></div>
+            <div class="qa-btn red" title="Cancelar"><i class="fa fa-ban"></i><span class="qa-badge" style="background:var(--red)">0</span></div>
+            <div class="qa-btn" title="Editar"><i class="fa fa-edit"></i><span class="qa-badge">0</span></div>
+            <div class="qa-btn" title="Equipe"><i class="fa fa-user-friends"></i></div>
+          </div>
+          <button class="btn btn-primary" onclick="applyFilters()">Filtrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PEDIDOS TABLE -->
+    <div class="card">
+      <div class="card-body" style="padding:16px">
+        <!-- TABS -->
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab('pedidos',this)">Pedidos</div>
+          <div class="tab" onclick="switchTab('rascunhos',this)">Rascunhos</div>
+          <div class="tab" onclick="switchTab('log',this)"><i class="fab fa-whatsapp" style="color:#25D366"></i> Log WhatsApp</div>
+        </div>
+
+        <!-- PEDIDOS TAB -->
+        <div id="tabPedidos">
+          <div class="subfilters">
+            <div class="sf-pill active" onclick="sfFilter('todos',this)">Todos <span class="sf-count" id="sfTodos">3</span></div>
+            <div class="sf-pill" onclick="sfFilter('solicitacao',this)">Solicitação Médico/Secretaria <span class="sf-count">0</span></div>
+            <div class="sf-pill" onclick="sfFilter('pint',this)">Pendências internas <span class="sf-count">0</span></div>
+            <div class="sf-pill" onclick="sfFilter('pmed',this)">Pendências médicas <span class="sf-count">0</span></div>
+            <div class="sf-pill" onclick="sfFilter('pres',this)">Pendências com resolução <span class="sf-count">0</span></div>
+            <div class="sf-pill" onclick="sfFilter('part',this)">Particular <span class="sf-count">0</span></div>
+            <input type="text" placeholder="🔍 Buscar..." style="border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;outline:none;margin-left:auto;width:180px" oninput="searchGrid(this.value)">
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div class="items-select">
+              <select onchange="changeItemsPerPage(this.value)"><option>10</option><option>25</option><option>50</option></select> itens
+            </div>
+            <div class="legend">
+              <span><span class="legend-dot" style="background:#F08080"></span> Emergência</span>
+              <span><span class="legend-dot" style="background:#FFB347"></span> Urgência</span>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table id="gridTable">
+              <thead>
+                <tr>
+                  <th onclick="sortGrid('aviso')">Aviso ↕</th>
+                  <th onclick="sortGrid('num')">Nº Pedido ↕</th>
+                  <th onclick="sortGrid('dt')">Dt Pedido ↕</th>
+                  <th>Bloco</th>
+                  <th>Paciente</th>
+                  <th>Cirurgia</th>
+                  <th>Cirurgião</th>
+                  <th>Convênio</th>
+                  <th>Dt prevista</th>
+                  <th>Dt Agend</th>
+                  <th>Chat</th>
+                  <th>Resp.</th>
+                  <th>Workflow</th>
+                  <th>ST</th>
+                  <th>Pend.</th>
+                  <th>Perfil</th>
+                </tr>
+              </thead>
+              <tbody id="gridBody"></tbody>
+            </table>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+            <span style="font-size:12px;color:#666" id="gridInfo">Mostrando 1 até 3 de 3 registros</span>
+            <div class="pagination">
+              <button class="page-btn">Anterior</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">Próximo</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RASCUNHOS TAB -->
+        <div id="tabRascunhos" class="hidden">
+          <p style="color:#888;text-align:center;padding:40px;font-size:13px">Nenhum rascunho encontrado.</p>
+        </div>
+
+        <!-- LOG WHATSAPP TAB -->
+        <div id="tabLog" class="hidden">
+          <div class="table-wrapper">
+            <table>
+              <thead><tr>
+                <th>Data/Hora</th><th>Nº Pedido</th><th>Paciente</th><th>Fase</th><th>Nº Destino</th><th>Status</th><th>Mensagem</th>
+              </tr></thead>
+              <tbody id="waLogBody"></tbody>
+            </table>
+          </div>
+          <p id="waLogEmpty" class="hidden" style="color:#888;text-align:center;padding:40px;font-size:13px">Nenhum registro no log.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW PEDIDO PAGE -->
+  <div id="pageNewPedido" class="hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h1 class="page-title" style="margin-bottom:0">Novo Pedido</h1>
+      <div class="context-box" style="font-size:12px;min-width:300px">
+        <div><strong>Hospital:</strong> ADVENTISTA DE BELEM</div>
+        <div><strong>Médico:</strong> BARBARA GONCALVES RODRIGUES</div>
+        <div><strong>Paciente:</strong> <span id="ctxPaciente">—</span></div>
+        <div><strong>Procedimento:</strong> <span id="ctxProc">—</span></div>
+      </div>
+    </div>
+
+    <!-- WIZARD -->
+    <div class="wizard-bar">
+      <div class="wizard-step active" id="ws1" onclick="goWizard(1)">Paciente</div>
+      <div class="wizard-step" id="ws2" onclick="goWizard(2)">Solicitação</div>
+      <div class="wizard-step" id="ws3" onclick="goWizard(3)">Itens</div>
+      <div class="wizard-step" id="ws4" onclick="goWizard(4)">Anexos</div>
+      <div class="wizard-step" id="ws5" onclick="goWizard(5)">Resumo</div>
+    </div>
+
+    <!-- STEP 1: PACIENTE -->
+    <div id="step1">
+      <!-- Hospital -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div class="section-hdr"><i class="fa fa-hospital" style="color:var(--blue)"></i><span>Dados do hospital</span></div>
+          <div class="form-row">
+            <div class="form-group w-half">
+              <label>Hospital <span class="req">*</span></label>
+              <div class="select-tag"><span class="removable-tag">ADVENTISTA DE BELEM <span class="rm" onclick="this.closest('.removable-tag').remove()">×</span></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Paciente -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div class="section-hdr"><i class="fa fa-user" style="color:var(--blue)"></i><span>Dados do paciente</span></div>
+          <div style="margin-bottom:14px">
+            <button class="btn btn-success" onclick="openPatientModal()"><i class="fa fa-search"></i> Selecionar paciente</button>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:3">
+              <label>Paciente <span class="req">*</span></label>
+              <input type="text" id="fPacienteNome" placeholder="">
+              <span class="err-msg" id="errPacienteNome">Campo obrigatório</span>
+            </div>
+            <div class="form-group" style="flex:2">
+              <label>Nome social</label>
+              <input type="text" id="fNomeSocial">
+            </div>
+            <div class="form-group w-quarter">
+              <label>Sexo <span class="req">*</span></label>
+              <select id="fSexo"><option value="">SELECIONE</option><option>MASCULINO</option><option>FEMININO</option></select>
+              <span class="err-msg" id="errSexo">Campo obrigatório</span>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Dt. de Nascimento <span class="req">*</span></label>
+              <input type="date" id="fNascimento">
+              <span class="err-msg" id="errNascimento">Campo obrigatório</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group w-third">
+              <label>E-mail</label>
+              <input type="email" id="fEmail">
+            </div>
+            <div class="form-group w-quarter">
+              <label>Telefone</label>
+              <input type="text" id="fTelefone" placeholder="(00) 0000-0000">
+            </div>
+            <div class="form-group w-quarter">
+              <label>Celular <span class="req">*</span> <small style="color:#666;font-weight:normal">(WhatsApp)</small></label>
+              <input type="text" id="fCelular" placeholder="(00) 00000-0000">
+              <span class="err-msg" id="errCelular">Campo obrigatório</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Convênio -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div class="section-hdr"><i class="fa fa-id-card" style="color:var(--blue)"></i><span>Dados do convênio</span></div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Convênio <span class="req">*</span></label>
+              <select id="fConvenio"><option value="">SELECIONE</option><option>ALBRAS</option><option>UNIMED</option><option>BRADESCO SAÚDE</option><option>AMIL</option><option>PARTICULAR</option></select>
+              <span class="err-msg" id="errConvenio">Campo obrigatório</span>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Plano</label>
+              <select id="fPlano"><option value="">SELECIONE</option><option>BÁSICO</option><option>STANDARD</option><option>PREMIUM</option></select>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Número Carteira <span class="req">*</span></label>
+              <div style="display:flex;gap:4px">
+                <input type="text" id="fNumCarteira" style="flex:1">
+                <button class="btn btn-outline btn-icon" title="Verificar" onclick="verificarCarteira()" id="btnVerifCarteira"><i class="fa fa-check"></i></button>
+              </div>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Validade Carteira <span class="req">*</span></label>
+              <div style="display:flex;gap:4px">
+                <input type="date" id="fValidadeCart" style="flex:1">
+                <button class="btn btn-outline btn-icon" title="Verificar" onclick="verificarValidade()" id="btnVerifValidade"><i class="fa fa-check"></i></button>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group w-third">
+              <label>Número da Guia</label>
+              <input type="text" id="fNumGuia">
+            </div>
+            <div class="form-group w-third">
+              <label>Senha de Autorização</label>
+              <input type="text" id="fSenhaAut">
+            </div>
+            <div class="form-group w-third">
+              <label>Data de validade da Senha</label>
+              <input type="date" id="fValidadeSenha">
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Ficha Clínica -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div class="section-hdr"><i class="fa fa-heartbeat" style="color:var(--blue)"></i><span>Ficha clínica</span></div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Alérgico (Látex)? <span class="req">*</span></label>
+              <select id="fLatex"><option value="">SELECIONE</option><option>SIM</option><option>NÃO</option></select>
+              <span class="err-msg" id="errLatex">Campo obrigatório</span>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Suscetibilidade a hipertermia maligna? <span class="req">*</span></label>
+              <select id="fHipertermia"><option value="">SELECIONE</option><option>SIM</option><option>NÃO</option></select>
+              <span class="err-msg" id="errHipertermia">Campo obrigatório</span>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Faz uso de medicação contínua?</label>
+              <select id="fMedContinua" onchange="toggleMedField()"><option value="">SELECIONE</option><option>SIM</option><option>NÃO</option></select>
+            </div>
+            <div class="form-group w-quarter" id="medFieldGroup" style="display:none">
+              <label>Informe o medicamento</label>
+              <input type="text" id="fMedicamento">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Peso (KG)</label>
+              <input type="number" id="fPeso" placeholder="0">
+            </div>
+            <div class="form-group w-quarter">
+              <label>Possui marca-passo?</label>
+              <select id="fMarcaPasso"><option value="">SELECIONE</option><option>SIM</option><option>NÃO</option></select>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Paciente autista?</label>
+              <select id="fAutista"><option value="">SELECIONE</option><option>SIM</option><option>NÃO</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="wizard-footer">
+        <button class="btn btn-danger" onclick="cancelForm()">Cancelar</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" disabled>Anterior</button>
+          <button class="btn btn-primary" onclick="nextStep(1)">Próximo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: SOLICITAÇÃO -->
+    <div id="step2" class="hidden">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div class="section-hdr"><i class="fa fa-pencil-alt" style="color:var(--blue)"></i><span>Cirurgia</span></div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Possui OPME? <span class="req">*</span></label>
+              <select id="fOpme"><option value="">SELECIONE</option><option>SIM</option><option>NÃO</option></select>
+              <span class="err-msg" id="errOpme">Campo obrigatório</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Data Prevista</label>
+              <input type="date" id="fDataPrevista">
+            </div>
+            <div class="form-group w-quarter">
+              <label>Hora Prevista</label>
+              <select id="fHoraPrevista">
+                <option value="">SELECIONE</option><option>00:00</option><option>06:00</option><option>07:00</option><option>08:00</option><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>13:00</option><option>14:00</option><option>15:00</option><option>16:00</option><option>17:00</option><option>18:00</option>
+              </select>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Duração Prevista</label>
+              <select id="fDuracao"><option value="">SELECIONE</option><option>00:30:00</option><option>01:00:00</option><option>01:30:00</option><option>02:00:00</option><option>02:30:00</option><option>03:00:00</option><option>04:00:00</option></select>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Bloco <span class="req">*</span></label>
+              <select id="fBloco"><option value="">SELECIONE</option><option>CENTRO CIRURGICO</option><option>BLOCO OBSTÉTRICO</option><option>CENTRO CIRURGICO AMBULATORIAL</option></select>
+              <span class="err-msg" id="errBloco">Campo obrigatório</span>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Sala Prevista <span class="req">*</span></label>
+              <select id="fSala"><option value="">SELECIONE</option><option>SALA 1</option><option>SALA 2</option><option>SALA 3</option><option>EXAME (INATIVO)</option></select>
+              <span class="err-msg" id="errSala">Campo obrigatório</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Técnica</label>
+              <select id="fTecnica"><option value="">SELECIONE</option><option>CONVENCIONAL</option><option>VIDEOLAPAROSCÓPICA</option><option>ROBÓTICA</option><option>ENDOSCÓPICA</option></select>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Congelação</label>
+              <select id="fCongelacao" onchange="toggleCongelacao()">
+                <option value="">SELECIONE</option>
+                <option value="NAO">NÃO</option>
+                <option value="SIM">SIM</option>
+              </select>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Lab. de Congelação</label>
+              <select id="fLabCongelacao" disabled style="background:#f0f0f0;color:#aaa;cursor:not-allowed"><option value="">SELECIONE</option><option>LAB CENTRAL</option><option>LAB EXTERNO A</option></select>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Sugestão Laboratórios</label>
+              <input type="text" id="fSugestaoLab" disabled placeholder="Bloqueado" style="background:#f0f0f0;color:#aaa;cursor:not-allowed">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Pedido conjunto?</label>
+              <select id="fPedConj"><option>SELECIONE</option><option>SIM</option><option>NÃO</option></select>
+            </div>
+            <div class="form-group w-half">
+              <label>Médico cirurgia conjunta</label>
+              <select><option>INFORME</option><option>BARBARA GONCALVES RODRIGUES</option><option>ANTONIO JORGE FERREIRA DA SILVA JUNIOR</option></select>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Prioridade atendimento <span class="req">*</span></label>
+              <select id="fPrioridade"><option value="">SELECIONE</option><option>ALTA</option><option>MÉDIA</option><option>BAIXA</option></select>
+              <span class="err-msg" id="errPrioridade">Campo obrigatório</span>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Liminar judicial</label>
+              <select id="fLiminarJudicial"><option value="">SELECIONE</option><option>SIM</option><option>NÃO</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group w-half">
+              <label>CID - 01</label>
+              <select id="fCid1"><option>INFORME</option><option>J18 - Pneumonia</option><option>K80 - Colelitíase</option><option>K37 - Apendicite</option><option>I25 - Doença isquêmica crônica</option></select>
+            </div>
+            <div class="form-group w-half">
+              <label>CID - 02</label>
+              <select id="fCid2"><option>INFORME</option><option>J18 - Pneumonia</option><option>K80 - Colelitíase</option><option>K37 - Apendicite</option><option>I25 - Doença isquêmica crônica</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Cirurgia com isolamento? <span class="req">*</span></label>
+              <select id="fIsolamento"><option value="">SELECIONE</option><option>SIM</option><option>NÃO</option></select>
+              <span class="err-msg" id="errIsolamento">Campo obrigatório</span>
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:4px">
+            <div class="form-group" style="flex:0 0 100%;width:100%">
+              <label>Indicação Clínica</label>
+              <textarea id="fIndicacao" rows="5" placeholder="DIGITE AQUI O DIAGNÓSTICO DO PACIENTE OU QUAISQUER INFORMAÇÕES RELEVANTES PARA A CIRURGIA" style="width:100%;resize:vertical"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div class="section-hdr"><i class="fa fa-bed" style="color:var(--blue)"></i><span>Internação</span></div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Tipo de Atendimento <span class="req">*</span></label>
+              <select id="fTipoAtend" onchange="toggleInternacao()"><option value="">SELECIONE</option><option>CONSULTÓRIO EXTERNO</option><option>AMBULATÓRIO</option><option>INTERNADO</option></select>
+              <span class="err-msg" id="errTipoAtend">Campo obrigatório</span>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Código do Atendimento</label>
+              <input type="text" id="fCodAtend" disabled>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Caráter <span class="req">*</span></label>
+              <select id="fCarater"><option value="">SELECIONE</option><option>ELETIVA</option><option>URGÊNCIA</option><option>EMERGÊNCIA</option></select>
+              <span class="err-msg" id="errCarater">Campo obrigatório</span>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Regime <span class="req">*</span></label>
+              <select id="fRegime"><option value="">SELECIONE</option><option>HOSPITALAR</option><option>AMBULATORIAL</option><option>HOSPITAL DIA</option></select>
+              <span class="err-msg" id="errRegime">Campo obrigatório</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Acomodação</label>
+              <select><option>SELECIONE</option><option>ENFERMARIA</option><option>APARTAMENTO</option><option>UTI</option></select>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Diárias solicitadas</label>
+              <input type="number" id="fDiarias" value="0" min="0">
+            </div>
+            <div class="form-group w-quarter">
+              <label>Reserva de UTI <span class="req">*</span></label>
+              <select id="fReservaUTI"><option value="">SELECIONE</option><option>SIM</option><option>NÃO</option></select>
+              <span class="err-msg" id="errReservaUTI">Campo obrigatório</span>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Unidade de internação</label>
+              <select id="fUnidadeIntern" disabled style="background:#f0f0f0;color:#aaa;cursor:not-allowed"><option value="">SELECIONE</option><option>UTI ADULTO</option><option>UTI NEONATAL</option><option>ENFERMARIA GERAL</option><option>APARTAMENTO</option></select>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Leito</label>
+              <input type="text" id="fLeito" disabled placeholder="Bloqueado" style="background:#f0f0f0;color:#aaa;cursor:not-allowed">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Necessita de Antibiótico? <span class="req">*</span></label>
+              <select id="fAntib"><option value="">SELECIONE</option><option>SIM</option><option>NÃO</option></select>
+              <span class="err-msg" id="errAntib">Campo obrigatório</span>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Necessita de Tricotomia? <span class="req">*</span></label>
+              <select id="fTricot"><option value="">SELECIONE</option><option>SIM</option><option>NÃO</option></select>
+              <span class="err-msg" id="errTricot">Campo obrigatório</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div class="section-hdr"><i class="fa fa-user-md" style="color:var(--blue)"></i><span>Equipe Anestésica</span></div>
+          <div class="form-row">
+            <div class="form-group w-half">
+              <label>Origem <span class="req">*</span></label>
+              <select id="fOrigemAnes" onchange="toggleAnestesista()">
+                <option value="">SELECIONE</option>
+                <option value="NAO_INFORMAR">NÃO INFORMAR</option>
+                <option value="PROPRIO">PRÓPRIO</option>
+                <option value="EQUIPE">EQUIPE</option>
+                <option value="CREDENCIADO">CREDENCIADO</option>
+              </select>
+              <small id="origemHint" style="color:#888;font-size:11px">Não enviar uma definição deste campo</small>
+            </div>
+            <div class="form-group w-half">
+              <label>Nome do Anestesista <span id="reqAnest" class="req" style="display:none">*</span></label>
+              <select id="fNomeAnest" disabled style="background:#f0f0f0;color:#aaa;cursor:not-allowed">
+                <option value="">SELECIONE</option>
+                <option>DR. CARLOS HENRIQUE ANESTESIA</option>
+                <option>DRA. FERNANDA CRISTINA ANESTESIA</option>
+                <option>DR. ROBERTO ALVES ANESTESIA</option>
+              </select>
+              <span class="err-msg" id="errAnest">Obrigatório quando Origem = EQUIPE</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Houve realização pré anestésica? <span class="req">*</span></label>
+              <select id="fPreAnes">
+              <option value="">SELECIONE</option>
+              <option value="SIM">Sim, foi realizado</option>
+              <option value="NAO">Não foi realizado</option>
+              <option value="NA">Não se aplica</option>
+            </select>
+              <span class="err-msg" id="errPreAnes">Campo obrigatório</span>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Tipo de anestesia</label>
+              <select><option>SELECIONE</option><option>GERAL</option><option>REGIONAL</option><option>LOCAL</option><option>SEDAÇÃO</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div class="section-hdr"><i class="fa fa-file-alt" style="color:var(--blue)"></i><span>Observações do médico</span></div>
+          <textarea id="fObsMedico" rows="4" placeholder="INFORME AQUI SE O PACIENTE FOR HOME CARE"></textarea>
+        </div>
+      </div>
+
+      <div class="wizard-footer">
+        <button class="btn btn-danger" onclick="cancelForm()">Cancelar</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="goWizard(1)">Anterior</button>
+          <button class="btn btn-primary" onclick="nextStep(2)">Próximo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: ITENS -->
+    <div id="step3" class="hidden">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div class="section-hdr"><i class="fa fa-stethoscope" style="color:var(--blue)"></i><span>Procedimentos</span></div>
+          <div class="form-row" style="align-items:flex-end">
+            <div class="form-group" style="flex:1;min-width:100px">
+              <label>Cód. TUSS</label>
+              <div style="display:flex;gap:4px"><input type="text" id="iTuss" placeholder="Cód. TUSS" oninput="liveSearchTuss(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();liveSearchTuss(this.value);}"><button class="btn btn-outline btn-icon" onclick="searchTuss()"><i class="fa fa-search"></i></button></div>
+            </div>
+            <div class="form-group" style="flex:3">
+              <label>Descrição</label>
+              <div style="display:flex;gap:4px"><input type="text" id="iDescricao" placeholder="DESCRIÇÃO" oninput="liveSearchTuss(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();liveSearchTuss(this.value);}"><button class="btn btn-outline btn-icon" onclick="searchTuss()"><i class="fa fa-search"></i></button></div>
+            </div>
+            <div class="form-group" style="flex:1;min-width:80px">
+              <label>Particular</label>
+              <input type="text" id="iParticular">
+            </div>
+            <div class="form-group" style="flex:0 0 60px">
+              <label>Qtd</label>
+              <input type="number" id="iQtd" value="1" min="1">
+            </div>
+            <div class="form-group" style="flex:2">
+              <label>Médico</label>
+              <select id="iMedico"><option>BARBARA GONCALVES RODRIGUES</option><option>ANTONIO JORGE FERREIRA DA SILVA JUNIOR</option></select>
+            </div>
+            <div class="form-group" style="flex:0 0 auto">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary" onclick="addProcedimento()"><i class="fa fa-plus"></i></button>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group w-quarter">
+              <label>Lateralidade <small style="color:#888;font-weight:normal;font-size:10px">(obrigatório ao adicionar)</small></label>
+              <select id="iLateralidade" onblur="checkLateralidade()"><option value="">SELECIONE</option><option>DIREITO</option><option>ESQUERDO</option><option>BILATERAL</option><option>N/A</option></select>
+            </div>
+            <div class="form-group w-quarter">
+              <label>Região</label>
+              <input type="text" id="iRegiao" onblur="checkRegiao()">
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table class="proc-table">
+              <thead><tr><th>Cód. Proc.</th><th>Cód.</th><th>Descrição</th><th>Principal</th><th>Particular</th><th>Qtd</th><th>Médico</th><th>Tempo</th><th>Rol ANS</th><th>Lateralidade</th><th>Região</th><th></th></tr></thead>
+              <tbody id="procBody"><tr id="procEmpty"><td colspan="12" style="text-align:center;color:#999;padding:20px">Nenhum registro encontrado</td></tr></tbody>
+            </table>
+          </div>
+          <div class="form-row" style="margin-top:12px">
+            <div class="form-group w-full">
+              <label>Possíveis Complicações</label>
+              <textarea rows="3" id="fComplicacoes"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div class="section-hdr"><i class="fa fa-users" style="color:var(--blue)"></i><span>Equipe médica</span></div>
+          <div class="form-row" style="align-items:flex-end">
+            <div class="form-group" style="flex:2">
+              <label>Procedimento</label>
+              <select id="emProcedimento"><option value="">SELECIONE</option></select>
+            </div>
+            <div class="form-group" style="flex:2">
+              <label>Médico(a)</label>
+              <select id="emMedico"><option>INFORME</option><option>BARBARA GONCALVES RODRIGUES</option><option>ANTONIO JORGE FERREIRA DA SILVA JUNIOR</option><option>CARLOS AUGUSTO MENDES</option></select>
+            </div>
+            <div class="form-group" style="flex:2">
+              <label>Tipo de atividade</label>
+              <select id="emTipo"><option value="">SELECIONE</option><option>CIRURGIÃO</option><option>1º AUXILIAR</option><option>2º AUXILIAR</option><option>ANESTESISTA</option><option>INSTRUMENTADOR</option></select>
+            </div>
+            <div class="form-group" style="flex:0 0 auto">
+              <label>&nbsp;</label>
+              <button class="btn btn-primary" onclick="addEquipeMedica()"><i class="fa fa-plus"></i></button>
+            </div>
+          </div>
+          <table>
+            <thead><tr><th>Procedimento</th><th>Médico(a)</th><th>Tipo de atividade</th><th></th></tr></thead>
+            <tbody id="equipeBody"><tr id="equipeEmpty"><td colspan="4" style="text-align:center;color:#999;padding:16px">Nenhum registro</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div class="section-hdr"><i class="fa fa-box" style="color:var(--blue)"></i><span>OPME</span></div>
+          <div class="form-row" style="align-items:flex-end">
+            <div class="form-group" style="flex:1;min-width:110px">
+              <label>Cód. TUSS</label>
+              <div style="display:flex;gap:4px">
+                <input type="text" id="opme_tuss" placeholder="Cód. TUSS" oninput="filterOpme()" onkeydown="if(event.key==='Enter')filterOpme();">
+                <button class="btn btn-outline btn-icon" onclick="filterOpme()"><i class="fa fa-search"></i></button>
+              </div>
+            </div>
+            <div class="form-group" style="flex:1;min-width:110px">
+              <label>Cód. Hospital</label>
+              <div style="display:flex;gap:4px">
+                <input type="text" id="opme_codhosp" placeholder="Cód. Hosp." oninput="filterOpme()" onkeydown="if(event.key==='Enter')filterOpme();">
+                <button class="btn btn-outline btn-icon" onclick="filterOpme()"><i class="fa fa-search"></i></button>
+              </div>
+            </div>
+            <div class="form-group" style="flex:2">
+              <label>Descrição</label>
+              <div style="display:flex;gap:4px">
+                <input type="text" id="opme_desc" placeholder="DESCRIÇÃO" oninput="filterOpme()" onkeydown="if(event.key==='Enter')filterOpme();">
+                <button class="btn btn-outline btn-icon" onclick="filterOpme()"><i class="fa fa-search"></i></button>
+              </div>
+            </div>
+            <div class="form-group" style="flex:0 0 70px"><label>Qtd</label><input type="number" id="opme_qtd" value="1" min="1"></div>
+            <div class="form-group" style="flex:0 0 auto"><label>&nbsp;</label><button class="btn btn-primary" onclick="addOpme()"><i class="fa fa-plus"></i> Inserir</button></div>
+          </div>
+          <div id="opme_sugestoes" style="display:none;border:1px solid var(--border);border-radius:4px;max-height:150px;overflow-y:auto;margin-bottom:10px;background:#fff">
+            <table style="font-size:12px;min-width:auto">
+              <thead><tr><th>Cód. TUSS</th><th>Cód. Hosp.</th><th>Descrição</th><th>Fornecedor</th><th></th></tr></thead>
+              <tbody id="opme_sugestoes_body"></tbody>
+            </table>
+          </div>
+          <table>
+            <thead><tr><th>TUSS</th><th>Cód. Hosp.</th><th>Descrição</th><th>Qtd</th><th>Fornecedor</th><th>Ações</th></tr></thead>
+            <tbody id="opmeBody"><tr id="opmeEmpty"><td colspan="6" style="text-align:center;color:#999;padding:16px">Nenhum registro encontrado</td></tr></tbody>
+          </table>
+          <small style="color:#888;font-size:11px" id="opmeCount">Mostrando 0 até 0 de 0 registros</small>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="card">
+          <div class="card-body">
+            <div class="section-hdr"><i class="fa fa-plug" style="color:var(--blue)"></i><span>Equipamentos</span></div>
+            <div class="form-row" style="align-items:flex-end">
+              <div class="form-group" style="flex:2"><label>Equipamento</label><select id="eqSelect"><option value="">SELECIONE</option><option value="131">131 - TAXA DE RECUPERACAO ANESTESICA</option><option value="68">68 - TAXA DE SALA PORTE 3</option><option value="214">214 - CARRO DE ANESTESIA (HORA)</option><option value="45">45 - MONITOR MULTIPARAMÉTRICO</option></select></div>
+              <div class="form-group" style="flex:2"><label>Observações</label><input type="text" id="eqObs" placeholder="OBSERVAÇÕES"></div>
+              <div class="form-group" style="flex:0 0 70px"><label>Qtd</label><input type="number" id="eqQtd" value="1"></div>
+              <div class="form-group" style="flex:0 0 auto"><label>&nbsp;</label><button class="btn btn-primary btn-icon" onclick="addEquipamento()"><i class="fa fa-plus"></i></button></div>
+            </div>
+            <table><thead><tr><th>Código</th><th>Descrição</th><th>Observações</th><th>Qtd</th><th></th></tr></thead>
+            <tbody id="eqBody"><tr id="eqEmpty"><td colspan="5" style="text-align:center;color:#999;padding:12px">Nenhum registro encontrado</td></tr></tbody></table>
+            <button class="btn btn-danger btn-sm" style="margin-top:8px" onclick="clearEquipamentos()"><i class="fa fa-trash"></i> Excluir todos</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="section-hdr"><i class="fa fa-tint" style="color:var(--blue)"></i><span>Sangue e Hemoderivados</span></div>
+            <div class="blood-section">
+              <input type="checkbox" id="cbSangue" onchange="toggleBlood()"> <label for="cbSangue">Reserva de sangue?</label> <span style="font-weight:600">Sim</span>
+            </div>
+            <div id="bloodSection" style="display:none">
+              <div class="form-row" style="align-items:flex-end">
+                <div class="form-group" style="flex:2"><select id="bloodType"><option value="">SELECIONE O HEMODERIVADO</option><option>CONCENTRADO DE HEMÁCIAS</option><option>PLASMA FRESCO CONGELADO</option><option>CONCENTRADO DE PLAQUETAS</option><option>CRIOPRECIPITADO</option><option>ALBUMINA HUMANA</option><option>CONCENTRADO DE GRANULÓCITOS</option><option>SANGUE TOTAL</option><option>FATOR VIII</option><option>FATOR IX</option><option>IMUNOGLOBULINA HUMANA</option></select></div>
+                <div class="form-group" style="flex:0 0 70px"><input type="number" id="bloodQtd" value="1"></div>
+                <div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary btn-icon" onclick="addBlood()"><i class="fa fa-plus"></i></button></div>
+              </div>
+              <table><thead><tr><th>Hemoderivado</th><th>Quantidade</th><th></th></tr></thead>
+              <tbody id="bloodBody"><tr><td colspan="4" style="text-align:center;color:#999;padding:12px">Nenhum registro encontrado</td></tr></tbody></table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wizard-footer">
+        <button class="btn btn-danger" onclick="cancelForm()">Cancelar</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="goWizard(2)">Anterior</button>
+          <button class="btn btn-primary" onclick="nextStep(3)">Próximo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4: ANEXOS -->
+    <div id="step4" class="hidden">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-body">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+            <button class="btn btn-success"><i class="fa fa-paperclip"></i> Selecionar Anexo único</button>
+          </div>
+          <div class="section-hdr"><i class="fa fa-paperclip" style="color:var(--blue)"></i><span>Anexos</span></div>
+          <table>
+            <thead><tr><th>Nome do arquivo</th><th style="text-align:center">Obrigatório para o pedido</th><th></th></tr></thead>
+            <tbody id="anexosBody"></tbody>
+          </table>
+          <div style="margin-top:12px;border-top:1px solid var(--gray-light);padding-top:12px">
+            <table style="min-width:auto;width:100%">
+              <thead><tr><th>Referência</th><th>Nome</th><th>Ação</th></tr></thead>
+              <tbody id="uploadedBody"><tr><td colspan="3" style="text-align:center;color:#999;font-size:12px;padding:8px">Nenhum arquivo enviado</td></tr></tbody>
+            </table>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px">
+              <strong>Tamanho Total:</strong> <button class="btn btn-danger btn-sm btn-icon"><i class="fa fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="wizard-footer">
+        <button class="btn btn-danger" onclick="cancelForm()">Cancelar</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="goWizard(3)">Anterior</button>
+          <button class="btn btn-primary" onclick="nextStep(4)">Próximo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5: RESUMO -->
+    <div id="step5" class="hidden">
+      <div class="card">
+        <div class="card-body">
+          <h3 style="text-align:center;font-size:16px;font-weight:700;margin-bottom:20px;border-bottom:2px solid var(--blue);padding-bottom:12px;color:var(--blue)">RESUMO DO PEDIDO</h3>
+          <div class="resume-section">
+            <h4>Paciente</h4>
+            <div class="resume-grid" id="resumePaciente"></div>
+          </div>
+          <div class="resume-cols">
+            <div class="resume-section">
+              <h4>Cirurgia</h4>
+              <div id="resumeCirurgia" style="font-size:13px;line-height:2"></div>
+            </div>
+            <div class="resume-section">
+              <h4>Internação</h4>
+              <div id="resumoInternacao" style="font-size:13px;line-height:2"></div>
+            </div>
+          </div>
+          <div class="resume-section">
+            <h4>Procedimentos</h4>
+            <table class="summary-table">
+              <thead><tr><th>TUSS</th><th>Descrição</th><th>Principal</th><th>Particular</th><th>Qtd.</th></tr></thead>
+              <tbody id="resumeProc"><tr><td colspan="5" style="text-align:center;color:#999;padding:12px">Nenhum procedimento</td></tr></tbody>
+            </table>
+          </div>
+          <div class="resume-section">
+            <h4>Equipamentos</h4>
+            <table class="summary-table">
+              <thead><tr><th>Código</th><th>Descrição</th><th>Observações</th><th>Qtd.</th></tr></thead>
+              <tbody id="resumeEq"><tr><td colspan="4" style="text-align:center;color:#999;padding:12px">Nenhum equipamento</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="wizard-footer">
+        <button class="btn btn-danger" onclick="cancelForm()">Cancelar</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" onclick="goWizard(4)">Anterior</button>
+          <button class="btn btn-primary" onclick="savePedido()"><i class="fa fa-save"></i> Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS PAGE -->
+  <div id="pageSuccess" class="hidden">
+    <div class="success-card">
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:16px"><i class="fa fa-check-circle" style="color:var(--green);margin-right:8px"></i>Solicitação realizada com Sucesso!</h2>
+      <hr style="border:none;border-top:1px solid var(--gray-light);margin:16px 0">
+      <p style="font-size:14px;margin-bottom:4px">Anote seu protocolo</p>
+      <p style="font-size:18px;font-weight:700;color:var(--blue);margin-bottom:4px">Número: <span id="successNum"></span></p>
+      <p style="font-size:13px;color:var(--green)">Em breve entraremos em contato confirmando a sua solicitação!</p>
+
+      <div id="waNotifBox" class="wa-send-indicator hidden">
+        <i class="fab fa-whatsapp" style="font-size:20px;color:#25D366"></i>
+        <div>
+          <strong>WhatsApp enviado com sucesso!</strong>
+          <div style="font-size:12px;margin-top:2px">Mensagem de rastreio enviada para <span id="waNumDest"></span></div>
+        </div>
+      </div>
+
+      <div id="waNoNumBox" class="hidden" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fff3cd;border-radius:6px;margin-top:12px;font-size:13px;color:#856404;border:1px solid #ffc107">
+        <i class="fa fa-exclamation-triangle"></i>
+        Paciente sem WhatsApp cadastrado. Envio não realizado. Ocorrência registrada.
+      </div>
+
+      <div class="success-actions">
+        <button class="btn btn-outline btn-sm" onclick="goToDashboard()"><i class="fa fa-desktop"></i> Tela inicial</button>
+        <button class="btn btn-outline btn-sm"><i class="fa fa-paperclip"></i> Anexar Documentos</button>
+        <button class="btn btn-outline btn-sm" onclick="goToNewPedido()"><i class="fa fa-plus"></i> Nova Solicitação</button>
+        <button class="btn btn-outline btn-sm"><i class="fa fa-print"></i> Planejamento Cirúrgico</button>
+        <button class="btn btn-outline btn-sm"><i class="fa fa-calendar"></i> Mapa Cirúrgico</button>
+        <button class="btn btn-outline btn-sm" onclick="openTrocaFase()"><i class="fa fa-exchange-alt"></i> Trocar fase</button>
+        <button class="btn btn-outline btn-sm"><i class="fa fa-print"></i> Termo de Consentimento</button>
+        <button class="btn btn-outline btn-sm"><i class="fa fa-edit"></i> Revisar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PATIENT MODAL -->
+<div class="modal-overlay hidden" id="modalPaciente">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h4>Pesquisar paciente</h4>
+      <button class="modal-close" onclick="closePatientModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="border-bottom:3px solid var(--blue);margin-bottom:20px"></div>
+      <div class="form-row">
+        <div class="form-group" style="flex:3">
+          <label>Nome</label>
+          <input type="text" id="searchNome" placeholder="">
+        </div>
+        <div class="form-group" style="flex:2">
+          <label>Nº da carteira</label>
+          <input type="text" id="searchCarteira">
+        </div>
+        <div class="form-group" style="flex:2">
+          <label>Data de nascimento</label>
+          <input type="date" id="searchNasc">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group w-quarter">
+          <label>CPF</label>
+          <input type="text" id="searchCPF" placeholder="000.000.000-00">
+        </div>
+        <div class="form-group w-quarter">
+          <label>Atendimento</label>
+          <input type="text" id="searchAtend">
+        </div>
+        <div class="form-group w-quarter">
+          <label>Prontuário</label>
+          <input type="text" id="searchPront">
+        </div>
+        <div class="form-group w-quarter">
+          <label>Cartão SUS</label>
+          <input type="text" id="searchSUS">
+        </div>
+      </div>
+      <div style="text-align:right;margin-bottom:16px">
+        <button class="btn btn-primary" onclick="searchPatients()"><i class="fa fa-search"></i> Pesquisar</button>
+      </div>
+      <div id="searchNoResult" class="hidden" style="text-align:center;padding:24px;color:#999;font-size:13px"><i class="fa fa-user-slash" style="font-size:24px;margin-bottom:8px;display:block;color:#ccc"></i>Nenhum paciente encontrado.</div>
+      <div id="searchResults" class="hidden">
+        <div style="border-top:1px solid var(--gray-light);margin-bottom:12px;padding-top:12px"></div>
+        <table class="search-results" style="min-width:100%">
+          <thead><tr><th>Nome</th><th>CPF</th><th>Dt. Nascimento</th><th>Prontuário</th><th>Convênio</th><th>Celular</th><th>Internado?</th><th>Ação</th></tr></thead>
+          <tbody id="patientResultsBody"></tbody>
+        </table>
+      </div>
+      <div style="border-top:2px solid var(--blue);margin:20px 0"></div>
+      <div id="newPatientSection" class="hidden">
+        <h5 style="font-size:14px;font-weight:700;margin-bottom:16px;color:var(--blue)">Cadastro de novo paciente</h5>
+        <div class="form-row">
+          <div class="form-group w-full"><label>Nome <span class="req">*</span></label><input type="text" id="npNome"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group w-quarter"><label>Sexo</label><select id="npSexo"><option>SELECIONE</option><option>MASCULINO</option><option>FEMININO</option></select></div>
+          <div class="form-group w-quarter"><label>Data Nascimento <span class="req">*</span></label><input type="date" id="npNasc"></div>
+          <div class="form-group w-half"><label>Nome da mãe</label><input type="text" id="npMae"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group w-half"><label>Nome do pai</label><input type="text" id="npPai"></div>
+          <div class="form-group w-quarter"><label>CPF</label><input type="text" id="npCPF" placeholder="000.000.000-00"></div>
+          <div class="form-group w-quarter"><label>CEP</label><input type="text" id="npCEP"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:3"><label>Endereço</label><input type="text" id="npEnd"></div>
+          <div class="form-group" style="flex:1"><label>Número</label><input type="text" id="npNum"></div>
+          <div class="form-group" style="flex:2"><label>Complemento</label><input type="text" id="npComp"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group w-quarter"><label>Bairro</label><input type="text" id="npBairro"></div>
+          <div class="form-group w-quarter"><label>Cidade</label><input type="text" id="npCidade"></div>
+          <div class="form-group" style="flex:0 0 80px"><label>UF</label><input type="text" id="npUF" maxlength="2"></div>
+          <div class="form-group w-quarter"><label>País</label><input type="text" id="npPais"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group w-half"><label>E-mail</label><input type="email" id="npEmail"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group w-half">
+            <label>Telefone Fixo</label>
+            <div style="display:flex;gap:4px">
+              <input type="text" placeholder="DDI" style="width:50px" id="npFixoDDI">
+              <input type="text" placeholder="DDD" style="width:55px" id="npFixoDDD">
+              <input type="text" placeholder="Número" id="npFixoNum">
+            </div>
+          </div>
+          <div class="form-group w-half">
+            <label>Telefone Celular <span class="req">*</span> <small style="color:#666">(WhatsApp)</small></label>
+            <div style="display:flex;gap:4px">
+              <input type="text" placeholder="DDI" style="width:50px" id="npCelDDI" value="+55">
+              <input type="text" placeholder="DDD" style="width:55px" id="npCelDDD">
+              <input type="text" placeholder="Número" id="npCelNum">
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+          <button class="btn btn-secondary" onclick="clearNewPatient()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveNewPatient()"><i class="fa fa-save"></i> Salvar</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePatientModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="showNewPatient()">Novo</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay hidden" id="modalConfirm">
+  <div class="modal-box confirm-modal">
+    <div class="modal-header">
+      <h4>Atenção!</h4>
+      <button class="modal-close" onclick="closeConfirm()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px">Deseja salvar o pedido?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeConfirm()">Não</button>
+      <button class="btn btn-primary" onclick="confirmSave()">Sim</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRACKING MODAL -->
+<div class="modal-overlay hidden" id="modalTracking">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-header">
+      <h4>Acompanhamento do pedido de cirurgia</h4>
+      <button class="modal-close" onclick="closeTracking()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="border-bottom:2px solid var(--blue);margin-bottom:16px;padding-bottom:12px;font-size:13px;line-height:2">
+        <div><strong>Paciente:</strong> <span id="tkPaciente"></span></div>
+        <div><strong>Cirurgia:</strong> <span id="tkCirurgia"></span></div>
+        <div><strong>Médico(a):</strong> <span id="tkMedico">BARBARA GONCALVES RODRIGUES</span></div>
+        <div><strong>Data agendada:</strong> <span id="tkData"></span></div>
+      </div>
+      <div id="linkCopiadoBadge" class="hidden" style="background:#28A745;color:#fff;display:inline-block;padding:5px 14px;border-radius:4px;font-size:12px;font-weight:700;margin-bottom:12px">
+        <i class="fa fa-check"></i> Link copiado com sucesso
+      </div>
+      <div style="margin-bottom:12px">
+        <button class="btn btn-outline btn-sm" onclick="copyTrackingLink()"><i class="fa fa-copy"></i> Copiar link de rastreio</button>
+        <span id="tkLink" style="font-size:11px;color:#888;margin-left:8px"></span>
+      </div>
+      <div class="tracking-timeline" id="trackingTimeline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FASE TROCA MODAL -->
+<div class="modal-overlay hidden" id="modalTrocaFase">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-header">
+      <h4><i class="fa fa-exchange-alt"></i> Trocar Fase</h4>
+      <button class="modal-close" onclick="document.getElementById('modalTrocaFase').classList.add('hidden')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Selecione a nova fase <span class="req">*</span></label>
+        <select id="novaFaseSelect" style="font-size:14px;padding:10px">
+          <option value="">SELECIONE</option>
+          <option>SOLICITADO</option><option>EM CONFERÊNCIA</option><option>REVISADO</option><option>AGENDADO</option>
+          <option>PRÉ-AGENDADO</option><option>REVISÃO AGENDAMENTO</option><option>EM COTAÇÃO</option>
+          <option>MATERIAL AUTORIZADO</option><option>AGUARDANDO OPERADORA</option><option>AUTORIZADO</option>
+          <option>LIBERADO</option><option>VALIDAÇÃO MÉDICA</option><option>AUT. PARCIALMENTE</option>
+          <option>NEGADO</option><option>REALIZADO</option><option>CANCELADO</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:12px">
+        <label>Observação (opcional)</label>
+        <textarea id="trocaFaseObs" rows="3" placeholder="Informe o motivo da troca de fase..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('modalTrocaFase').classList.add('hidden')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarTrocaFase()"><i class="fa fa-check"></i> Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TUSS SEARCH MODAL -->
+<div class="modal-overlay hidden" id="modalTuss">
+  <div class="modal-box" style="max-width:600px">
+    <div class="modal-header">
+      <h4><i class="fa fa-search"></i> Buscar Procedimento</h4>
+      <button class="modal-close" onclick="document.getElementById('modalTuss').classList.add('hidden')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row" style="align-items:flex-end">
+        <div class="form-group" style="flex:1"><input type="text" id="tussSearch" placeholder="Buscar por código ou descrição..." oninput="filterTuss(this.value)"></div>
+      </div>
+      <table>
+        <thead><tr><th>Cód. TUSS</th><th>Descrição</th><th></th></tr></thead>
+        <tbody id="tussBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script>
+// ============ DATA ============
+const MOCK_PATIENTS = [
+  {id:1,nome:'ALESSANDRO KAYKY BRITO SANTOS',internado:false,unidade:'',leito:'',cpf:'123.456.789-00',nasc:'1985-03-15',pront:'12345',convenio:'UNIMED',celular:'91988887777',email:'alessandro@email.com',sexo:'MASCULINO'},
+  {id:2,nome:'MARIA SILVA SANTOS',internado:false,unidade:'',leito:'',cpf:'987.654.321-00',nasc:'1990-07-22',pront:'23456',convenio:'ALBRAS',celular:'91977776666',email:'maria@email.com',sexo:'FEMININO'},
+  {id:3,nome:'JOÃO PEDRO OLIVEIRA',internado:true,unidade:'UTI ADULTO',leito:'12A',cpf:'456.789.123-00',nasc:'1975-11-10',pront:'34567',convenio:'ALBRAS',celular:'91966665555',email:'joao@email.com',sexo:'MASCULINO'},
+  {id:4,nome:'ANA CAROLINA FERREIRA',internado:false,unidade:'',leito:'',cpf:'321.654.987-00',nasc:'2000-09-05',pront:'45678',convenio:'UNIMED',celular:'91955554444',email:'ana@email.com',sexo:'FEMININO'},
+  {id:5,nome:'TESTE 25/06/2026, 11:05:58',cpf:'111.222.333-44',nasc:'2017-12-25',pront:'56789',convenio:'ALBRAS',celular:'91944443333',email:'',sexo:'MASCULINO',internado:false,unidade:'',leito:''}
+];
+
+const TUSS_LIST = [
+  {tuss:'98306570',desc:'RECOLOCACAO DO ELETRODO'},
+  {tuss:'31309186',desc:'COLECISTECTOMIA VIDEOLAPAROSCOPICA'},
+  {tuss:'31003026',desc:'APENDICECTOMIA'},
+  {tuss:'40101010',desc:'INSTALACAO CATETER DE LONGA PERMANENCIA'},
+  {tuss:'31309020',desc:'PUNCAO LOMBAR C/ MANOMETRIA INC/FINAL'},
+  {tuss:'31301012',desc:'HERNIORRAFIA INGUINAL'},
+  {tuss:'31005018',desc:'HEMORROIDECTOMIA'},
+  {tuss:'20101039',desc:'CONSULTA EM CLINICA CIRÚRGICA'},
+  {tuss:'10101012',desc:'ANESTESIA GERAL'}
+];
+
+const ANEXOS_LIST = [
+  {id:'01',nome:'01 - SOLICITAÇÃO CIRURGICA',obrig:true},
+  {id:'03',nome:'03 - LAUDO MÉDICO',obrig:false},
+  {id:'04',nome:'04 - AUTORIZAÇÃO DA OPERADORA',obrig:false},
+  {id:'05',nome:'05 - CONSENTIMENTO MÉDICO',obrig:false},
+  {id:'02',nome:'02 - CARTEIRINHA E DOCUMENTAÇÃO COM FOTO',obrig:false},
+  {id:'06',nome:'06 - TERMO ANESTÉSICO + RISCO CIRÚRGICO',obrig:false},
+  {id:'07',nome:'07 - AVALIAÇÃO CARDIOLÓGICA',obrig:false},
+  {id:'08',nome:'08 - DOCUMENTAÇÃO DO BANCO DE SANGUE',obrig:false},
+  {id:'09',nome:'09 - ORÇAMENTO',obrig:false},
+  {id:'10',nome:'_10 - FORMULÁRIO DE MATERIAIS',obrig:false},
+  {id:'11',nome:'_11 - COMPROVANTE DE PAGAMENTO PARTICULAR',obrig:false},
+  {id:'12',nome:'_12 - ELEGIBILIDADE',obrig:false},
+  {id:'13',nome:'_13 - EXAME COMPROBATÓRIO',obrig:false},
+  {id:'14',nome:'_14 - LIMINAR JUDICIAL',obrig:false},
+  {id:'15',nome:'_15 - SOLICITAÇÃO DE CANCELAMENTO',obrig:false},
+  {id:'16',nome:'_16 - TERMO DE CONSENTIMENTO ANESTÉSICO',obrig:false},
+  {id:'17',nome:'_17 - PENDÊNCIA AMBULATÓRIO',obrig:false},
+  {id:'18',nome:'_18 - LAUDO MÉDICO',obrig:false},
+  {id:'19',nome:'_19 - TERMO DE CONSENTIMENTO CIRURGICO',obrig:false},
+  {id:'20',nome:'_20 - NEGATIVA DO CONVÊNIO',obrig:false},
+  {id:'21',nome:'_21 - NOTA FISCAL',obrig:false},
+  {id:'22',nome:'_22 - CARTA DE CORREÇÃO',obrig:false},
+  {id:'23',nome:'_23 - OUTROS DOCUMENTOS',obrig:false}
+];
+
+const FASES = ['SOLICITADO','EM CONFERÊNCIA','REVISADO','AGENDADO','PRÉ-AGENDADO','REVISÃO AGENDAMENTO','EM COTAÇÃO','MATERIAL AUTORIZADO','AGUARDANDO OPERADORA','AUTORIZADO','LIBERADO','VALIDAÇÃO MÉDICA','AUT. PARCIALMENTE','NEGADO','EM NEGOCIAÇÃO PARTICULAR','NEGOCIAÇÃO PARTICULAR APROVADA','AUTORIZADO PARTICULAR','SOL. AGENDAMENTO MÉDICO','REALIZADO','CANCELADO'];
+
+const EQ_MAP = {'131':'TAXA DE RECUPERACAO ANESTESICA','68':'TAXA DE SALA PORTE 3','214':'CARRO DE ANESTESIA (HORA)','45':'MONITOR MULTIPARAMÉTRICO'};
+
+const PROC_AUTO_EQ = {
+  '31309186':[{code:'131',desc:'TAXA DE RECUPERACAO ANESTESICA',obs:'',qtd:1},{code:'68',desc:'TAXA DE SALA PORTE 3',obs:'',qtd:1},{code:'214',desc:'CARRO DE ANESTESIA (HORA)',obs:'',qtd:1}],
+  '31003026':[{code:'131',desc:'TAXA DE RECUPERACAO ANESTESICA',obs:'',qtd:1},{code:'68',desc:'TAXA DE SALA PORTE 3',obs:'',qtd:1},{code:'214',desc:'CARRO DE ANESTESIA (HORA)',obs:'',qtd:1}],
+  '40101010':[{code:'131',desc:'TAXA DE RECUPERACAO ANESTESICA',obs:'',qtd:1},{code:'45',desc:'MONITOR MULTIPARAMÉTRICO',obs:'UTI',qtd:1}],
+  '98306570':[{code:'214',desc:'CARRO DE ANESTESIA (HORA)',obs:'',qtd:1},{code:'68',desc:'TAXA DE SALA PORTE 3',obs:'',qtd:1}],
+  '31309020':[{code:'131',desc:'TAXA DE RECUPERACAO ANESTESICA',obs:'',qtd:1}],
+};
+
+// STATE
+let pedidos = [];
+let waLog = [];
+let currentPedido = null;
+let selectedPatient = null;
+let procedimentos = [];
+let equipamentos = [];
+let equipeMedica = [];
+let currentStep = 1;
+let currentTrackingId = null;
+
+// Load from storage
+function loadStorage(){
+  try{
+    const sp = localStorage.getItem('neoh_pedidos');
+    if(sp) pedidos = JSON.parse(sp);
+    const wl = localStorage.getItem('neoh_walog');
+    if(wl) waLog = JSON.parse(wl);
+    // Add mock initial data if empty
+    if(pedidos.length === 0){
+      pedidos = [
+        {id:'2026010700032',aviso:'2026010700032',dt:'24/06/2026 09:15',bloco:'CENTRO CIRURGICO',paciente:'MARIA SILVA SANTOS',cirurgia:'COLECISTECTOMIA VIDEOLAPAROSCOPICA',cirurgiao:'ANTONIO JORGE FERREIRA DA SILVA JUNIOR',convenio:'UNIMED',dtPrevista:'30/06/2026 08:00',fase:'AGENDADO',celular:'91977776666',fases:[{fase:'SOLICITADO',dt:now()},{fase:'EM CONFERÊNCIA',dt:now()},{fase:'REVISADO',dt:now()},{fase:'AGENDADO',dt:now()}],trackId:genId(),urgencia:null},
+        {id:'2026010600019',aviso:'2026010600019',dt:'23/06/2026 14:30',bloco:'CENTRO CIRURGICO',paciente:'JOÃO PEDRO OLIVEIRA',cirurgia:'APENDICECTOMIA',cirurgiao:'BARBARA GONCALVES RODRIGUES',convenio:'ALBRAS',dtPrevista:'28/06/2026 10:00',fase:'EM CONFERÊNCIA',celular:'91966665555',fases:[{fase:'SOLICITADO',dt:now()},{fase:'EM CONFERÊNCIA',dt:now()}],trackId:genId(),urgencia:'urgencia'}
+      ];
+      saveStorage();
+    }
+  }catch(e){}
+}
+
+function saveStorage(){
+  localStorage.setItem('neoh_pedidos',JSON.stringify(pedidos));
+  localStorage.setItem('neoh_walog',JSON.stringify(waLog));
+}
+
+function genId(){return Math.random().toString(36).substr(2,8).toUpperCase()}
+function now(){return new Date().toLocaleString('pt-BR')}
+function genPedidoNum(){return '2026010800' + String(50+pedidos.length+1).padStart(3,'0')}
+
+// ============ PAGES ============
+function showPage(id){
+  ['pageDashboard','pageNewPedido','pageSuccess'].forEach(p=>{
+    document.getElementById(p).classList.add('hidden');
+  });
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function goToDashboard(){
+  showPage('pageDashboard');
+  renderGrid();
+  updateMetrics();
+}
+
+function goToNewPedido(){
+  resetForm();
+  showPage('pageNewPedido');
+  goWizard(1);
+}
+
+function cancelForm(){
+  if(confirm('Deseja cancelar o pedido? As alterações serão perdidas.')) goToDashboard();
+}
+
+// ============ DASHBOARD ============
+function toggleFilters(){
+  const b=document.getElementById('filtersBody');
+  const i=document.getElementById('filterToggleIcon');
+  b.classList.toggle('hidden');
+  i.className=b.classList.contains('hidden')?'fa fa-plus':'fa fa-minus';
+}
+
+function setToday(){document.getElementById('fPeriodo').value='2026-06-25';}
+
+function switchTab(tab,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tabPedidos').classList.add('hidden');
+  document.getElementById('tabRascunhos').classList.add('hidden');
+  document.getElementById('tabLog').classList.add('hidden');
+  if(tab==='pedidos') document.getElementById('tabPedidos').classList.remove('hidden');
+  else if(tab==='rascunhos') document.getElementById('tabRascunhos').classList.remove('hidden');
+  else if(tab==='log'){document.getElementById('tabLog').classList.remove('hidden');renderWaLog();}
+}
+
+function sfFilter(f,el){
+  document.querySelectorAll('.sf-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+
+function applyFilters(){renderGrid();showToast('Filtros aplicados.','info');}
+function sortGrid(col){renderGrid();}
+function changeItemsPerPage(v){renderGrid();}
+function searchGrid(v){renderGrid(v);}
+
+function getBadgeClass(fase){
+  const m={'SOLICITADO':'solicitado','EM CONFERÊNCIA':'conferencia','REVISADO':'revisado','AGENDADO':'agendado','PRÉ-AGENDADO':'pre-agendado','EM COTAÇÃO':'cotacao','AUTORIZADO':'autorizado','LIBERADO':'liberado','NEGADO':'negado','REALIZADO':'realizado','CANCELADO':'cancelado'};
+  return 'badge badge-'+(m[fase]||'solicitado');
+}
+
+function renderGrid(search=''){
+  const tbody=document.getElementById('gridBody');
+  let list=pedidos.filter(p=>{
+    if(search) return p.paciente.toLowerCase().includes(search.toLowerCase())||p.id.includes(search)||p.cirurgia.toLowerCase().includes(search.toLowerCase());
+    return true;
+  });
+  if(!list.length){tbody.innerHTML='<tr><td colspan="16" style="text-align:center;color:#999;padding:30px">Nenhum registro encontrado</td></tr>';
+  document.getElementById('gridInfo').textContent='Mostrando 0 registros';return;}
+  document.getElementById('gridInfo').textContent=`Mostrando 1 até ${list.length} de ${list.length} registros`;
+  document.getElementById('sfTodos').textContent=list.length;
+  tbody.innerHTML=list.map(p=>{
+    const rowBg=p.urgencia==='emergencia'?'background:#FFF0F0;':p.urgencia==='urgencia'?'background:#FFF8F0;':'';
+    return `<tr style="${rowBg}cursor:pointer" onclick="openTracking('${p.id}')">
+      <td><a class="link-blue" onclick="event.stopPropagation();openTracking('${p.id}')">${p.aviso}</a></td>
+      <td>—</td>
+      <td>${p.dt}</td>
+      <td>${p.bloco}</td>
+      <td>${p.paciente}${p.urgencia==='emergencia'?'<br><span class="badge badge-uti" style="background:#E040FB;font-size:10px">UTI</span>':''}</td>
+      <td>${p.cirurgia}</td>
+      <td>${p.cirurgiao}</td>
+      <td><a class="link-blue">${p.convenio}</a></td>
+      <td>${p.dtPrevista||'—'}</td>
+      <td>—</td>
+      <td><span class="chat-bubble"><i class="fa fa-comment" style="font-size:10px"></i></span> 0</td>
+      <td><i class="fa fa-user" style="color:#888"></i></td>
+      <td><span class="${getBadgeClass(p.fase)}">${p.fase}</span></td>
+      <td><span class="st-circle">A</span></td>
+      <td><i class="fa fa-check" style="color:#28A745"></i></td>
+      <td><i class="fa fa-lock" style="color:#888;margin-right:6px"></i><i class="fa fa-bars" style="color:#888"></i></td>
+    </tr>`;
+  }).join('');
+}
+
+function updateMetrics(){
+  document.getElementById('metTotal').textContent=pedidos.length;
+  document.getElementById('metSolicitado').textContent=pedidos.filter(p=>p.fase==='SOLICITADO').length;
+  document.getElementById('metAgendado').textContent=pedidos.filter(p=>p.fase==='AGENDADO').length;
+  document.getElementById('metWa').textContent=waLog.filter(l=>l.status==='ENVIADO').length;
+}
+
+function renderWaLog(){
+  const tbody=document.getElementById('waLogBody');
+  const empty=document.getElementById('waLogEmpty');
+  if(!waLog.length){tbody.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  tbody.innerHTML=waLog.map(l=>`<tr>
+    <td>${l.dt}</td><td>${l.pedidoId}</td><td>${l.paciente}</td>
+    <td><span class="${getBadgeClass(l.fase)}" style="font-size:10px">${l.fase}</span></td>
+    <td>${l.numero}</td>
+    <td><span class="badge badge-${l.status.toLowerCase().replace(' ','-')}">${l.status}</span></td>
+    <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px">${l.msg}</td>
+  </tr>`).join('');
+}
+
+// ============ WIZARD ============
+function goWizard(step){
+  currentStep=step;
+  for(let i=1;i<=5;i++){
+    const ws=document.getElementById('ws'+i);
+    const s=document.getElementById('step'+i);
+    ws.className='wizard-step'+(i===step?' active':i<step?' done':'');
+    s.classList.toggle('hidden',i!==step);
+  }
+  // Re-render dynamic content for each step
+  if(step===3){
+    renderProcedimentos();
+    renderEquipamentos();
+    if(typeof renderOpmes==='function') renderOpmes();
+  }
+  if(step===4) renderAnexos();
+  if(step===5) buildResume();
+  window.scrollTo(0,0);
+}
+
+function nextStep(from){
+  if(!validateStep(from)) return;
+  goWizard(from+1);
+}
+
+function validateStep(step){
+  let valid=true;
+  const req=(id,errId)=>{
+    const el=document.getElementById(id);
+    const err=document.getElementById(errId);
+    if(!el||!el.value.trim()){if(el)el.classList.add('input-invalid');if(err)err.classList.add('show');valid=false;}
+    else{if(el)el.classList.remove('input-invalid');if(err)err.classList.remove('show');}
+  };
+  if(step===1){
+    req('fPacienteNome','errPacienteNome');
+    req('fSexo','errSexo');
+    req('fNascimento','errNascimento');
+    req('fCelular','errCelular');
+    req('fConvenio','errConvenio');
+    req('fLatex','errLatex');
+    req('fHipertermia','errHipertermia');
+  }
+  if(step===2){
+    req('fOpme','errOpme');
+    req('fBloco','errBloco');
+    req('fSala','errSala');
+    req('fPrioridade','errPrioridade');
+    req('fTipoAtend','errTipoAtend');
+    req('fRegime','errRegime');
+    req('fAntib','errAntib');
+    req('fTricot','errTricot');
+    req('fPreAnes','errPreAnes');
+  }
+  if(!valid) showToast('Preencha todos os campos obrigatórios (*)','error');
+  return valid;
+}
+
+function toggleMedField(){
+  const v=document.getElementById('fMedContinua').value;
+  document.getElementById('medFieldGroup').style.display=v==='SIM'?'flex':'none';
+}
+function toggleBlood(){
+  document.getElementById('bloodSection').style.display=document.getElementById('cbSangue').checked?'block':'none';
+}
+
+// ============ PATIENT MODAL ============
+function openPatientModal(){
+  document.getElementById('modalPaciente').classList.remove('hidden');
+  document.getElementById('searchResults').classList.add('hidden');
+  ['searchNome','searchCPF','searchPront','searchAtend','searchSUS','searchCarteira'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+}
+function closePatientModal(){document.getElementById('modalPaciente').classList.add('hidden');}
+
+
+
+function searchPatients(){
+  const nome=document.getElementById('searchNome').value.toLowerCase().trim();
+  const cpf=document.getElementById('searchCPF').value.replace(/\D/g,'');
+  const pront=document.getElementById('searchPront').value.trim();
+  let r=MOCK_PATIENTS;
+  if(nome) r=r.filter(p=>p.nome.toLowerCase().includes(nome));
+  if(cpf) r=r.filter(p=>p.cpf.replace(/\D/g,'').includes(cpf));
+  if(pront) r=r.filter(p=>p.pront.includes(pront));
+  const noRes=document.getElementById('searchNoResult');
+  if(!r.length){document.getElementById('searchResults').classList.add('hidden');noRes.classList.remove('hidden');return;}
+  noRes.classList.add('hidden');
+  renderPatientResults(r);
+  document.getElementById('searchResults').classList.remove('hidden');
+}
+
+function renderPatientResults(list){
+  document.getElementById('patientResultsBody').innerHTML=list.map(p=>`
+    <tr>
+      <td>${p.nome}</td><td>${p.cpf}</td>
+      <td>${new Date(p.nasc+'T12:00:00').toLocaleDateString('pt-BR')}</td>
+      <td>${p.pront}</td><td>${p.convenio}</td>
+      <td>${formatPhone(p.celular)}</td>
+      <td>${p.internado?'<span class="badge badge-solicitado" style="font-size:10px">INTERNADO</span>':'—'}</td>
+      <td><button class="btn btn-primary btn-sm" onclick="selectPatient(${p.id})">Selecionar</button></td>
+    </tr>`).join('');
+}
+
+function selectPatient(id){
+  const p=MOCK_PATIENTS.find(x=>x.id===id);
+  if(!p) return;
+  window._selectedPatient=p;
+  selectedPatient=p;
+  if(p.internado){
+    // will auto-fill when user gets to step 2
+    setTimeout(()=>{
+      const ta=document.getElementById('fTipoAtend');
+      if(ta){ta.value='INTERNADO';toggleInternacao();}
+    },300);
+  }
+  document.getElementById('fPacienteNome').value=p.nome;
+  document.getElementById('fSexo').value=p.sexo;
+  document.getElementById('fNascimento').value=p.nasc;
+  document.getElementById('fEmail').value=p.email;
+  document.getElementById('fCelular').value=formatPhone(p.celular);
+  const csel=document.getElementById('fConvenio');
+  for(let o of csel.options){if(o.text===p.convenio){csel.value=o.value;break;}}
+  document.getElementById('ctxPaciente').textContent=p.nome;
+  closePatientModal();
+  showToast('Paciente selecionado: '+p.nome,'success');
+}
+
+function showNewPatient(){
+  document.getElementById('newPatientSection').classList.remove('hidden');
+  document.getElementById('newPatientSection').scrollIntoView({behavior:'smooth'});
+}
+function clearNewPatient(){document.querySelectorAll('#newPatientSection input,#newPatientSection select').forEach(el=>{if(el.id!=='npPais')el.value='';});}
+
+function saveNewPatient(){
+  const nome=document.getElementById('npNome').value.trim();
+  const nasc=document.getElementById('npNasc').value;
+  const ddd=document.getElementById('npCelDDD').value;
+  const num=document.getElementById('npCelNum').value;
+  if(!nome||!nasc){showToast('Nome e data de nascimento são obrigatórios','error');return;}
+  const cel=(ddd+num).replace(/\D/g,'');
+  const newP={
+    id:MOCK_PATIENTS.length+Date.now(),
+    nome:nome.toUpperCase(),
+    cpf:document.getElementById('npCPF').value||'—',
+    nasc:nasc,
+    pront:'NOVO'+Date.now(),
+    convenio:'PARTICULAR',
+    celular:cel,
+    email:document.getElementById('npEmail').value,
+    sexo:document.getElementById('npSexo').value||'MASCULINO'
+  };
+  MOCK_PATIENTS.push(newP);
+  selectPatient(newP.id);
+  showToast('Paciente cadastrado e selecionado!','success');
+}
+
+function formatPhone(cel){
+  if(!cel) return '';
+  const d=cel.replace(/\D/g,'');
+  if(d.length===11) return `(${d.substr(0,2)}) ${d.substr(2,5)}-${d.substr(7)}`;
+  if(d.length===10) return `(${d.substr(0,2)}) ${d.substr(2,4)}-${d.substr(6)}`;
+  return cel;
+}
+
+// ============ TUSS MODAL ============
+function searchTuss(){
+  document.getElementById('modalTuss').classList.remove('hidden');
+  // Pré-preencher busca com o que já foi digitado
+  const tussVal = document.getElementById('iTuss').value;
+  const descVal = document.getElementById('iDescricao').value;
+  const query = tussVal || descVal || '';
+  document.getElementById('tussSearch').value = query;
+  filterTuss(query);
+  setTimeout(()=>document.getElementById('tussSearch').focus(), 100);
+}
+
+function liveSearchTuss(val){
+  if(!val || val.length < 1) return;
+  // Abre o modal automaticamente ao digitar
+  document.getElementById('modalTuss').classList.remove('hidden');
+  document.getElementById('tussSearch').value = val;
+  filterTuss(val);
+}
+function filterTuss(v){
+  const list=TUSS_LIST.filter(t=>!v||t.tuss.includes(v)||t.desc.toLowerCase().includes(v.toLowerCase()));
+  document.getElementById('tussBody').innerHTML=list.map(t=>`
+    <tr><td>${t.tuss}</td><td>${t.desc}</td>
+    <td><button class="btn btn-primary btn-sm" onclick="selectTuss('${t.tuss}','${t.desc}')">Selecionar</button></td></tr>`).join('');
+}
+function selectTuss(tuss,desc){
+  document.getElementById('iTuss').value=tuss;
+  document.getElementById('iDescricao').value=desc;
+  document.getElementById('modalTuss').classList.add('hidden');
+}
+
+// ============ PROCEDIMENTOS ============
+function addProcedimento(){
+  const tuss=document.getElementById('iTuss').value;
+  const desc=document.getElementById('iDescricao').value;
+  const lat=document.getElementById('iLateralidade').value;
+  const reg=document.getElementById('iRegiao').value.trim();
+  if(!tuss||!desc){showToast('Selecione um procedimento','error');return;}
+  if(!lat){showFieldPopup('Campo lateralidade é obrigatório, favor preencher!');document.getElementById('iLateralidade').focus();return;}
+  if(!reg){showFieldPopup('Campo região é obrigatório, favor preencher!');document.getElementById('iRegiao').focus();return;}
+  const qtd=parseInt(document.getElementById('iQtd').value)||1;
+  const med=document.getElementById('iMedico').value;
+  procedimentos.push({tuss,desc,principal:procedimentos.length===0?'SIM':'NÃO',particular:'NÃO',qtd,medico:med,tempo:'00:30',rolAns:'SIM',lateralidade:'N/A',regiao:document.getElementById('iRegiao').value||'—'});
+  renderProcedimentos();
+  document.getElementById('iTuss').value='';
+  document.getElementById('iDescricao').value='';
+  document.getElementById('iQtd').value='1';
+  document.getElementById('iLateralidade').value='';
+  document.getElementById('iRegiao').value='';
+  document.getElementById('ctxProc').textContent=procedimentos[0]?.desc||'—';
+  // Update equipe procedimento select
+  const sel=document.getElementById('emProcedimento');
+  sel.innerHTML='<option value="">SELECIONE</option>'+procedimentos.map(p=>`<option>${p.desc}</option>`).join('');
+  // Fix 9: Auto-insert equipamentos from MV parameterization
+  if(PROC_AUTO_EQ[tuss]){
+    const autoEqs=PROC_AUTO_EQ[tuss];let added=0;
+    autoEqs.forEach(e=>{if(!equipamentos.find(x=>x.code===e.code)){equipamentos.push({...e});added++;}});
+    renderEquipamentos();
+    if(added>0)showToast('✔ '+added+' equipamento(s) inserido(s) automaticamente (parametrização MV)','info');
+  }
+}
+
+function renderProcedimentos(){
+  const tbody=document.getElementById('procBody');
+  if(!procedimentos.length){tbody.innerHTML='<tr id="procEmpty"><td colspan="12" style="text-align:center;color:#999;padding:20px">Nenhum registro encontrado</td></tr>';return;}
+  tbody.innerHTML=procedimentos.map((p,i)=>`
+    <tr><td>${p.tuss}</td><td>${p.tuss}</td><td>${p.desc}</td>
+    <td><span class="badge badge-${p.principal==='SIM'?'agendado':'pendente'}" style="font-size:10px">${p.principal}</span></td>
+    <td>${p.particular}</td><td>${p.qtd}</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.medico}</td>
+    <td>${p.tempo}</td><td>${p.rolAns}</td><td>${p.lateralidade}</td><td>${p.regiao}</td>
+    <td><button class="btn btn-danger btn-icon btn-sm" onclick="removeProcedimento(${i})"><i class="fa fa-trash"></i></button></td></tr>`).join('');
+}
+
+function removeProcedimento(i){procedimentos.splice(i,1);if(procedimentos.length>0)procedimentos[0].principal='SIM';renderProcedimentos();}
+
+// ============ EQUIPE MEDICA ============
+function addEquipeMedica(){
+  const proc=document.getElementById('emProcedimento').value;
+  const med=document.getElementById('emMedico').value;
+  const tipo=document.getElementById('emTipo').value;
+  if(!proc||!med||!tipo){showToast('Preencha todos os campos da equipe','error');return;}
+  equipeMedica.push({proc,med,tipo});
+  const tbody=document.getElementById('equipeBody');
+  document.getElementById('equipeEmpty')&&document.getElementById('equipeEmpty').remove();
+  tbody.innerHTML=equipeMedica.map((e,i)=>`<tr><td>${e.proc}</td><td>${e.med}</td><td>${e.tipo}</td>
+    <td><button class="btn btn-danger btn-icon btn-sm" onclick="removeEquipe(${i})"><i class="fa fa-trash"></i></button></td></tr>`).join('');
+}
+function removeEquipe(i){equipeMedica.splice(i,1);addEquipeMedica();}
+
+// ============ EQUIPAMENTOS ============
+function addEquipamento(){
+  const sel=document.getElementById('eqSelect');
+  const v=sel.value;
+  if(!v){showToast('Selecione um equipamento','error');return;}
+  const obs=document.getElementById('eqObs').value;
+  const qtd=parseInt(document.getElementById('eqQtd').value)||1;
+  equipamentos.push({code:v,desc:EQ_MAP[v]||v,obs,qtd});
+  renderEquipamentos();
+}
+function renderEquipamentos(){
+  const tbody=document.getElementById('eqBody');
+  if(!equipamentos.length){tbody.innerHTML='<tr id="eqEmpty"><td colspan="5" style="text-align:center;color:#999;padding:12px">Nenhum registro encontrado</td></tr>';return;}
+  tbody.innerHTML=equipamentos.map((e,i)=>`<tr><td>${e.code}</td><td>${e.desc}</td><td>${e.obs||'—'}</td><td>${e.qtd}</td>
+    <td><button class="btn btn-danger btn-icon btn-sm" onclick="removeEq(${i})"><i class="fa fa-trash"></i></button></td></tr>`).join('');
+}
+function removeEq(i){equipamentos.splice(i,1);renderEquipamentos();}
+function clearEquipamentos(){equipamentos=[];renderEquipamentos();}
+
+// ============ OPME ============
+const OPME_LIST=[
+  {tuss:'10101050',codhosp:'MAT001',desc:'PARAFUSO TITANIO 3.5MM',fornecedor:'MEDLINE'},
+  {tuss:'10101051',codhosp:'MAT002',desc:'PLACA RECONSTRUÇÃO MANDIBULAR',fornecedor:'STRYKER'},
+  {tuss:'10101052',codhosp:'MAT003',desc:'CATETER FOLEY 18FR',fornecedor:'BARD'},
+  {tuss:'10101053',codhosp:'MAT004',desc:'PRÓTESE TOTAL DE JOELHO',fornecedor:'ZIMMER'},
+  {tuss:'10101054',codhosp:'MAT005',desc:'FITA SLING TVT',fornecedor:'ETHICON'},
+  {tuss:'10101055',codhosp:'MAT006',desc:'ELETRODO MARCAPASSO',fornecedor:'MEDTRONIC'},
+  {tuss:'10101056',codhosp:'MAT007',desc:'CLIPE ANEURISMA TITANIO',fornecedor:'AESCULAP'},
+  {tuss:'10101057',codhosp:'MAT008',desc:'TELA HERNIA POLIPROPILENO',fornecedor:'DAVOL'},
+];
+let opmes=[];
+function filterOpme(){
+  const t=document.getElementById('opme_tuss').value.toLowerCase();
+  const c=document.getElementById('opme_codhosp').value.toLowerCase();
+  const d=document.getElementById('opme_desc').value.toLowerCase();
+  const sug=document.getElementById('opme_sugestoes');
+  if(!t&&!c&&!d){sug.style.display='none';return;}
+  const res=OPME_LIST.filter(o=>(t?o.tuss.toLowerCase().includes(t):true)&&(c?o.codhosp.toLowerCase().includes(c):true)&&(d?o.desc.toLowerCase().includes(d):true));
+  const body=document.getElementById('opme_sugestoes_body');
+  if(!res.length){body.innerHTML='<tr><td colspan="5" style="text-align:center;color:#999;padding:8px">Nenhum item encontrado</td></tr>';}
+  else{body.innerHTML=res.map(o=>`<tr style="cursor:pointer" onclick="selectOpmeItem('${o.tuss}','${o.codhosp}','${o.desc}','${o.fornecedor}')"><td>${o.tuss}</td><td>${o.codhosp}</td><td>${o.desc}</td><td>${o.fornecedor}</td><td><button class="btn btn-primary btn-sm">Sel.</button></td></tr>`).join('');}
+  sug.style.display='block';
+}
+function selectOpmeItem(tuss,codhosp,desc,fornecedor){
+  document.getElementById('opme_tuss').value=tuss;
+  document.getElementById('opme_codhosp').value=codhosp;
+  document.getElementById('opme_desc').value=desc;
+  document.getElementById('opme_sugestoes').style.display='none';
+}
+function addOpme(){
+  const tuss=document.getElementById('opme_tuss').value||'—';
+  const codhosp=document.getElementById('opme_codhosp').value||'—';
+  const desc=document.getElementById('opme_desc').value.trim();
+  if(!desc){showToast('Informe ou selecione a descrição do OPME','error');return;}
+  const qtd=parseInt(document.getElementById('opme_qtd').value)||1;
+  const found=OPME_LIST.find(o=>o.tuss===tuss);
+  opmes.push({tuss,codhosp,desc,qtd,fornecedor:found?found.fornecedor:'—',uid:Date.now()});
+  renderOpmes();
+  document.getElementById('opme_tuss').value='';document.getElementById('opme_codhosp').value='';document.getElementById('opme_desc').value='';document.getElementById('opme_qtd').value='1';document.getElementById('opme_sugestoes').style.display='none';
+}
+function renderOpmes(){
+  document.getElementById('opmeCount').textContent='Mostrando 0 até '+opmes.length+' de '+opmes.length+' registros';
+  const tbody=document.getElementById('opmeBody');
+  if(!opmes.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#999;padding:16px">Nenhum registro encontrado</td></tr>';return;}
+  tbody.innerHTML=opmes.map((o,i)=>`<tr>
+    <td>${o.tuss}</td><td>${o.codhosp}</td>
+    <td><input type="text" value="${o.desc}" onchange="opmes[${i}].desc=this.value" style="border:1px solid #ccc;border-radius:3px;padding:3px 6px;font-size:12px;min-width:140px"></td>
+    <td><input type="number" value="${o.qtd}" onchange="opmes[${i}].qtd=parseInt(this.value)||1" style="border:1px solid #ccc;border-radius:3px;padding:3px 6px;font-size:12px;width:55px"></td>
+    <td>${o.fornecedor}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-outline btn-icon btn-sm" onclick="editOpme(${i})" title="Editar"><i class="fa fa-edit"></i></button>
+      <button class="btn btn-danger btn-icon btn-sm" onclick="opmes.splice(${i},1);renderOpmes()" title="Excluir"><i class="fa fa-trash"></i></button>
+    </td>
+  </tr>`).join('');
+}
+function editOpme(i){
+  const o=opmes[i];
+  document.getElementById('opme_tuss').value=o.tuss==='—'?'':o.tuss;
+  document.getElementById('opme_codhosp').value=o.codhosp==='—'?'':o.codhosp;
+  document.getElementById('opme_desc').value=o.desc;
+  document.getElementById('opme_qtd').value=o.qtd;
+  opmes.splice(i,1);renderOpmes();
+  showToast('Item carregado para edição','info');
+}
+
+// ============ BLOOD ============
+let bloodItems=[];
+function addBlood(){
+  const tipo=document.getElementById('bloodType').value;
+  if(!tipo){showToast('Selecione o tipo de hemoderivado','error');return;}
+  const qtd=parseInt(document.getElementById('bloodQtd').value)||1;
+  bloodItems.push({tipo,qtd});
+  document.getElementById('bloodBody').innerHTML=bloodItems.map((b,i)=>`<tr>
+    <td>${b.tipo}</td><td>${b.qtd}</td>
+    <td><button class="btn btn-danger btn-icon btn-sm" onclick="bloodItems.splice(${i},1);renderBloodItems()"><i class="fa fa-trash"></i></button></td>
+  </tr>`).join('');
+  document.getElementById('bloodType').value='';document.getElementById('bloodQtd').value='1';
+}
+function renderBloodItems(){
+  if(!bloodItems.length){document.getElementById('bloodBody').innerHTML='<tr><td colspan="3" style="text-align:center;color:#999;padding:12px">Nenhum registro</td></tr>';return;}
+  document.getElementById('bloodBody').innerHTML=bloodItems.map((b,i)=>`<tr><td>${b.tipo}</td><td>${b.qtd}</td><td><button class="btn btn-danger btn-icon btn-sm" onclick="bloodItems.splice(${i},1);renderBloodItems()"><i class="fa fa-trash"></i></button></td></tr>`).join('');
+}
+
+// ============ ANEXOS ============
+function renderAnexos(){
+  document.getElementById('anexosBody').innerHTML=ANEXOS_LIST.map(a=>`
+    <tr><td><a class="link-blue">${a.nome}</a></td>
+    <td style="text-align:center"><span class="badge badge-${a.obrig?'sim':'nao'}">${a.obrig?'Sim':'Não'}</span></td>
+    <td><button class="btn btn-primary btn-icon btn-sm" onclick="fakeUpload('${a.id}')"><i class="fa fa-upload"></i></button></td></tr>`).join('');
+}
+function fakeUpload(id){showToast('Arquivo selecionado (simulação)','info');}
+
+// ============ RESUME ============
+function buildResume(){
+  // Paciente
+  const pNome=document.getElementById('fPacienteNome').value;
+  const pSexo=document.getElementById('fSexo').value;
+  const pNasc=document.getElementById('fNascimento').value;
+  const pNascFmt=pNasc?new Date(pNasc+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const pLatex=document.getElementById('fLatex').value;
+  const pCel=document.getElementById('fCelular').value;
+  const pConv=document.getElementById('fConvenio').value;
+  const pPlano=document.getElementById('fPlano').value;
+  document.getElementById('resumePaciente').innerHTML=`
+    <div class="resume-field"><strong>Nome do Paciente:</strong> <a class="link-blue">${pNome}</a></div>
+    <div class="resume-field"><strong>Sexo:</strong> ${pSexo}</div>
+    <div class="resume-field"><strong>Data de Nascimento:</strong> ${pNascFmt}</div>
+    <div class="resume-field"><strong>Alérgico (Latex):</strong> ${pLatex}</div>
+    <div class="resume-field"><strong>Convênio:</strong> ${pConv}</div>
+    <div class="resume-field"><strong>Celular:</strong> ${pCel}</div>
+    <div class="resume-field"><strong>Plano:</strong> ${pPlano||'—'}</div>
+    <div class="resume-field"><strong>Validade da Carteira:</strong> ${document.getElementById('fValidadeCart').value||'Não Possui Validade'}</div>`;
+  // Cirurgia
+  const dtP=document.getElementById('fDataPrevista').value;
+  const dtFmt=dtP?new Date(dtP+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  document.getElementById('resumeCirurgia').innerHTML=`
+    <div><strong>Data Prevista:</strong> ${dtFmt}</div>
+    <div><strong>Hora Prevista:</strong> ${document.getElementById('fHoraPrevista').value}</div>
+    <div><strong>Duração:</strong> ${document.getElementById('fDuracao').value}</div>
+    <div><strong>Bloco:</strong> ${document.getElementById('fBloco').value}</div>
+    <div><strong>Sala:</strong> ${document.getElementById('fSala').value}</div>
+    <div><strong>Técnica:</strong> ${document.getElementById('fTecnica')?document.getElementById('fTecnica').value||'—':'—'}</div>
+    <div><strong>Congelação?</strong> ${document.getElementById('fCongelacao').value||'—'}</div>
+    <div><strong>Reserva de sangue?</strong> ${document.getElementById('cbSangue').checked?'SIM':'NÃO'}</div>
+    <div><strong>Possui OPME?</strong> ${document.getElementById('fOpme').value||'—'}</div>
+    <div><strong>Cirurgia conjunta?</strong> Não</div>`;
+  // Internação
+  document.getElementById('resumoInternacao').innerHTML=`
+    <div><strong>Origem:</strong> ${document.getElementById('fTipoAtend').value||'—'}</div>
+    <div><strong>Caráter:</strong> ${document.getElementById('fCarater')?document.getElementById('fCarater').value||'—':'—'}</div>
+    <div><strong>Regime:</strong> ${document.getElementById('fRegime').value||'—'}</div>
+    <div><strong>Acomodação:</strong> —</div>
+    <div><strong>Diárias Solicitadas:</strong> ${document.getElementById('fDiarias').value}</div>
+    <div><strong>Reserva UTI:</strong> ${document.getElementById('fReservaUTI')?document.getElementById('fReservaUTI').value||'—':'—'}</div>`;
+  // Procedimentos
+  if(procedimentos.length){
+    document.getElementById('resumeProc').innerHTML=procedimentos.map(p=>`<tr><td>${p.tuss}</td><td>${p.desc}</td><td>${p.principal}</td><td>${p.particular}</td><td>${p.qtd}</td></tr>`).join('');
+  }
+  // Equipamentos
+  if(equipamentos.length){
+    document.getElementById('resumeEq').innerHTML=equipamentos.map(e=>`<tr><td>${e.code}</td><td>${e.desc}</td><td>${e.obs||'—'}</td><td>${e.qtd}</td></tr>`).join('');
+  }
+}
+
+// ============ SAVE PEDIDO ============
+function savePedido(){document.getElementById('modalConfirm').classList.remove('hidden');}
+function closeConfirm(){document.getElementById('modalConfirm').classList.add('hidden');}
+
+function confirmSave(){
+  closeConfirm();
+  const num=genPedidoNum();
+  const pNome=document.getElementById('fPacienteNome').value;
+  const pCel=document.getElementById('fCelular').value.replace(/\D/g,'');
+  const conv=document.getElementById('fConvenio').value;
+  const dtP=document.getElementById('fDataPrevista').value;
+  const dtFmt=dtP?new Date(dtP+'T12:00:00').toLocaleDateString('pt-BR')+' '+document.getElementById('fHoraPrevista').value:'—';
+  const trackId=genId();
+  const cirurgia=procedimentos.length?procedimentos[0].desc:'(SEM PROCEDIMENTO)';
+  const bloco=document.getElementById('fBloco').value;
+  const novoPedido={
+    id:num,aviso:num,
+    dt:new Date().toLocaleString('pt-BR'),
+    bloco,paciente:pNome,
+    cirurgia,cirurgiao:'BARBARA GONCALVES RODRIGUES',
+    convenio:conv,dtPrevista:dtFmt,
+    fase:'SOLICITADO',celular:pCel,
+    fases:[{fase:'SOLICITADO',dt:new Date().toLocaleString('pt-BR')}],
+    trackId,urgencia:null
+  };
+  pedidos.unshift(novoPedido);
+  currentPedido=novoPedido;
+  // WhatsApp logic
+  const baseUrl = window.location.href.split('?')[0];
+  const trackUrl = baseUrl + '?rastreio=' + trackId;
+  const waMsg=`Olá, *${pNome}*! 👋
+
+Informamos que a sua cirurgia se encontra na fase *SOLICITADO*.
+
+🔗 Acompanhe o status do seu agendamento pelo link abaixo:
+${trackUrl}
+
+_Hospital Adventista de Belém — Sistema Neoh_`;
+  const logEntry={dt:new Date().toLocaleString('pt-BR'),pedidoId:num,paciente:pNome,fase:'SOLICITADO',numero:pCel?'+55'+pCel:'SEM NÚMERO',msg:waMsg,status:pCel?'ENVIADO':'SEM NÚMERO'};
+  waLog.unshift(logEntry);
+  saveStorage();
+  // Show success
+  document.getElementById('successNum').textContent=num;
+  if(pCel){
+    sendRealWhatsApp(pCel,waMsg);
+    document.getElementById('waNotifBox').classList.remove('hidden');
+    document.getElementById('waNumDest').textContent='+55'+pCel;
+    document.getElementById('waNoNumBox').classList.add('hidden');
+  } else {
+    document.getElementById('waNotifBox').classList.add('hidden');
+    document.getElementById('waNoNumBox').classList.remove('hidden');
+    document.getElementById('waNoNumBox').style.display='flex';
+  }
+  showPage('pageSuccess');
+  updateMetrics();
+  showToast('Pedido '+num+' registrado com sucesso!','success');
+}
+
+// ============ WHATSAPP REAL INTEGRATION ============
+function sendRealWhatsApp(celular, mensagem){
+  // Clean number - remove all non-digits
+  const numLimpo = celular.replace(/\D/g,'');
+  // Format for WhatsApp: 55 + DDD + number
+  let numFormatado = numLimpo;
+  if(!numFormatado.startsWith('55')) numFormatado = '55' + numFormatado;
+  // Encode message for URL
+  const msgEncoded = encodeURIComponent(mensagem);
+  // Open WhatsApp Web / App
+  const waUrl = `https://wa.me/${numFormatado}?text=${msgEncoded}`;
+  // Open in new tab
+  window.open(waUrl, '_blank');
+  showToast('WhatsApp aberto para envio! Clique em Enviar no WhatsApp.','success');
+}
+
+function sendWhatsAppUpdate(pedido, fase){
+  if(!pedido.celular) return;
+  // Check duplicate - Cenário 3
+  const lastLog=waLog.find(l=>l.pedidoId===pedido.id&&l.fase===fase);
+  if(lastLog){showToast('Paciente já notificado sobre esta fase. Envio não realizado.','warning');
+    waLog.unshift({dt:new Date().toLocaleString('pt-BR'),pedidoId:pedido.id,paciente:pedido.paciente,fase,numero:'+55'+pedido.celular,msg:'DUPLICADO - JÁ NOTIFICADO',status:'DUPLICADO'});
+    saveStorage();return;}
+  const baseUrl2 = window.location.href.split('?')[0];
+  const trackUrl2 = baseUrl2 + '?rastreio=' + pedido.trackId;
+  const msg=`Olá, *${pedido.paciente}*! 👋
+
+Informamos que a sua cirurgia foi atualizada para a fase *${fase}*.
+
+🔗 Acompanhe o status do seu agendamento pelo link abaixo:
+${trackUrl2}
+
+_Hospital Adventista de Belém — Sistema Neoh_`;
+  sendRealWhatsApp(pedido.celular, msg);
+  waLog.unshift({dt:new Date().toLocaleString('pt-BR'),pedidoId:pedido.id,paciente:pedido.paciente,fase,numero:'+55'+pedido.celular,msg,status:'ENVIADO'});
+  saveStorage();
+  showToast('WhatsApp enviado para '+pedido.paciente+' — Fase: '+fase,'success');
+}
+
+// ============ TRACKING ============
+function openTracking(id){
+  const p=pedidos.find(x=>x.id===id);
+  if(!p) return;
+  currentTrackingId=id;
+  document.getElementById('tkPaciente').textContent=p.paciente;
+  document.getElementById('tkCirurgia').textContent=p.cirurgia;
+  document.getElementById('tkData').textContent=p.dtPrevista||'—';
+  const baseUrlTk = window.location.href.split('?')[0];
+  document.getElementById('tkLink').textContent=baseUrlTk+'?rastreio='+p.trackId;
+  document.getElementById('linkCopiadoBadge').classList.add('hidden');
+  renderTimeline(p);
+  document.getElementById('modalTracking').classList.remove('hidden');
+}
+
+function renderTimeline(p){
+  const timeline=document.getElementById('trackingTimeline');
+  const done=p.fases.map(f=>f.fase);
+  const currentFase=p.fase;
+  const showFases=FASES.slice(0,Math.min(FASES.indexOf(currentFase)+3,FASES.length));
+  timeline.innerHTML=showFases.map((f,i)=>{
+    const isDone=done.includes(f)&&f!==currentFase;
+    const isCurrent=f===currentFase;
+    const fInfo=p.fases.find(x=>x.fase===f);
+    const isLast=i===showFases.length-1;
+    return `<div class="tl-item">
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center">
+        <div class="tl-icon ${isDone?'done':isCurrent?'current':'pending'}">
+          ${isDone?'<i class="fa fa-check"></i>':isCurrent?'<i class="fa fa-circle"></i>':'○'}
+        </div>
+        ${!isLast?`<div style="width:2px;height:40px;background:${isDone?'#28A745':'#e0e0e0'};margin-top:2px"></div>`:''}
+      </div>
+      <div class="tl-content">
+        <div class="tl-label" style="color:${isCurrent?'#F47920':isDone?'#28A745':'#aaa'}">${f}</div>
+        <div class="tl-time">${fInfo?fInfo.dt:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function copyTrackingLink(){
+  const p=pedidos.find(x=>x.id===currentTrackingId);
+  if(!p) return;
+  const link=window.location.href.split('?')[0]+'?rastreio='+p.trackId;
+  navigator.clipboard.writeText(link).then(()=>{
+    document.getElementById('linkCopiadoBadge').classList.remove('hidden');
+    setTimeout(()=>document.getElementById('linkCopiadoBadge').classList.add('hidden'),3000);
+  }).catch(()=>{
+    showToast('Link: '+link,'info');
+  });
+}
+
+function closeTracking(){document.getElementById('modalTracking').classList.add('hidden');}
+
+// ============ TROCAR FASE ============
+function openTrocaFase(){
+  const p=currentPedido||pedidos[0];
+  if(!p) return;
+  currentTrackingId=p.id;
+  document.getElementById('modalTrocaFase').classList.remove('hidden');
+}
+
+function confirmarTrocaFase(){
+  const novaFase=document.getElementById('novaFaseSelect').value;
+  if(!novaFase){showToast('Selecione uma fase','error');return;}
+  const p=pedidos.find(x=>x.id===currentTrackingId)||(currentPedido);
+  if(!p){showToast('Pedido não encontrado','error');return;}
+  // Cenário 3 - duplicate check
+  const lastEntry=waLog.find(l=>l.pedidoId===p.id&&l.fase===novaFase&&l.status==='ENVIADO');
+  if(lastEntry){showToast('⚠️ Paciente já notificado sobre fase '+novaFase+'. Envio duplicado evitado.','warning');
+    waLog.unshift({dt:new Date().toLocaleString('pt-BR'),pedidoId:p.id,paciente:p.paciente,fase:novaFase,numero:p.celular?'+55'+p.celular:'—',msg:'DUPLICADO',status:'DUPLICADO'});
+    saveStorage();
+    document.getElementById('modalTrocaFase').classList.add('hidden');
+    return;
+  }
+  p.fase=novaFase;
+  p.fases.push({fase:novaFase,dt:new Date().toLocaleString('pt-BR')});
+  saveStorage();
+  document.getElementById('modalTrocaFase').classList.add('hidden');
+  // Send WhatsApp
+  if(p.celular){
+    sendWhatsAppUpdate(p,novaFase);
+  } else {
+    waLog.unshift({dt:new Date().toLocaleString('pt-BR'),pedidoId:p.id,paciente:p.paciente,fase:novaFase,numero:'SEM NÚMERO',msg:'Paciente sem celular',status:'SEM NÚMERO'});
+    saveStorage();
+    showToast('Paciente sem WhatsApp. Envio não realizado. Registrado no log.','warning');
+  }
+  renderGrid();
+  updateMetrics();
+  showToast('Fase atualizada para: '+novaFase,'success');
+}
+
+// ============ RESET FORM ============
+function resetForm(){
+  selectedPatient=null;
+  window._selectedPatient=null;
+  procedimentos=[];
+  equipamentos=[];
+  equipeMedica=[];
+  opmes=[];
+  bloodItems=[];
+  // Clear fields
+  ['fPacienteNome','fNomeSocial','fEmail','fTelefone','fCelular','fNumCarteira','fNumGuia','fSenhaAut',
+   'fLeito','fSugestaoLab','fIndicacao','fObsMedico','fComplicacoes','fMedicamento','fPeso'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  ['fSexo','fConvenio','fPlano','fOpme','fBloco','fSala','fPrioridade','fTipoAtend','fRegime',
+   'fAntib','fTricot','fPreAnes','fLatex','fHipertermia','fMedContinua','fMarcaPasso'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('fBloco').value='';
+  document.getElementById('fSala').value='';
+  document.getElementById('fDataPrevista').value='';
+  document.getElementById('fDiarias').value='';
+  document.getElementById('ctxPaciente').textContent='—';
+  document.getElementById('ctxProc').textContent='—';
+  document.getElementById('cbSangue').checked=false;
+  document.getElementById('bloodSection').style.display='none';
+
+  const newSelects=['fTecnica','fCarater','fReservaUTI','fIsolamento','fAutista','fHoraPrevista'];
+  newSelects.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderProcedimentos();
+  renderEquipamentos();
+  renderAnexos();
+  if(typeof renderOpmes==='function')renderOpmes();
+  if(typeof renderBloodItems==='function')renderBloodItems();
+  // Reset carteira/validade verify buttons
+  const nc=document.getElementById('fNumCarteira');
+  const vc=document.getElementById('fValidadeCart');
+  const bc=document.getElementById('btnVerifCarteira');
+  const bv=document.getElementById('btnVerifValidade');
+  if(nc){nc.readOnly=false;nc.style.cssText='';}
+  if(vc){vc.readOnly=false;vc.style.cssText='';}
+  if(bc){bc.innerHTML='<i class="fa fa-check"></i>';bc.style.cssText='';bc.disabled=false;bc.title='Verificar';}
+  if(bv){bv.innerHTML='<i class="fa fa-check"></i>';bv.style.cssText='';bv.disabled=false;bv.title='Verificar';}
+  // Unlock carteira/validade fields on reset
+  ['fNumCarteira','fValidadeCart'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.readOnly=false;el.style.cssText=el.id==='fNumCarteira'?'flex:1':'flex:1';}
+  });
+  ['btnVerifCarteira','btnVerifValidade'].forEach(id=>{
+    const btn=document.getElementById(id);
+    if(btn){btn.innerHTML='<i class="fa fa-check"></i>';btn.style.cssText='';btn.disabled=false;btn.title='Verificar';}
+  });
+  document.querySelectorAll('.input-invalid').forEach(el=>el.classList.remove('input-invalid'));
+  document.querySelectorAll('.err-msg.show').forEach(el=>el.classList.remove('show'));
+}
+
+// ============ TOASTS ============
+function showToast(msg,type='info'){
+  const c=document.getElementById('toastContainer');
+  const t=document.createElement('div');
+  t.className='toast '+type;
+  const icons={success:'fa-check-circle',error:'fa-times-circle',warning:'fa-exclamation-triangle',info:'fa-info-circle'};
+  t.innerHTML=`<i class="fa ${icons[type]||'fa-info-circle'}"></i> ${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(),4000);
+}
+
+
+
+function toggleInternacao(){
+  const v=document.getElementById('fTipoAtend').value;
+  const unidade=document.getElementById('fUnidadeIntern');
+  const leito=document.getElementById('fLeito');
+  const cod=document.getElementById('fCodAtend');
+  if(v==='INTERNADO'){
+    unidade.disabled=false;unidade.style.cssText='';
+    leito.disabled=false;leito.style.cssText='';leito.placeholder='';
+    // auto-fill if patient is internado
+    if(window._selectedPatient && window._selectedPatient.internado){
+      cod.value='123456';
+      unidade.value=window._selectedPatient.unidade||'';
+      leito.value=window._selectedPatient.leito||'';
+    }
+  } else {
+    unidade.disabled=true;unidade.style.cssText='background:#f0f0f0;color:#aaa;cursor:not-allowed';unidade.value='';
+    leito.disabled=true;leito.style.cssText='background:#f0f0f0;color:#aaa;cursor:not-allowed';leito.value='';leito.placeholder='Bloqueado';
+    if(v!=='INTERNADO') cod.value='';
+  }
+}
+
+
+function toggleAnestesista(){
+  const v=document.getElementById('fOrigemAnes').value;
+  const anest=document.getElementById('fNomeAnest');
+  const req=document.getElementById('reqAnest');
+  const hint=document.getElementById('origemHint');
+  if(v==='EQUIPE'){
+    anest.disabled=false;anest.style.cssText='';
+    req.style.display='inline';
+    hint.textContent='Informe o anestesista responsável pela equipe';
+  } else if(v==='NAO_INFORMAR'){
+    anest.disabled=true;anest.style.cssText='background:#f0f0f0;color:#aaa;cursor:not-allowed';anest.value='';
+    req.style.display='none';
+    hint.textContent='Não enviar uma definição deste campo';
+  } else {
+    anest.disabled=false;anest.style.cssText='';
+    req.style.display='none';
+    hint.textContent='';
+  }
+}
+
+
+let _popTimer=null;
+function showFieldPopup(msg){
+  // Remove existing popup to re-trigger animation
+  const old=document.getElementById('fieldPopup');
+  if(old) old.remove();
+  const pop=document.createElement('div');
+  pop.id='fieldPopup';
+  pop.style.cssText='position:fixed;bottom:24px;right:24px;background:#DC3545;color:#fff;padding:14px 20px;border-radius:8px;font-size:14px;font-weight:600;z-index:9999;display:flex;align-items:center;gap:10px;box-shadow:0 6px 20px rgba(0,0,0,0.25);animation:popIn .3s ease;max-width:380px;line-height:1.4';
+  pop.innerHTML='<i class="fa fa-exclamation-triangle" style="font-size:18px;flex-shrink:0"></i><span>'+msg+'</span><span onclick="this.parentElement.remove()" style="margin-left:12px;cursor:pointer;opacity:.7;font-size:18px;line-height:1">×</span>';
+  document.body.appendChild(pop);
+  clearTimeout(_popTimer);
+  _popTimer=setTimeout(()=>{if(pop.parentElement)pop.remove();},4500);
+}
+function checkLateralidade(){if(!document.getElementById('iLateralidade').value)showFieldPopup('Campo lateralidade é obrigatório, favor preencher!');}
+function checkRegiao(){if(!document.getElementById('iRegiao').value.trim())showFieldPopup('Campo região é obrigatório, favor preencher!');}
+
+function toggleCongelacao(){
+  const v=document.getElementById('fCongelacao').value;
+  const lab=document.getElementById('fLabCongelacao');
+  const sug=document.getElementById('fSugestaoLab');
+  if(v==='SIM'){
+    lab.disabled=false;lab.style.cssText='';
+    sug.disabled=false;sug.style.cssText='';sug.placeholder='';
+  } else {
+    lab.disabled=true;lab.style.cssText='background:#f0f0f0;color:#aaa;cursor:not-allowed';lab.value='';
+    sug.disabled=true;sug.style.cssText='background:#f0f0f0;color:#aaa;cursor:not-allowed';sug.value='';sug.placeholder='Bloqueado';
+  }
+}
+
+
+function verificarCarteira(){
+  const input = document.getElementById('fNumCarteira');
+  const btn = document.getElementById('btnVerifCarteira');
+  const val = input.value.trim();
+  // FIX 1: Bloqueia independente de estar preenchido ou não
+  // Se vazio: bloqueia sem dados (artifício para avançar sem carteira)
+  btn.innerHTML='<span style="width:14px;height:14px;border:2px solid #2E7FB8;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin .6s linear infinite"></span>';
+  btn.disabled=true;
+  setTimeout(()=>{
+    input.readOnly=true;
+    if(val){
+      input.style.cssText='flex:1;background:#f0f8f0;border-color:#28A745;color:#155724;cursor:not-allowed';
+      btn.innerHTML='<i class="fa fa-lock" style="color:#28A745"></i>';
+      btn.style.cssText='background:#e8f5e9;border-color:#28A745;cursor:default';
+      btn.title='Carteira bloqueada';
+      showToast('Carteira bloqueada com sucesso!','success');
+    } else {
+      input.placeholder='Não informado';
+      input.style.cssText='flex:1;background:#f8f9fa;border-color:#adb5bd;color:#6c757d;cursor:not-allowed';
+      btn.innerHTML='<i class="fa fa-lock" style="color:#6c757d"></i>';
+      btn.style.cssText='background:#f8f9fa;border-color:#adb5bd;cursor:default';
+      btn.title='Campo bloqueado sem carteira';
+      showToast('Campo bloqueado. Carteira não informada.','info');
+    }
+    btn.disabled=true;
+  },800);
+}
+
+function verificarValidade(){
+  const input = document.getElementById('fValidadeCart');
+  const btn = document.getElementById('btnVerifValidade');
+  const val = input.value;
+  // FIX 1: Bloqueia mesmo sem data preenchida
+  btn.innerHTML='<span style="width:14px;height:14px;border:2px solid #2E7FB8;border-top-color:transparent;border-radius:50%;display:inline-block;animation:spin .6s linear infinite"></span>';
+  btn.disabled=true;
+  setTimeout(()=>{
+    input.readOnly=true;
+    if(!val){
+      input.style.cssText='flex:1;background:#f8f9fa;border-color:#adb5bd;color:#6c757d;cursor:not-allowed';
+      btn.innerHTML='<i class="fa fa-lock" style="color:#6c757d"></i>';
+      btn.style.cssText='background:#f8f9fa;border-color:#adb5bd;cursor:default';
+      btn.title='Campo bloqueado sem validade';
+      showToast('Campo bloqueado. Validade não informada.','info');
+    } else {
+      const hoje = new Date();
+      const valDate = new Date(val+'T12:00:00');
+      if(valDate < hoje){
+        input.style.cssText='flex:1;background:#fff5f5;border-color:#DC3545;color:#721c24;cursor:not-allowed';
+        btn.innerHTML='<i class="fa fa-exclamation-triangle" style="color:#DC3545"></i>';
+        btn.style.cssText='background:#fde8e8;border-color:#DC3545;cursor:default';
+        btn.title='Carteira vencida';
+        showToast('Atenção: Carteira com validade VENCIDA! Campo bloqueado.','error');
+      } else {
+        input.style.cssText='flex:1;background:#f0f8f0;border-color:#28A745;color:#155724;cursor:not-allowed';
+        btn.innerHTML='<i class="fa fa-lock" style="color:#28A745"></i>';
+        btn.style.cssText='background:#e8f5e9;border-color:#28A745;cursor:default';
+        btn.title='Validade bloqueada';
+        showToast('Validade bloqueada com sucesso!','success');
+      }
+    }
+    btn.disabled=true;
+  },800);
+}
+
+// ============ INIT ============
+loadStorage();
+goToDashboard();
+renderAnexos();
+filterTuss('');
+
+
+function showModalRastreioExterno(trackId){
+  // Criar modal de rastreio simplificado para acesso via link externo
+  const overlay = document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:#0007;z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`
+    <div style="background:#fff;border-radius:12px;width:100%;max-width:480px;box-shadow:0 8px 32px #0003;overflow:hidden">
+      <div style="background:#2E7FB8;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:10px;color:#fff">
+          <div style="width:32px;height:32px;background:#F47920;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px">h</div>
+          <span style="font-size:15px;font-weight:700">Acompanhamento Cirúrgico</span>
+        </div>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;opacity:.8">×</button>
+      </div>
+      <div style="padding:24px">
+        <div style="text-align:center;margin-bottom:20px">
+          <i class="fa fa-hospital" style="font-size:36px;color:#2E7FB8;margin-bottom:12px;display:block"></i>
+          <div style="font-size:15px;font-weight:700;color:#1A2B3C">Hospital Adventista de Belém</div>
+          <div style="font-size:13px;color:#888;margin-top:4px">Rastreio do pedido cirúrgico</div>
+        </div>
+        <div style="background:#EAF3FD;border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px">
+          <div style="margin-bottom:6px"><strong>Protocolo:</strong> #${trackId}</div>
+          <div style="margin-bottom:6px"><strong>Status atual:</strong> <span style="background:#2E7FB8;color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700">SOLICITADO</span></div>
+          <div><strong>Atualizado em:</strong> ${new Date().toLocaleString('pt-BR')}</div>
+        </div>
+        <div style="border-left:3px solid #2E7FB8;padding:12px 16px;background:#f8fbff;border-radius:0 6px 6px 0;font-size:13px;color:#555;margin-bottom:16px">
+          Sua solicitação cirúrgica foi recebida e está sendo processada pela equipe do hospital. Em breve entraremos em contato com as próximas atualizações.
+        </div>
+        <div style="text-align:center;font-size:12px;color:#aaa">
+          <i class="fab fa-whatsapp" style="color:#25D366"></i> Você receberá atualizações via WhatsApp a cada mudança de fase.
+        </div>
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid #eee;text-align:center">
+        <button onclick="this.closest('[style*=fixed]').remove()" style="background:#2E7FB8;color:#fff;border:none;border-radius:6px;padding:10px 28px;font-size:13px;font-weight:700;cursor:pointer">Fechar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+// FIX 3: Verificar se URL tem parâmetro de rastreio ao abrir
+(function checkRastreioUrl(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const rastreioId = params.get('rastreio');
+    if(rastreioId){
+      // Procurar pedido com este trackId
+      const pedido = pedidos.find(p => p.trackId === rastreioId);
+      if(pedido){
+        // Abrir modal de rastreio automaticamente
+        setTimeout(()=>{
+          openTracking(pedido.id);
+        }, 500);
+      } else {
+        // TrackId não encontrado localmente — mostrar modal com info básica do link
+        setTimeout(()=>{
+          showModalRastreioExterno(rastreioId);
+        }, 300);
+      }
+    }
+  } catch(e){}
+})();
+</script>
+</body>
+</html>
