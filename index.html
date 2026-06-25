@@ -1533,7 +1533,9 @@ function loadStorage(){
     if(pedidos.length === 0){
       pedidos = [
         {id:'2026010700032',aviso:'111432',dt:'24/06/2026 09:15',bloco:'CENTRO CIRURGICO',paciente:'MARIA SILVA SANTOS',cirurgia:'COLECISTECTOMIA VIDEOLAPAROSCOPICA',cirurgiao:'ANTONIO JORGE FERREIRA DA SILVA JUNIOR',convenio:'UNIMED',dtPrevista:'30/06/2026 08:00',fase:'AGENDADO',celular:'91977776666',fases:[{fase:'SOLICITADO',dt:now()},{fase:'EM CONFERÊNCIA',dt:now()},{fase:'REVISADO',dt:now()},{fase:'AGENDADO',dt:now()}],trackId:genId(),urgencia:null},
-        {id:'2026010600019',aviso:'111419',dt:'23/06/2026 14:30',bloco:'CENTRO CIRURGICO',paciente:'JOÃO PEDRO OLIVEIRA',cirurgia:'APENDICECTOMIA',cirurgiao:'BARBARA GONCALVES RODRIGUES',convenio:'ALBRAS',dtPrevista:'28/06/2026 10:00',fase:'EM CONFERÊNCIA',celular:'91966665555',fases:[{fase:'SOLICITADO',dt:now()},{fase:'EM CONFERÊNCIA',dt:now()}],trackId:genId(),urgencia:'urgencia'}
+        {id:'2026010600019',aviso:'111419',dt:'23/06/2026 14:30',bloco:'CENTRO CIRURGICO',paciente:'JOÃO PEDRO OLIVEIRA',cirurgia:'APENDICECTOMIA',cirurgiao:'BARBARA GONCALVES RODRIGUES',convenio:'ALBRAS',dtPrevista:'28/06/2026 10:00',fase:'EM CONFERÊNCIA',celular:'91966665555',fases:[{fase:'SOLICITADO',dt:now()},{fase:'EM CONFERÊNCIA',dt:now()}],trackId:genId(),urgencia:'urgencia'},
+        {id:'2026010500088',aviso:'111388',dt:'22/06/2026 11:20',bloco:'CENTRO CIRURGICO',paciente:'ANA CAROLINA FERREIRA',cirurgia:'HERNIORRAFIA INGUINAL',cirurgiao:'BARBARA GONCALVES RODRIGUES',convenio:'BRADESCO SAUDE',dtPrevista:'05/07/2026 14:00',fase:'SOLICITADO',celular:null,fases:[{fase:'SOLICITADO',dt:now()}],trackId:genId(),urgencia:null},
+        {id:'2026010500071',aviso:'111371',dt:'21/06/2026 16:45',bloco:'CENTRO CIRURGICO',paciente:'CARLOS EDUARDO MENDONÇA',cirurgia:'COLECISTECTOMIA LAPAROSCOPICA',cirurgiao:'ANTONIO JORGE FERREIRA DA SILVA JUNIOR',convenio:'UNIMED',dtPrevista:'03/07/2026 09:00',fase:'REVISADO',celular:null,fases:[{fase:'SOLICITADO',dt:now()},{fase:'REVISADO',dt:now()}],trackId:genId(),urgencia:null}
       ];
       saveStorage();
     }
@@ -2970,6 +2972,30 @@ function fecharModal() {
 }
 
 // ============ INIT ============
+// Inicializar waLog com falhas para pedidos sem celular (demonstração)
+(function initWaFailures(){
+  setTimeout(function(){
+    pedidos.forEach(function(p){
+      if(!p.celular){
+        const jatem = waLog.some(function(l){ return l.pedidoId===p.id; });
+        if(!jatem){
+          waLog.push({
+            dt: p.dt,
+            pedidoId: p.id,
+            paciente: p.paciente,
+            fase: p.fase,
+            numero: 'SEM NÚMERO',
+            msg: 'Número de celular não cadastrado',
+            status: 'SEM NÚMERO'
+          });
+        }
+      }
+    });
+    saveStorage();
+    updateMetrics();
+    renderGrid();
+  }, 300);
+})();
 // Limpar localStorage antigo para garantir dados frescos com formato correto
 (function(){
   try{
