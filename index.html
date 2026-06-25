@@ -2265,18 +2265,14 @@ function confirmSave(){
   const baseUrl = window.location.href.split('?')[0];
   const rastreioBase = baseUrl.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
   const rastreioUrl = rastreioBase + '?id=' + trackId;
-  const waMsg=`Olá, *${pNome}*! 👋
+  const waMsg=`Olá, ${pNome}!
 
-✅ *Pedido cirúrgico registrado!*
+Informamos que a sua cirurgia foi atualizada para a fase *SOLICITADO*.
 
-📋 *Cirurgia:* ${cirurgia}
-📌 *Fase atual:* SOLICITADO
-🏥 *Hospital:* Adventista de Belém
-
-🔗 Acompanhe o status:
+Acompanhe o status do seu agendamento pelo link abaixo:
 ${rastreioUrl}
 
-_Sistema Neoh — Hospital Adventista de Belém_`;
+Hospital Adventista de Belém — Sistema Neoh`;
   const logEntry={dt:new Date().toLocaleString('pt-BR'),pedidoId:num,paciente:pNome,fase:'SOLICITADO',numero:pCel?'+55'+pCel:'SEM NÚMERO',msg:waMsg,status:pCel?'ENVIADO':'SEM NÚMERO'};
   waLog.unshift(logEntry);
   saveStorage();
@@ -2323,18 +2319,14 @@ function sendWhatsAppUpdate(pedido, fase){
   const baseUrl2 = window.location.href.split('?')[0];
   const rastreioBase2 = baseUrl2.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
   const rastreioUrl2 = rastreioBase2 + '?id=' + pedido.trackId;
-  const msg=`Olá, *${pedido.paciente}*! 👋
+  const msg=`Olá, ${pedido.paciente}!
 
-🔄 *Atualização do pedido cirúrgico*
+Informamos que a sua cirurgia foi atualizada para a fase *${fase}*.
 
-📋 *Cirurgia:* ${pedido.cirurgia}
-📌 *Nova fase:* ${fase}
-🏥 *Hospital:* Adventista de Belém
-
-🔗 Acompanhe o status:
+Acompanhe o status do seu agendamento pelo link abaixo:
 ${rastreioUrl2}
 
-_Sistema Neoh — Hospital Adventista de Belém_`;
+Hospital Adventista de Belém — Sistema Neoh`;
   sendRealWhatsApp(pedido.celular, msg);
   waLog.unshift({dt:new Date().toLocaleString('pt-BR'),pedidoId:pedido.id,paciente:pedido.paciente,fase,numero:'+55'+pedido.celular,msg,status:'ENVIADO'});
   saveStorage();
