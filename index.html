@@ -307,22 +307,11 @@ input.opme-disabled{background:#f5f5f5;pointer-events:none}
   </div>
 </div>
 <script>
-(function(){
-  try{if(sessionStorage.getItem('neoh_auth')==='1'){document.getElementById('lockScreen').style.display='none';return;}}catch(e){}
-})();
+(function(){try{if(sessionStorage.getItem('neoh_auth')==='1'){document.getElementById('lockScreen').style.display='none';}}catch(e){}})();
 function checkLockPwd(){
-  const SENHA='NEOH2026';
-  const v=document.getElementById('lockPwd').value;
-  if(v===SENHA){
-    document.getElementById('lockScreen').style.display='none';
-    try{sessionStorage.setItem('neoh_auth','1');}catch(e){}
-  } else {
-    const err=document.getElementById('lockErr');
-    err.style.display='block';
-    document.getElementById('lockPwd').value='';
-    document.getElementById('lockPwd').focus();
-    setTimeout(()=>{err.style.display='none';},3000);
-  }
+  const SENHA='NEOH2026';const v=document.getElementById('lockPwd').value;
+  if(v===SENHA){document.getElementById('lockScreen').style.display='none';try{sessionStorage.setItem('neoh_auth','1');}catch(e){}}
+  else{const err=document.getElementById('lockErr');err.style.display='block';document.getElementById('lockPwd').value='';document.getElementById('lockPwd').focus();setTimeout(()=>{err.style.display='none';},3000);}
 }
 </script>
 <!-- TOPBAR -->
@@ -2078,7 +2067,16 @@ function confirmSave(){
   currentPedido=novoPedido;
   // WhatsApp logic
   const baseUrl = window.location.href.split('?')[0];
-  const rastreioUrl = baseUrl.replace('index.html','').replace(/\/$/,'') + '/rastreio.html?rastreio=' + trackId;
+  const rastreioBase = baseUrl.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
+  const rastreioParams = new URLSearchParams({
+    rastreio: trackId,
+    pac: pNome,
+    cir: cirurgia,
+    fase: 'SOLICITADO',
+    dt: dtFmt,
+    id: num
+  });
+  const rastreioUrl = rastreioBase + '?' + rastreioParams.toString();
   const waMsg=`Olá, *${pNome}*! 👋
 
 Informamos que a sua cirurgia se encontra na fase *SOLICITADO*.
@@ -2131,7 +2129,17 @@ function sendWhatsAppUpdate(pedido, fase){
     waLog.unshift({dt:new Date().toLocaleString('pt-BR'),pedidoId:pedido.id,paciente:pedido.paciente,fase,numero:'+55'+pedido.celular,msg:'DUPLICADO - JÁ NOTIFICADO',status:'DUPLICADO'});
     saveStorage();return;}
   const baseUrl2 = window.location.href.split('?')[0];
-  const rastreioUrl2 = baseUrl2.replace('index.html','').replace(/\/$/,'') + '/rastreio.html?rastreio=' + pedido.trackId;
+  const rastreioBase2 = baseUrl2.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
+  const rastreioParams2 = new URLSearchParams({
+    rastreio: pedido.trackId,
+    pac: pedido.paciente,
+    cir: pedido.cirurgia,
+    fase: fase,
+    dt: pedido.dtPrevista||'—',
+    id: pedido.id,
+    fases: JSON.stringify(pedido.fases)
+  });
+  const rastreioUrl2 = rastreioBase2 + '?' + rastreioParams2.toString();
   const msg=`Olá, *${pedido.paciente}*! 👋
 
 Informamos que a sua cirurgia foi atualizada para a fase *${fase}*.
@@ -2155,7 +2163,9 @@ function openTracking(id){
   document.getElementById('tkCirurgia').textContent=p.cirurgia;
   document.getElementById('tkData').textContent=p.dtPrevista||'—';
   const baseUrlTk = window.location.href.split('?')[0];
-  const rastreioUrlTk = baseUrlTk.replace('index.html','').replace(/\/$/,'') + '/rastreio.html?rastreio=' + p.trackId;
+  const rastreioBaseTk = baseUrlTk.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
+  const rastreioParamsTk = new URLSearchParams({rastreio:p.trackId,pac:p.paciente,cir:p.cirurgia,fase:p.fase,dt:p.dtPrevista||'—',id:p.id,fases:JSON.stringify(p.fases)});
+  const rastreioUrlTk = rastreioBaseTk + '?' + rastreioParamsTk.toString();
   document.getElementById('tkLink').textContent=rastreioUrlTk;
   document.getElementById('linkCopiadoBadge').classList.add('hidden');
   renderTimeline(p);
@@ -2191,7 +2201,9 @@ function copyTrackingLink(){
   const p=pedidos.find(x=>x.id===currentTrackingId);
   if(!p) return;
   const baseUrlCopy = window.location.href.split('?')[0];
-  const link = baseUrlCopy.replace('index.html','').replace(/\/$/,'') + '/rastreio.html?rastreio=' + p.trackId;
+  const rastreioBaseCopy = baseUrlCopy.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
+  const rastreioParamsCopy = new URLSearchParams({rastreio:p.trackId,pac:p.paciente,cir:p.cirurgia,fase:p.fase,dt:p.dtPrevista||'—',id:p.id,fases:JSON.stringify(p.fases)});
+  const link = rastreioBaseCopy + '?' + rastreioParamsCopy.toString();
   navigator.clipboard.writeText(link).then(()=>{
     document.getElementById('linkCopiadoBadge').classList.remove('hidden');
     setTimeout(()=>document.getElementById('linkCopiadoBadge').classList.add('hidden'),3000);
