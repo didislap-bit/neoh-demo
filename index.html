@@ -2267,12 +2267,16 @@ function confirmSave(){
   const rastreioUrl = rastreioBase + '?id=' + trackId;
   const waMsg=`Olá, *${pNome}*! 👋
 
-Informamos que a sua cirurgia se encontra na fase *SOLICITADO*.
+✅ *Pedido cirúrgico registrado!*
 
-🔗 Acompanhe o status do seu agendamento pelo link abaixo:
+📋 *Cirurgia:* ${cirurgia}
+📌 *Fase atual:* SOLICITADO
+🏥 *Hospital:* Adventista de Belém
+
+🔗 Acompanhe o status:
 ${rastreioUrl}
 
-_Hospital Adventista de Belém — Sistema Neoh_`;
+_Sistema Neoh — Hospital Adventista de Belém_`;
   const logEntry={dt:new Date().toLocaleString('pt-BR'),pedidoId:num,paciente:pNome,fase:'SOLICITADO',numero:pCel?'+55'+pCel:'SEM NÚMERO',msg:waMsg,status:pCel?'ENVIADO':'SEM NÚMERO'};
   waLog.unshift(logEntry);
   saveStorage();
@@ -2321,12 +2325,16 @@ function sendWhatsAppUpdate(pedido, fase){
   const rastreioUrl2 = rastreioBase2 + '?id=' + pedido.trackId;
   const msg=`Olá, *${pedido.paciente}*! 👋
 
-Informamos que a sua cirurgia foi atualizada para a fase *${fase}*.
+🔄 *Atualização do pedido cirúrgico*
 
-🔗 Acompanhe o status do seu agendamento pelo link abaixo:
+📋 *Cirurgia:* ${pedido.cirurgia}
+📌 *Nova fase:* ${fase}
+🏥 *Hospital:* Adventista de Belém
+
+🔗 Acompanhe o status:
 ${rastreioUrl2}
 
-_Hospital Adventista de Belém — Sistema Neoh_`;
+_Sistema Neoh — Hospital Adventista de Belém_`;
   sendRealWhatsApp(pedido.celular, msg);
   waLog.unshift({dt:new Date().toLocaleString('pt-BR'),pedidoId:pedido.id,paciente:pedido.paciente,fase,numero:'+55'+pedido.celular,msg,status:'ENVIADO'});
   saveStorage();
