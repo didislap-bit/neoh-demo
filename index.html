@@ -1524,6 +1524,18 @@ let currentTrackingId = null;
 
 // Load from storage
 function loadStorage(){
+  // Limpar dados antigos para garantir mock data atualizado
+  try{
+    const stored = localStorage.getItem('neoh_pedidos');
+    if(stored){
+      const data = JSON.parse(stored);
+      // Se dados antigos têm menos de 4 pedidos mock, resetar
+      if(data && data.length < 4){
+        localStorage.removeItem('neoh_pedidos');
+        localStorage.removeItem('neoh_walog');
+      }
+    }
+  }catch(e){}
   try{
     const sp = localStorage.getItem('neoh_pedidos');
     if(sp) pedidos = JSON.parse(sp);
@@ -1709,11 +1721,8 @@ function updateMetrics(){
   document.getElementById('metSolicitado').textContent=pedidos.filter(p=>p.fase==='SOLICITADO').length;
   document.getElementById('metAgendado').textContent=pedidos.filter(p=>p.fase==='AGENDADO').length;
   document.getElementById('metWa').textContent=waLog.filter(l=>l.status==='ENVIADO').length;
-  // Count pedidos with WA failures
-  const semWa=pedidos.filter(p=>{
-    const logs=waLog.filter(l=>l.pedidoId===p.id);
-    return logs.length===0||logs.some(l=>l.status==='SEM NÚMERO');
-  }).length;
+  // Count pedidos sem celular cadastrado (falha WA)
+  const semWa=pedidos.filter(p=>!p.celular).length;
   const sfEl=document.getElementById('sfSemWaCount');
   if(sfEl) sfEl.textContent=semWa;
 }
@@ -1721,11 +1730,8 @@ function updateMetrics(){
 function filterSemWhatsapp(el){
   document.querySelectorAll('.sf-pill').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
-  // Filter grid to show only pedidos with WA issues
-  const problemas=pedidos.filter(p=>{
-    const logs=waLog.filter(l=>l.pedidoId===p.id);
-    return logs.length===0||logs.some(l=>l.status==='SEM NÚMERO');
-  });
+  // Pedidos sem número de celular cadastrado
+  const problemas=pedidos.filter(p=>!p.celular);
   const tbody=document.getElementById('gridBody');
   if(!problemas.length){
     tbody.innerHTML='<tr><td colspan="16" style="text-align:center;color:#999;padding:20px"><i class="fab fa-whatsapp" style="color:#25D366;font-size:20px;margin-right:8px"></i>Todos os pedidos com WhatsApp enviado com sucesso!</td></tr>';
