@@ -301,12 +301,38 @@ input.opme-disabled{background:#f5f5f5;pointer-events:none}
     <div style="font-size:18px;font-weight:700;color:#1A2B3C;margin-bottom:4px">Neoh — Demonstração</div>
     <div style="font-size:13px;color:#888;margin-bottom:24px">Hospital Adventista de Belém<br>Acesso restrito</div>
     <input style="width:100%;border:2px solid #e0e0e0;border-radius:8px;padding:12px 16px;font-size:15px;outline:none;text-align:center;letter-spacing:3px;box-sizing:border-box;transition:.2s" type="password" id="lockPwd" placeholder="••••••••" maxlength="20" onkeydown="if(event.key==='Enter')checkLockPwd()" onfocus="this.style.borderColor='#2E7FB8'">
-    <button style="width:100%;background:#2E7FB8;color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;margin-top:12px;transition:.2s" onmouseover="this.style.background='#1a5f8a'" onmouseout="this.style.background='#2E7FB8'" onclick="checkLockPwd()">🔐 Entrar</button>
+    <button style="width:100%;background:#2E7FB8;color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;margin-top:12px" onclick="checkLockPwd()">🔐 Entrar</button>
     <div id="lockErr" style="color:#DC3545;font-size:13px;margin-top:10px;display:none;padding:8px;background:#fff5f5;border-radius:6px">Senha incorreta. Tente novamente.</div>
     <div style="font-size:11px;color:#ccc;margin-top:20px">Sistema de Pedidos Cirúrgicos · HML</div>
   </div>
 </div>
 <script>
+(function(){
+  // Se URL tem ?rastreio= → pular senha e mostrar rastreio diretamente
+  const params = new URLSearchParams(window.location.search);
+  const rastreioId = params.get('rastreio');
+  
+  if(rastreioId){
+    // Esconder a tela de senha imediatamente
+    document.getElementById('lockScreen').style.display='none';
+    // Marcar como autenticado para esta sessão
+    try{ sessionStorage.setItem('neoh_auth','1'); }catch(e){}
+    // O checkRastreioUrl() no script principal vai abrir o modal automaticamente
+    return;
+  }
+  
+  // Se já autenticado nesta sessão → pular senha
+  try{
+    if(sessionStorage.getItem('neoh_auth')==='1'){
+      document.getElementById('lockScreen').style.display='none';
+      return;
+    }
+  }catch(e){}
+  
+  // Mostrar tela de senha normalmente
+  // (já está visível por padrão)
+})();
+
 function checkLockPwd(){
   const SENHA='NEOH2026';
   const v=document.getElementById('lockPwd').value;
@@ -321,7 +347,6 @@ function checkLockPwd(){
     setTimeout(()=>{err.style.display='none';},3000);
   }
 }
-try{if(sessionStorage.getItem('neoh_auth')==='1')document.getElementById('lockScreen').style.display='none';}catch(e){}
 </script>
 <!-- TOPBAR -->
 <div class="topbar">
