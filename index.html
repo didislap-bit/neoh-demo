@@ -340,15 +340,8 @@ input.opme-disabled{background:#f5f5f5;pointer-events:none}
 (function(){try{if(sessionStorage.getItem('neoh_auth')==='1'){document.getElementById('lockScreen').style.display='none';return;}}catch(e){}})();
 function checkLockPwd(){
   var SENHA='NEOH2026';var v=document.getElementById('lockPwd').value;
-  if(v===SENHA){
-    document.getElementById('lockScreen').style.display='none';
-    document.body.style.overflow='';
-    try{sessionStorage.setItem('neoh_auth','1');}catch(e){}
-  } else {
-    var err=document.getElementById('lockErr');err.style.display='block';
-    document.getElementById('lockPwd').value='';document.getElementById('lockPwd').focus();
-    setTimeout(function(){err.style.display='none';},3000);
-  }
+  if(v===SENHA){document.getElementById('lockScreen').style.display='none';document.body.style.overflow='';try{sessionStorage.setItem('neoh_auth','1');}catch(e){}}
+  else{var err=document.getElementById('lockErr');err.style.display='block';document.getElementById('lockPwd').value='';document.getElementById('lockPwd').focus();setTimeout(function(){err.style.display='none';},3000);}
 }
 </script>
 <!-- TOPBAR -->
@@ -2877,12 +2870,26 @@ function toggleRowMenu(id, btn){
   const menu = document.getElementById('menu_'+id);
   if(!menu) return;
   const rect = btn.getBoundingClientRect();
-  // position:fixed usa coordenadas do viewport (sem scrollY)
+  const menuW = 260;
+  menu.style.position = 'fixed';
   menu.style.top = (rect.bottom + 4) + 'px';
-  menu.style.right = (window.innerWidth - rect.right) + 'px';
-  menu.style.left = 'auto';
   menu.style.zIndex = '99500';
+  // Se não couber à direita, abrir à esquerda
+  if(rect.right + menuW > window.innerWidth){
+    menu.style.right = (window.innerWidth - rect.right) + 'px';
+    menu.style.left = 'auto';
+  } else {
+    menu.style.left = rect.left + 'px';
+    menu.style.right = 'auto';
+  }
+  // Garantir que não passa do fundo da tela
   menu.classList.add('open');
+  setTimeout(()=>{
+    const mRect = menu.getBoundingClientRect();
+    if(mRect.bottom > window.innerHeight){
+      menu.style.top = (rect.top - mRect.height - 4) + 'px';
+    }
+  },0);
   setTimeout(()=>{
     document.addEventListener('click', closeAllMenus, {once:true});
   },50);
@@ -2897,32 +2904,163 @@ function openTrocaFaseModal(id){
   const p = pedidos.find(x=>x.id===id);
   if(!p){ showToast('Pedido não encontrado','error'); return; }
   currentTrackingId = id;
-  
-  // Garantir que o modal está no body
-  const modal = document.getElementById('modalTrocaFase');
-  if(modal.parentElement !== document.body) document.body.appendChild(modal);
-  
-  // Preencher dados
-  document.getElementById('tfNumPedido').textContent = p.id;
-  document.getElementById('tfMedico').textContent = p.cirurgiao||'BARBARA GONCALVES RODRIGUES';
-  document.getElementById('tfPaciente').textContent = p.paciente;
-  document.getElementById('tfConvenio').textContent = p.convenio;
-  document.getElementById('tfFaseAtual').textContent = p.fase;
-  document.getElementById('novaFaseSelect').value = '';
-  document.getElementById('trocaFaseObs').value = '';
+
+  // Remover modal anterior se existir
+  const old = document.getElementById('__modalTrocaFase');
+  if(old) old.remove();
+
   const cel = p.celular ? fmtPhone(p.celular) : 'Não cadastrado';
-  document.getElementById('tfCelPaciente').textContent = cel;
-  const icon = document.getElementById('tfCelPacIcon');
-  if(p.celular){ icon.className='fa fa-check-circle'; icon.style.color='#28A745'; }
-  else { icon.className='fa fa-times-circle'; icon.style.color='#DC3545'; }
-  document.getElementById('tfEmailPaciente').textContent = '—';
-  document.getElementById('tfEmailMedico').textContent = 'ajorge.junior1980@gmail.com';
-  document.getElementById('tfCelMedico').textContent = '(91) 98882-7762';
-  
-  // Mostrar usando style inline direto (ignora CSS classes)
-  modal.style.cssText = 'position:fixed !important;top:0 !important;left:0 !important;width:100% !important;height:100% !important;background:rgba(0,0,0,0.6) !important;z-index:99000 !important;display:flex !important;align-items:center !important;justify-content:center !important;padding:20px !important;box-sizing:border-box !important;overflow-y:auto !important';
-  modal.classList.remove('hidden');
+  const temCel = !!p.celular;
+  const celIcon = temCel
+    ? '<i class="fa fa-check-circle" style="color:#28A745;font-size:14px"></i>'
+    : '<i class="fa fa-times-circle" style="color:#DC3545;font-size:14px"></i>';
+
+  const faseOptions = ['SOLICITADO','EM CONFERÊNCIA','REVISADO','AGENDADO','PRÉ-AGENDADO',
+    'REVISÃO AGENDAMENTO','EM COTAÇÃO','MATERIAL AUTORIZADO','AGUARDANDO OPERADORA',
+    'AUTORIZADO','LIBERADO','VALIDAÇÃO MÉDICA','AUT. PARCIALMENTE','NEGADO',
+    'EM NEGOCIAÇÃO PARTICULAR','NEGOCIAÇÃO PARTICULAR APROVADA','AUTORIZADO PARTICULAR',
+    'SOL. AGENDAMENTO MÉDICO','REALIZADO','CANCELADO']
+    .map(f=>`<option value="${f}">${f}</option>`).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = '__modalTrocaFase';
+  overlay.style.cssText = [
+    'position:fixed','top:0','left:0','width:100%','height:100%',
+    'background:rgba(0,0,0,0.6)','z-index:999999',
+    'display:flex','align-items:center','justify-content:center',
+    'padding:20px','box-sizing:border-box','overflow-y:auto'
+  ].join(';');
+
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:8px;width:100%;max-width:640px;box-shadow:0 8px 32px rgba(0,0,0,0.35);overflow:hidden;flex-shrink:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e9ecef">
+        <h4 style="margin:0;font-size:16px;font-weight:700;color:#1A2B3C">
+          <i class="fa fa-exchange-alt" style="color:#2E7FB8;margin-right:8px"></i>Troca de fase
+        </h4>
+        <button onclick="document.getElementById('__modalTrocaFase').remove();document.body.style.overflow='';"
+          style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;line-height:1;padding:0">×</button>
+      </div>
+      <div style="border-bottom:2px solid #2E7FB8;margin:0 20px"></div>
+
+      <div style="padding:16px 20px;border-bottom:1px solid #f0f0f0">
+        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Dados do pedido</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px">
+          <div><strong style="color:#555">Número do pedido:</strong> <span style="color:#2E7FB8">${p.id}</span></div>
+          <div><strong style="color:#555">Paciente:</strong> ${p.paciente}</div>
+          <div><strong style="color:#555">Médico:</strong> ${p.cirurgiao||'BARBARA GONCALVES RODRIGUES'}</div>
+          <div><strong style="color:#555">Convênio:</strong> ${p.convenio}</div>
+        </div>
+      </div>
+
+      <div style="padding:16px 20px;border-bottom:1px solid #f0f0f0;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#555;display:block;margin-bottom:6px">Fase atual</label>
+          <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:4px;padding:8px 12px;font-size:13px;font-weight:600;color:#555">${p.fase}</div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#555;display:block;margin-bottom:6px">Nova fase <span style="color:#DC3545">*</span></label>
+          <select id="__novaFaseSelect" style="width:100%;border:1px solid #ced4da;border-radius:4px;padding:8px 10px;font-size:13px;outline:none">
+            <option value="">SELECIONE</option>${faseOptions}
+          </select>
+        </div>
+      </div>
+
+      <div style="padding:16px 20px;border-bottom:1px solid #f0f0f0">
+        <label style="font-size:12px;font-weight:700;color:#555;display:block;margin-bottom:6px">Observações</label>
+        <textarea id="__trocaFaseObs" rows="3" placeholder="Informe o motivo da troca de fase..."
+          style="width:100%;border:1px solid #ced4da;border-radius:4px;padding:8px 12px;font-size:13px;resize:vertical;box-sizing:border-box;outline:none"></textarea>
+      </div>
+
+      <div style="padding:16px 20px;border-bottom:1px solid #f0f0f0">
+        <label style="font-size:12px;font-weight:700;color:#555;display:block;margin-bottom:6px">Responsável do pedido</label>
+        <select style="width:220px;border:1px solid #ced4da;border-radius:4px;padding:7px 10px;font-size:13px;outline:none">
+          <option>DESATRIBUIR RESPONSÁVEL ATUAL</option>
+          <option>DIOGO CABRAL</option>
+          <option>BARBARA GONCALVES RODRIGUES</option>
+        </select>
+      </div>
+
+      <div style="padding:16px 20px;border-bottom:1px solid #f0f0f0">
+        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Notificações</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">E-mail do médico(a)</label>
+            <div style="display:flex;align-items:center;gap:6px;border:1px solid #dee2e6;border-radius:4px;padding:7px 10px;background:#f8f9fa;font-size:12px">
+              <i class="fa fa-times-circle" style="color:#DC3545;font-size:13px"></i> ajorge.junior1980@gmail.com
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">E-mail do paciente</label>
+            <div style="display:flex;align-items:center;gap:6px;border:1px solid #dee2e6;border-radius:4px;padding:7px 10px;background:#f8f9fa;font-size:12px">
+              <i class="fa fa-times-circle" style="color:#DC3545;font-size:13px"></i> —
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Celular do médico(a)</label>
+            <div style="display:flex;align-items:center;gap:6px;border:1px solid #dee2e6;border-radius:4px;padding:7px 10px;background:#f8f9fa;font-size:12px">
+              <i class="fa fa-times-circle" style="color:#DC3545;font-size:13px"></i> (91) 98882-7762
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Celular do paciente <i class="fab fa-whatsapp" style="color:#25D366"></i></label>
+            <div style="display:flex;align-items:center;gap:6px;border:1px solid #dee2e6;border-radius:4px;padding:7px 10px;background:#f8f9fa;font-size:12px">
+              ${celIcon} ${cel}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:12px 20px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #f0f0f0">
+        <button onclick="document.getElementById('__modalTrocaFase').remove();document.body.style.overflow='';"
+          style="padding:8px 20px;border-radius:4px;border:1px solid #6c757d;background:#fff;color:#6c757d;font-size:13px;font-weight:600;cursor:pointer">Fechar</button>
+        <button onclick="confirmarTrocaFaseInline()"
+          style="padding:8px 20px;border-radius:4px;border:none;background:#2E7FB8;color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+          <i class="fa fa-check"></i> Salvar
+        </button>
+      </div>
+    </div>`;
+
+  // Fechar ao clicar fora
+  overlay.addEventListener('click', function(e){
+    if(e.target === overlay){
+      overlay.remove();
+      document.body.style.overflow = '';
+    }
+  });
+
+  document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
+}
+
+function confirmarTrocaFaseInline(){
+  const nova = document.getElementById('__novaFaseSelect')?.value;
+  if(!nova){ showToast('Selecione uma fase','error'); return; }
+  const p = pedidos.find(x=>x.id===currentTrackingId);
+  if(!p){ showToast('Pedido não encontrado','error'); return; }
+  const dup = waLog.find(l=>l.pedidoId===p.id&&l.fase===nova&&l.status==='ENVIADO');
+  if(dup){
+    showToast('⚠️ Paciente já notificado sobre esta fase. Duplicata evitada.','warning');
+    waLog.unshift({dt:now(),pedidoId:p.id,paciente:p.paciente,fase:nova,
+      numero:p.celular?'+55'+p.celular:'—',msg:'DUPLICADO',status:'DUPLICADO'});
+    saveStorage();
+    document.getElementById('__modalTrocaFase')?.remove();
+    document.body.style.overflow = '';
+    return;
+  }
+  p.fase = nova;
+  p.fases.push({fase:nova,dt:now()});
+  saveStorage();
+  document.getElementById('__modalTrocaFase')?.remove();
+  document.body.style.overflow = '';
+  if(p.celular) sendWhatsAppUpdate(p, nova);
+  else {
+    waLog.unshift({dt:now(),pedidoId:p.id,paciente:p.paciente,fase:nova,
+      numero:'SEM NÚMERO',msg:'Sem celular',status:'SEM NÚMERO'});
+    saveStorage();
+    showToast('Paciente sem WhatsApp. Registrado no log.','warning');
+  }
+  renderGrid(); updateMetrics();
+  showToast('Fase atualizada: '+nova,'success');
 }
 
 // ===== REENVIAR WHATSAPP MANUALMENTE =====
