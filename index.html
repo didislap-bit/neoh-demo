@@ -337,25 +337,16 @@ input.opme-disabled{background:#f5f5f5;pointer-events:none}
   </div>
 </div>
 <script>
-(function(){
-  try{
-    if(sessionStorage.getItem('neoh_auth')==='1'){
-      document.getElementById('lockScreen').style.display='none';
-    }
-  }catch(e){}
-})();
+(function(){try{if(sessionStorage.getItem('neoh_auth')==='1'){document.getElementById('lockScreen').style.display='none';return;}}catch(e){}})();
 function checkLockPwd(){
-  var SENHA='NEOH2026';
-  var v=document.getElementById('lockPwd').value;
+  var SENHA='NEOH2026';var v=document.getElementById('lockPwd').value;
   if(v===SENHA){
     document.getElementById('lockScreen').style.display='none';
     document.body.style.overflow='';
     try{sessionStorage.setItem('neoh_auth','1');}catch(e){}
   } else {
-    var err=document.getElementById('lockErr');
-    err.style.display='block';
-    document.getElementById('lockPwd').value='';
-    document.getElementById('lockPwd').focus();
+    var err=document.getElementById('lockErr');err.style.display='block';
+    document.getElementById('lockPwd').value='';document.getElementById('lockPwd').focus();
     setTimeout(function(){err.style.display='none';},3000);
   }
 }
@@ -2042,7 +2033,7 @@ function toggleBlood(){
 function openPatientModal(){
   const mPat=document.getElementById('modalPaciente');
   if(mPat.parentElement!==document.body) document.body.appendChild(mPat);
-  mPat.style.display='flex';
+  mPat.style.cssText='position:fixed !important;top:0 !important;left:0 !important;width:100% !important;height:100% !important;background:rgba(0,0,0,0.6) !important;z-index:99000 !important;display:flex !important;align-items:center !important;justify-content:center !important;padding:20px !important;box-sizing:border-box !important;overflow-y:auto !important';
   mPat.classList.remove('hidden');
   document.body.style.overflow='hidden';
   document.getElementById('searchResults').classList.add('hidden');
@@ -2050,7 +2041,7 @@ function openPatientModal(){
     const el=document.getElementById(id);if(el)el.value='';
   });
 }
-function closePatientModal(){const m=document.getElementById('modalPaciente');m.style.display='none';m.classList.add('hidden');document.body.style.overflow='';}
+function closePatientModal(){const m=document.getElementById('modalPaciente');m.style.cssText='display:none';m.classList.add('hidden');document.body.style.overflow='';}
 
 
 
@@ -2437,10 +2428,11 @@ function buildResume(){
 function savePedido(){
   const mc=document.getElementById('modalConfirm');
   if(mc.parentElement!==document.body) document.body.appendChild(mc);
-  mc.style.display='flex'; mc.classList.remove('hidden');
+  mc.style.cssText='position:fixed !important;top:0 !important;left:0 !important;width:100% !important;height:100% !important;background:rgba(0,0,0,0.6) !important;z-index:99000 !important;display:flex !important;align-items:center !important;justify-content:center !important;padding:20px !important;box-sizing:border-box !important';
+  mc.classList.remove('hidden');
   document.body.style.overflow='hidden';
 }
-function closeConfirm(){document.getElementById('modalConfirm').style.display='none';document.getElementById('modalConfirm').classList.add('hidden');document.body.style.overflow='';}
+function closeConfirm(){document.getElementById('modalConfirm').style.cssText='display:none';document.getElementById('modalConfirm').classList.add('hidden');document.body.style.overflow='';}
 
 function confirmSave(){
   closeConfirm();
@@ -2573,7 +2565,7 @@ function openTracking(id){
   renderTimeline(p);
   const mTk = document.getElementById('modalTracking');
   if(mTk.parentElement !== document.body) document.body.appendChild(mTk);
-  mTk.style.display = 'flex';
+  mTk.style.cssText = 'position:fixed !important;top:0 !important;left:0 !important;width:100% !important;height:100% !important;background:rgba(0,0,0,0.6) !important;z-index:99000 !important;display:flex !important;align-items:center !important;justify-content:center !important;padding:20px !important;box-sizing:border-box !important;overflow-y:auto !important';
   mTk.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
@@ -2618,7 +2610,7 @@ function copyTrackingLink(){
   });
 }
 
-function closeTracking(){const m=document.getElementById('modalTracking');m.style.display='none';m.classList.add('hidden');document.body.style.overflow='';}
+function closeTracking(){const m=document.getElementById('modalTracking');m.style.cssText='display:none';m.classList.add('hidden');document.body.style.overflow='';}
 
 // ============ TROCAR FASE ============
 function openTrocaFase(){
@@ -2631,7 +2623,7 @@ function openTrocaFase(){
 
 function closeTrocaFase(){
   const modal = document.getElementById('modalTrocaFase');
-  modal.style.display = 'none';
+  modal.style.cssText = 'display:none';
   modal.classList.add('hidden');
   document.body.style.overflow = '';
 }
@@ -2885,11 +2877,12 @@ function toggleRowMenu(id, btn){
   const menu = document.getElementById('menu_'+id);
   if(!menu) return;
   const rect = btn.getBoundingClientRect();
-  menu.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+  // position:fixed usa coordenadas do viewport (sem scrollY)
+  menu.style.top = (rect.bottom + 4) + 'px';
   menu.style.right = (window.innerWidth - rect.right) + 'px';
   menu.style.left = 'auto';
+  menu.style.zIndex = '99500';
   menu.classList.add('open');
-  // Fechar ao clicar fora
   setTimeout(()=>{
     document.addEventListener('click', closeAllMenus, {once:true});
   },50);
@@ -2904,6 +2897,12 @@ function openTrocaFaseModal(id){
   const p = pedidos.find(x=>x.id===id);
   if(!p){ showToast('Pedido não encontrado','error'); return; }
   currentTrackingId = id;
+  
+  // Garantir que o modal está no body
+  const modal = document.getElementById('modalTrocaFase');
+  if(modal.parentElement !== document.body) document.body.appendChild(modal);
+  
+  // Preencher dados
   document.getElementById('tfNumPedido').textContent = p.id;
   document.getElementById('tfMedico').textContent = p.cirurgiao||'BARBARA GONCALVES RODRIGUES';
   document.getElementById('tfPaciente').textContent = p.paciente;
@@ -2919,10 +2918,9 @@ function openTrocaFaseModal(id){
   document.getElementById('tfEmailPaciente').textContent = '—';
   document.getElementById('tfEmailMedico').textContent = 'ajorge.junior1980@gmail.com';
   document.getElementById('tfCelMedico').textContent = '(91) 98882-7762';
-  // Mover modal para body para garantir stacking context correto
-  const modal = document.getElementById('modalTrocaFase');
-  if(modal.parentElement !== document.body) document.body.appendChild(modal);
-  modal.style.display = 'flex';
+  
+  // Mostrar usando style inline direto (ignora CSS classes)
+  modal.style.cssText = 'position:fixed !important;top:0 !important;left:0 !important;width:100% !important;height:100% !important;background:rgba(0,0,0,0.6) !important;z-index:99000 !important;display:flex !important;align-items:center !important;justify-content:center !important;padding:20px !important;box-sizing:border-box !important;overflow-y:auto !important';
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
@@ -2967,6 +2965,59 @@ function updateWaAlertPanel(){
         </button>
       </td>
     </tr>`).join('');
+}
+
+
+// ===== SISTEMA DE MODAIS - OVERLAY INLINE =====
+function abrirModal(modalId) {
+  // Fechar qualquer overlay existente
+  const oldOverlay = document.getElementById('__modalOverlay');
+  if(oldOverlay) oldOverlay.remove();
+  
+  const modal = document.getElementById(modalId);
+  if(!modal) return;
+  
+  // Criar overlay dinamicamente com style 100% inline
+  const overlay = document.createElement('div');
+  overlay.id = '__modalOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;overflow-y:auto';
+  
+  // Mover conteúdo do modal para dentro do overlay
+  // Pegar apenas o modal-box dentro do modal-overlay
+  const box = modal.querySelector('.modal-box') || modal.querySelector('[class*="modal-box"]');
+  if(!box) {
+    // O modal não tem .modal-box, usar o próprio conteúdo
+    overlay.innerHTML = modal.innerHTML;
+  } else {
+    const boxClone = box.cloneNode(true);
+    overlay.appendChild(boxClone);
+  }
+  
+  // Fechar ao clicar no overlay (fundo)
+  overlay.addEventListener('click', function(e) {
+    if(e.target === overlay) fecharModal();
+  });
+  
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+  
+  // Reattach event listeners (botões do box clonado)
+  // Para não perder listeners, vamos usar abordagem diferente:
+  // Mover o modal-box original para o overlay
+  overlay.innerHTML = '';
+  if(box) {
+    overlay.appendChild(box);
+    box.style.cssText = 'background:#fff;border-radius:8px;width:100%;max-width:680px;box-shadow:0 8px 32px rgba(0,0,0,0.3);max-height:90vh;overflow-y:auto;flex-shrink:0';
+  }
+}
+
+function fecharModal() {
+  const overlay = document.getElementById('__modalOverlay');
+  if(overlay) {
+    // Devolver box ao modal original se necessário
+    overlay.remove();
+  }
+  document.body.style.overflow = '';
 }
 
 // ============ INIT ============
