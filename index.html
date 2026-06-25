@@ -14,7 +14,7 @@
   --text:#333;--border:#ced4da;
   --sidebar-bg:#1A2B3C;--topbar-bg:#2E7FB8;
 }
-body{font-family:'Segoe UI',Roboto,sans-serif;font-size:13px;color:var(--text);background:var(--gray-bg);overflow-x:hidden}
+body{font-family:'Segoe UI',Roboto,sans-serif;font-size:13px;color:var(--text);background:var(--gray-bg)}
 
 /* TOPBAR */
 .topbar{position:fixed;top:0;left:0;right:0;height:50px;background:var(--topbar-bg);z-index:1000;display:flex;align-items:center;padding:0 16px;gap:12px;color:#fff}
@@ -137,7 +137,7 @@ tbody tr:hover{background:#f8fbff}
 .context-box strong{color:#555}
 
 /* MODAL */
-.modal-overlay{position:fixed;inset:0;background:#0006;z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.55);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;box-sizing:border-box}
 .modal-box{background:#fff;border-radius:8px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px #0003}
 .modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--gray-light)}
 .modal-header h4{font-size:16px;font-weight:700}
@@ -325,7 +325,7 @@ input.opme-disabled{background:#f5f5f5;pointer-events:none}
 </style>
 </head>
 <body>
-<div id="lockScreen" style="position:fixed;inset:0;background:linear-gradient(135deg,#1A2B3C 0%,#2E7FB8 100%);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:'Segoe UI',sans-serif">
+<div id="lockScreen" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:linear-gradient(135deg,#1A2B3C 0%,#2E7FB8 100%);display:flex;align-items:center;justify-content:center;z-index:99999;font-family:'Segoe UI',sans-serif">
   <div style="background:#fff;border-radius:12px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="width:56px;height:56px;background:#F47920;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;color:#fff;margin:0 auto 20px">h</div>
     <div style="font-size:18px;font-weight:700;color:#1A2B3C;margin-bottom:4px">Neoh — Demonstração</div>
@@ -340,9 +340,11 @@ input.opme-disabled{background:#f5f5f5;pointer-events:none}
 (function(){try{if(sessionStorage.getItem('neoh_auth')==='1'){document.getElementById('lockScreen').style.display='none';}}catch(e){}})();
 function checkLockPwd(){
   const SENHA='NEOH2026';const v=document.getElementById('lockPwd').value;
-  if(v===SENHA){document.getElementById('lockScreen').style.display='none';try{sessionStorage.setItem('neoh_auth','1');}catch(e){}}
+  if(v===SENHA){document.getElementById('lockScreen').style.display='none';document.body.style.overflow='';try{sessionStorage.setItem('neoh_auth','1');}catch(e){}}
   else{const err=document.getElementById('lockErr');err.style.display='block';document.getElementById('lockPwd').value='';document.getElementById('lockPwd').focus();setTimeout(()=>{err.style.display='none';},3000);}
 }
+// Bloquear scroll enquanto lock está ativo
+(function(){try{if(sessionStorage.getItem('neoh_auth')!=='1')document.body.style.overflow='hidden';}catch(e){}})();
 </script>
 <!-- TOPBAR -->
 <div class="topbar">
@@ -1411,7 +1413,7 @@ function checkLockPwd(){
 
 <!-- FASE TROCA MODAL -->
 <div class="modal-overlay hidden" id="modalTrocaFase">
-  <div class="modal-box" style="max-width:640px">
+  <div class="modal-box" style="max-width:640px;margin:auto">
     <div class="modal-header">
       <h4><i class="fa fa-exchange-alt" style="color:#2E7FB8;margin-right:8px"></i> Troca de fase</h4>
       <button class="modal-close" onclick="closeTrocaFase()">×</button>
@@ -1835,13 +1837,13 @@ function renderGrid(search=''){
           </button>
           <div class="row-menu-dropdown" id="menu_${p.id}">
             <div style="padding:6px 14px 4px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px">Outros</div>
-            <div class="row-menu-item" onclick="closeAllMenus();openTracking('${p.id}')">
+            <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();setTimeout(()=>openTracking('${p.id}'),50)">
               <i class="fa fa-search"></i> Consultar Pedido
             </div>
             <div class="row-menu-item" onclick="closeAllMenus()">
               <i class="fa fa-paperclip"></i> Anexos
             </div>
-            <div class="row-menu-item" onclick="closeAllMenus();openTracking('${p.id}')">
+            <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();setTimeout(()=>openTracking('${p.id}'),50)">
               <i class="fa fa-route"></i> Rastrear Pedido
             </div>
             <div class="row-menu-item" onclick="closeAllMenus()">
@@ -1879,10 +1881,10 @@ function renderGrid(search=''){
             <div class="row-menu-item" onclick="closeAllMenus()">
               <i class="fa fa-comment"></i> Chat
             </div>
-            <div class="row-menu-item" onclick="closeAllMenus();openTrocaFaseModal('${p.id}')">
+            <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();setTimeout(()=>openTrocaFaseModal('${p.id}'),50)">
               <i class="fa fa-exchange-alt" style="color:#2E7FB8"></i> <strong>Trocar fase</strong>
             </div>
-            <div class="row-menu-item" onclick="closeAllMenus();reenviarWhatsApp('${p.id}')">
+            <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();setTimeout(()=>reenviarWhatsApp('${p.id}'),50)">
               <i class="fab fa-whatsapp" style="color:#25D366"></i> Reenviar WhatsApp
             </div>
           </div>
@@ -2023,14 +2025,14 @@ function toggleBlood(){
 }
 
 // ============ PATIENT MODAL ============
-function openPatientModal(){
+function openPatientModal(){document.body.style.overflow='hidden';
   document.getElementById('modalPaciente').classList.remove('hidden');
   document.getElementById('searchResults').classList.add('hidden');
   ['searchNome','searchCPF','searchPront','searchAtend','searchSUS','searchCarteira'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
 }
-function closePatientModal(){document.getElementById('modalPaciente').classList.add('hidden');}
+function closePatientModal(){document.getElementById('modalPaciente').classList.add('hidden');document.body.style.overflow='';}
 
 
 
@@ -2537,7 +2539,7 @@ function openTracking(id){
   document.getElementById('tkLink').textContent=rastreioUrlTk;
   document.getElementById('linkCopiadoBadge').classList.add('hidden');
   renderTimeline(p);
-  document.getElementById('modalTracking').classList.remove('hidden');
+  document.getElementById('modalTracking').classList.remove('hidden');document.body.style.overflow='hidden';
 }
 
 function renderTimeline(p){
@@ -2580,7 +2582,7 @@ function copyTrackingLink(){
   });
 }
 
-function closeTracking(){document.getElementById('modalTracking').classList.add('hidden');}
+function closeTracking(){document.getElementById('modalTracking').classList.add('hidden');document.body.style.overflow='';}
 
 // ============ TROCAR FASE ============
 function openTrocaFase(){
@@ -2588,9 +2590,10 @@ function openTrocaFase(){
   if(!p) return;
   currentTrackingId=p.id;
   document.getElementById('modalTrocaFase').classList.remove('hidden');
+  document.body.style.overflow='hidden';
 }
 
-function closeTrocaFase(){document.getElementById('modalTrocaFase').classList.add('hidden');}
+function closeTrocaFase(){document.getElementById('modalTrocaFase').classList.add('hidden');document.body.style.overflow='';}
 
 function confirmarTrocaFase(){
   const novaFase=document.getElementById('novaFaseSelect').value;
@@ -2877,6 +2880,7 @@ function openTrocaFaseModal(id){
   document.getElementById('tfEmailMedico').textContent = 'ajorge.junior1980@gmail.com';
   document.getElementById('tfCelMedico').textContent = '(91) 98882-7762';
   document.getElementById('modalTrocaFase').classList.remove('hidden');
+  document.body.style.overflow='hidden';
 }
 
 // ===== REENVIAR WHATSAPP MANUALMENTE =====
