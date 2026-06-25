@@ -115,7 +115,7 @@ function renderPedido(pac,cir,fase,dt,proto,fasesArr){
 
 function init(){
   const p=new URLSearchParams(window.location.search);
-  const id=p.get('rastreio');
+  const id=p.get('id') || p.get('rastreio'); // suporte ?id= (novo) e ?rastreio= (legado)
 
   if(!id){
     document.getElementById('cardBody').innerHTML=`<div class="not-found"><i class="fa fa-link-slash"></i><h3>Link inválido</h3><p>Este link não contém um código de rastreio válido.<br>Verifique a mensagem recebida no WhatsApp.</p></div>`;
@@ -143,7 +143,7 @@ function init(){
     if(raw) pedidos=JSON.parse(raw);
   }catch(e){}
 
-  const pedido=pedidos.find(pd=>pd.trackId===id);
+  const pedido=pedidos.find(pd=>pd.trackId===id || pd.id===id);
   if(pedido){
     renderPedido(pedido.paciente,pedido.cirurgia,pedido.fase,pedido.dtPrevista,pedido.id,pedido.fases||[]);
     return;
