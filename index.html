@@ -343,8 +343,7 @@ function checkLockPwd(){
   if(v===SENHA){document.getElementById('lockScreen').style.display='none';document.body.style.overflow='';try{sessionStorage.setItem('neoh_auth','1');}catch(e){}}
   else{var err=document.getElementById('lockErr');err.style.display='block';document.getElementById('lockPwd').value='';document.getElementById('lockPwd').focus();setTimeout(function(){err.style.display='none';},3000);}
 }
-</script>
-<!-- TOPBAR -->
+</script><!-- TOPBAR -->
 <div class="topbar">
   <div class="logo">h</div>
   <div class="hospital-name">ADVENTISTA DE BELEM - HML</div>
@@ -2740,7 +2739,7 @@ function openTrocaFaseModal(id){
   const old = document.getElementById('__modalTrocaFase');
   if(old) old.remove();
 
-  const cel = p.celular ? fmtPhone(p.celular) : 'Não cadastrado';
+  const cel = p.celular ? formatPhone(p.celular) : 'Não cadastrado';
   const temCel = !!p.celular;
   const celIcon = temCel
     ? '<i class="fa fa-check-circle" style="color:#28A745;font-size:14px"></i>'
