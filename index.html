@@ -308,31 +308,8 @@ input.opme-disabled{background:#f5f5f5;pointer-events:none}
 </div>
 <script>
 (function(){
-  // Se URL tem ?rastreio= → pular senha e mostrar rastreio diretamente
-  const params = new URLSearchParams(window.location.search);
-  const rastreioId = params.get('rastreio');
-  
-  if(rastreioId){
-    // Esconder a tela de senha imediatamente
-    document.getElementById('lockScreen').style.display='none';
-    // Marcar como autenticado para esta sessão
-    try{ sessionStorage.setItem('neoh_auth','1'); }catch(e){}
-    // O checkRastreioUrl() no script principal vai abrir o modal automaticamente
-    return;
-  }
-  
-  // Se já autenticado nesta sessão → pular senha
-  try{
-    if(sessionStorage.getItem('neoh_auth')==='1'){
-      document.getElementById('lockScreen').style.display='none';
-      return;
-    }
-  }catch(e){}
-  
-  // Mostrar tela de senha normalmente
-  // (já está visível por padrão)
+  try{if(sessionStorage.getItem('neoh_auth')==='1'){document.getElementById('lockScreen').style.display='none';return;}}catch(e){}
 })();
-
 function checkLockPwd(){
   const SENHA='NEOH2026';
   const v=document.getElementById('lockPwd').value;
@@ -2101,13 +2078,13 @@ function confirmSave(){
   currentPedido=novoPedido;
   // WhatsApp logic
   const baseUrl = window.location.href.split('?')[0];
-  const trackUrl = baseUrl + '?rastreio=' + trackId;
+  const rastreioUrl = baseUrl.replace('index.html','').replace(/\/$/,'') + '/rastreio.html?rastreio=' + trackId;
   const waMsg=`Olá, *${pNome}*! 👋
 
 Informamos que a sua cirurgia se encontra na fase *SOLICITADO*.
 
 🔗 Acompanhe o status do seu agendamento pelo link abaixo:
-${trackUrl}
+${rastreioUrl}
 
 _Hospital Adventista de Belém — Sistema Neoh_`;
   const logEntry={dt:new Date().toLocaleString('pt-BR'),pedidoId:num,paciente:pNome,fase:'SOLICITADO',numero:pCel?'+55'+pCel:'SEM NÚMERO',msg:waMsg,status:pCel?'ENVIADO':'SEM NÚMERO'};
@@ -2154,13 +2131,13 @@ function sendWhatsAppUpdate(pedido, fase){
     waLog.unshift({dt:new Date().toLocaleString('pt-BR'),pedidoId:pedido.id,paciente:pedido.paciente,fase,numero:'+55'+pedido.celular,msg:'DUPLICADO - JÁ NOTIFICADO',status:'DUPLICADO'});
     saveStorage();return;}
   const baseUrl2 = window.location.href.split('?')[0];
-  const trackUrl2 = baseUrl2 + '?rastreio=' + pedido.trackId;
+  const rastreioUrl2 = baseUrl2.replace('index.html','').replace(/\/$/,'') + '/rastreio.html?rastreio=' + pedido.trackId;
   const msg=`Olá, *${pedido.paciente}*! 👋
 
 Informamos que a sua cirurgia foi atualizada para a fase *${fase}*.
 
 🔗 Acompanhe o status do seu agendamento pelo link abaixo:
-${trackUrl2}
+${rastreioUrl2}
 
 _Hospital Adventista de Belém — Sistema Neoh_`;
   sendRealWhatsApp(pedido.celular, msg);
@@ -2178,7 +2155,8 @@ function openTracking(id){
   document.getElementById('tkCirurgia').textContent=p.cirurgia;
   document.getElementById('tkData').textContent=p.dtPrevista||'—';
   const baseUrlTk = window.location.href.split('?')[0];
-  document.getElementById('tkLink').textContent=baseUrlTk+'?rastreio='+p.trackId;
+  const rastreioUrlTk = baseUrlTk.replace('index.html','').replace(/\/$/,'') + '/rastreio.html?rastreio=' + p.trackId;
+  document.getElementById('tkLink').textContent=rastreioUrlTk;
   document.getElementById('linkCopiadoBadge').classList.add('hidden');
   renderTimeline(p);
   document.getElementById('modalTracking').classList.remove('hidden');
@@ -2212,7 +2190,8 @@ function renderTimeline(p){
 function copyTrackingLink(){
   const p=pedidos.find(x=>x.id===currentTrackingId);
   if(!p) return;
-  const link=window.location.href.split('?')[0]+'?rastreio='+p.trackId;
+  const baseUrlCopy = window.location.href.split('?')[0];
+  const link = baseUrlCopy.replace('index.html','').replace(/\/$/,'') + '/rastreio.html?rastreio=' + p.trackId;
   navigator.clipboard.writeText(link).then(()=>{
     document.getElementById('linkCopiadoBadge').classList.remove('hidden');
     setTimeout(()=>document.getElementById('linkCopiadoBadge').classList.add('hidden'),3000);
