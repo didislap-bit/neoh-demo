@@ -2264,15 +2264,7 @@ function confirmSave(){
   // WhatsApp logic
   const baseUrl = window.location.href.split('?')[0];
   const rastreioBase = baseUrl.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
-  const rastreioParams = new URLSearchParams({
-    rastreio: trackId,
-    pac: pNome,
-    cir: cirurgia,
-    fase: 'SOLICITADO',
-    dt: dtFmt,
-    id: num
-  });
-  const rastreioUrl = rastreioBase + '?' + rastreioParams.toString();
+  const rastreioUrl = rastreioBase + '?id=' + trackId;
   const waMsg=`Olá, *${pNome}*! 👋
 
 Informamos que a sua cirurgia se encontra na fase *SOLICITADO*.
@@ -2326,16 +2318,7 @@ function sendWhatsAppUpdate(pedido, fase){
     saveStorage();return;}
   const baseUrl2 = window.location.href.split('?')[0];
   const rastreioBase2 = baseUrl2.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
-  const rastreioParams2 = new URLSearchParams({
-    rastreio: pedido.trackId,
-    pac: pedido.paciente,
-    cir: pedido.cirurgia,
-    fase: fase,
-    dt: pedido.dtPrevista||'—',
-    id: pedido.id,
-    fases: JSON.stringify(pedido.fases)
-  });
-  const rastreioUrl2 = rastreioBase2 + '?' + rastreioParams2.toString();
+  const rastreioUrl2 = rastreioBase2 + '?id=' + pedido.trackId;
   const msg=`Olá, *${pedido.paciente}*! 👋
 
 Informamos que a sua cirurgia foi atualizada para a fase *${fase}*.
@@ -2360,8 +2343,7 @@ function openTracking(id){
   document.getElementById('tkData').textContent=p.dtPrevista||'—';
   const baseUrlTk = window.location.href.split('?')[0];
   const rastreioBaseTk = baseUrlTk.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
-  const rastreioParamsTk = new URLSearchParams({rastreio:p.trackId,pac:p.paciente,cir:p.cirurgia,fase:p.fase,dt:p.dtPrevista||'—',id:p.id,fases:JSON.stringify(p.fases)});
-  const rastreioUrlTk = rastreioBaseTk + '?' + rastreioParamsTk.toString();
+  const rastreioUrlTk = rastreioBaseTk + '?id=' + p.trackId;
   document.getElementById('tkLink').textContent=rastreioUrlTk;
   document.getElementById('linkCopiadoBadge').classList.add('hidden');
   renderTimeline(p);
@@ -2401,9 +2383,7 @@ function copyTrackingLink(){
   const p=pedidos.find(x=>x.id===currentTrackingId);
   if(!p) return;
   const baseUrlCopy = window.location.href.split('?')[0];
-  const rastreioBaseCopy = baseUrlCopy.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
-  const rastreioParamsCopy = new URLSearchParams({rastreio:p.trackId,pac:p.paciente,cir:p.cirurgia,fase:p.fase,dt:p.dtPrevista||'—',id:p.id,fases:JSON.stringify(p.fases)});
-  const link = rastreioBaseCopy + '?' + rastreioParamsCopy.toString();
+  const link = baseUrlCopy.replace('index.html','').replace(/\/$/,'') + '/rastreio.html?id=' + p.trackId;
   navigator.clipboard.writeText(link).then(()=>{
     document.getElementById('linkCopiadoBadge').classList.remove('hidden');
     setTimeout(()=>document.getElementById('linkCopiadoBadge').classList.add('hidden'),3000);
