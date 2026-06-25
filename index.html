@@ -337,14 +337,28 @@ input.opme-disabled{background:#f5f5f5;pointer-events:none}
   </div>
 </div>
 <script>
-(function(){try{if(sessionStorage.getItem('neoh_auth')==='1'){document.getElementById('lockScreen').style.display='none';}}catch(e){}})();
+(function(){
+  try{
+    if(sessionStorage.getItem('neoh_auth')==='1'){
+      document.getElementById('lockScreen').style.display='none';
+    }
+  }catch(e){}
+})();
 function checkLockPwd(){
-  const SENHA='NEOH2026';const v=document.getElementById('lockPwd').value;
-  if(v===SENHA){document.getElementById('lockScreen').style.display='none';document.body.style.overflow='';try{sessionStorage.setItem('neoh_auth','1');}catch(e){}}
-  else{const err=document.getElementById('lockErr');err.style.display='block';document.getElementById('lockPwd').value='';document.getElementById('lockPwd').focus();setTimeout(()=>{err.style.display='none';},3000);}
+  var SENHA='NEOH2026';
+  var v=document.getElementById('lockPwd').value;
+  if(v===SENHA){
+    document.getElementById('lockScreen').style.display='none';
+    document.body.style.overflow='';
+    try{sessionStorage.setItem('neoh_auth','1');}catch(e){}
+  } else {
+    var err=document.getElementById('lockErr');
+    err.style.display='block';
+    document.getElementById('lockPwd').value='';
+    document.getElementById('lockPwd').focus();
+    setTimeout(function(){err.style.display='none';},3000);
+  }
 }
-// Bloquear scroll enquanto lock está ativo
-(function(){try{if(sessionStorage.getItem('neoh_auth')!=='1')document.body.style.overflow='hidden';}catch(e){}})();
 </script>
 <!-- TOPBAR -->
 <div class="topbar">
@@ -1512,7 +1526,7 @@ function checkLockPwd(){
   <div class="modal-box troca-fase-modal">
     <div class="modal-header">
       <h4><i class="fa fa-exchange-alt" style="color:#2E7FB8;margin-right:8px"></i> Troca de fase</h4>
-      <button class="modal-close" onclick="document.getElementById('modalTrocaFase').classList.add('hidden')">×</button>
+      <button class="modal-close" onclick="closeTrocaFase()">×</button>
     </div>
     <div class="modal-body">
       <div style="border-bottom:2px solid #2E7FB8;margin-bottom:16px"></div>
@@ -1579,7 +1593,7 @@ function checkLockPwd(){
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="document.getElementById('modalTrocaFase').classList.add('hidden')">Fechar</button>
+      <button class="btn btn-secondary" onclick="closeTrocaFase()">Fechar</button>
       <button class="btn btn-primary" onclick="confirmarTrocaFase()"><i class="fa fa-save"></i> Salvar</button>
     </div>
   </div>
@@ -1590,7 +1604,7 @@ function checkLockPwd(){
   <div class="modal-box" style="max-width:680px">
     <div class="modal-header">
       <h4><i class="fa fa-box" style="color:var(--blue);margin-right:8px"></i> Buscar OPME / Material</h4>
-      <button class="modal-close" onclick="document.getElementById('modalOpmeBusca').classList.add('hidden')">×</button>
+      <button class="modal-close" onclick="document.getElementById('modalOpmeBusca').style.display='none';document.getElementById('modalOpmeBusca').classList.add('hidden');document.body.style.overflow=''">×</button>
     </div>
     <div class="modal-body">
       <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -1612,7 +1626,7 @@ function checkLockPwd(){
   <div class="modal-box" style="max-width:600px">
     <div class="modal-header">
       <h4><i class="fa fa-search"></i> Buscar Procedimento</h4>
-      <button class="modal-close" onclick="document.getElementById('modalTuss').classList.add('hidden')">×</button>
+      <button class="modal-close" onclick="document.getElementById('modalTuss').style.display='none';document.getElementById('modalTuss').classList.add('hidden');document.body.style.overflow=''">×</button>
     </div>
     <div class="modal-body">
       <div class="form-row" style="align-items:flex-end">
@@ -2025,14 +2039,18 @@ function toggleBlood(){
 }
 
 // ============ PATIENT MODAL ============
-function openPatientModal(){document.body.style.overflow='hidden';
-  document.getElementById('modalPaciente').classList.remove('hidden');
+function openPatientModal(){
+  const mPat=document.getElementById('modalPaciente');
+  if(mPat.parentElement!==document.body) document.body.appendChild(mPat);
+  mPat.style.display='flex';
+  mPat.classList.remove('hidden');
+  document.body.style.overflow='hidden';
   document.getElementById('searchResults').classList.add('hidden');
   ['searchNome','searchCPF','searchPront','searchAtend','searchSUS','searchCarteira'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
 }
-function closePatientModal(){document.getElementById('modalPaciente').classList.add('hidden');document.body.style.overflow='';}
+function closePatientModal(){const m=document.getElementById('modalPaciente');m.style.display='none';m.classList.add('hidden');document.body.style.overflow='';}
 
 
 
@@ -2126,7 +2144,10 @@ function formatPhone(cel){
 
 // ============ TUSS MODAL ============
 function searchTuss(){
-  document.getElementById('modalTuss').classList.remove('hidden');
+  const mTuss=document.getElementById('modalTuss');
+  if(mTuss.parentElement!==document.body) document.body.appendChild(mTuss);
+  mTuss.style.display='flex'; mTuss.classList.remove('hidden');
+  document.body.style.overflow='hidden';
   // Pré-preencher busca com o que já foi digitado
   const tussVal = document.getElementById('iTuss').value;
   const descVal = document.getElementById('iDescricao').value;
@@ -2139,7 +2160,10 @@ function searchTuss(){
 function liveSearchTuss(val){
   if(!val || val.length < 1) return;
   // Abre o modal automaticamente ao digitar
-  document.getElementById('modalTuss').classList.remove('hidden');
+  const mTuss=document.getElementById('modalTuss');
+  if(mTuss.parentElement!==document.body) document.body.appendChild(mTuss);
+  mTuss.style.display='flex'; mTuss.classList.remove('hidden');
+  document.body.style.overflow='hidden';
   document.getElementById('tussSearch').value = val;
   filterTuss(val);
 }
@@ -2152,7 +2176,7 @@ function filterTuss(v){
 function selectTuss(tuss,desc){
   document.getElementById('iTuss').value=tuss;
   document.getElementById('iDescricao').value=desc;
-  document.getElementById('modalTuss').classList.add('hidden');
+  document.getElementById('modalTuss').style.display='none';document.getElementById('modalTuss').classList.add('hidden');document.body.style.overflow='';
 }
 
 // ============ PROCEDIMENTOS ============
@@ -2252,7 +2276,10 @@ function filterOpme(){
   const query = t||c||d||'';
   document.getElementById('opmeModalSearch').value = query;
   filterOpmeModal(query);
-  document.getElementById('modalOpmeBusca').classList.remove('hidden');
+  const mOpme=document.getElementById('modalOpmeBusca');
+  if(mOpme.parentElement!==document.body) document.body.appendChild(mOpme);
+  mOpme.style.display='flex'; mOpme.classList.remove('hidden');
+  document.body.style.overflow='hidden';
   setTimeout(()=>document.getElementById('opmeModalSearch').focus(),100);
 }
 
@@ -2282,7 +2309,7 @@ function selectOpmeFromModal(tuss,codhosp,desc,fornecedor){
   document.getElementById('opme_codhosp').value=codhosp;
   document.getElementById('opme_desc').value=desc;
   document.getElementById('opme_sugestoes').style.display='none';
-  document.getElementById('modalOpmeBusca').classList.add('hidden');
+  document.getElementById('modalOpmeBusca').style.display='none';document.getElementById('modalOpmeBusca').classList.add('hidden');document.body.style.overflow='';
   showToast('OPME selecionado: '+desc,'info');
 }
 function selectOpmeItem(tuss,codhosp,desc,fornecedor){
@@ -2407,8 +2434,13 @@ function buildResume(){
 }
 
 // ============ SAVE PEDIDO ============
-function savePedido(){document.getElementById('modalConfirm').classList.remove('hidden');}
-function closeConfirm(){document.getElementById('modalConfirm').classList.add('hidden');}
+function savePedido(){
+  const mc=document.getElementById('modalConfirm');
+  if(mc.parentElement!==document.body) document.body.appendChild(mc);
+  mc.style.display='flex'; mc.classList.remove('hidden');
+  document.body.style.overflow='hidden';
+}
+function closeConfirm(){document.getElementById('modalConfirm').style.display='none';document.getElementById('modalConfirm').classList.add('hidden');document.body.style.overflow='';}
 
 function confirmSave(){
   closeConfirm();
@@ -2539,7 +2571,11 @@ function openTracking(id){
   document.getElementById('tkLink').textContent=rastreioUrlTk;
   document.getElementById('linkCopiadoBadge').classList.add('hidden');
   renderTimeline(p);
-  document.getElementById('modalTracking').classList.remove('hidden');document.body.style.overflow='hidden';
+  const mTk = document.getElementById('modalTracking');
+  if(mTk.parentElement !== document.body) document.body.appendChild(mTk);
+  mTk.style.display = 'flex';
+  mTk.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
 }
 
 function renderTimeline(p){
@@ -2582,7 +2618,7 @@ function copyTrackingLink(){
   });
 }
 
-function closeTracking(){document.getElementById('modalTracking').classList.add('hidden');document.body.style.overflow='';}
+function closeTracking(){const m=document.getElementById('modalTracking');m.style.display='none';m.classList.add('hidden');document.body.style.overflow='';}
 
 // ============ TROCAR FASE ============
 function openTrocaFase(){
@@ -2593,7 +2629,12 @@ function openTrocaFase(){
   document.body.style.overflow='hidden';
 }
 
-function closeTrocaFase(){document.getElementById('modalTrocaFase').classList.add('hidden');document.body.style.overflow='';}
+function closeTrocaFase(){
+  const modal = document.getElementById('modalTrocaFase');
+  modal.style.display = 'none';
+  modal.classList.add('hidden');
+  document.body.style.overflow = '';
+}
 
 function confirmarTrocaFase(){
   const novaFase=document.getElementById('novaFaseSelect').value;
@@ -2870,7 +2911,6 @@ function openTrocaFaseModal(id){
   document.getElementById('tfFaseAtual').textContent = p.fase;
   document.getElementById('novaFaseSelect').value = '';
   document.getElementById('trocaFaseObs').value = '';
-  // Celular paciente com ícone
   const cel = p.celular ? fmtPhone(p.celular) : 'Não cadastrado';
   document.getElementById('tfCelPaciente').textContent = cel;
   const icon = document.getElementById('tfCelPacIcon');
@@ -2879,8 +2919,12 @@ function openTrocaFaseModal(id){
   document.getElementById('tfEmailPaciente').textContent = '—';
   document.getElementById('tfEmailMedico').textContent = 'ajorge.junior1980@gmail.com';
   document.getElementById('tfCelMedico').textContent = '(91) 98882-7762';
-  document.getElementById('modalTrocaFase').classList.remove('hidden');
-  document.body.style.overflow='hidden';
+  // Mover modal para body para garantir stacking context correto
+  const modal = document.getElementById('modalTrocaFase');
+  if(modal.parentElement !== document.body) document.body.appendChild(modal);
+  modal.style.display = 'flex';
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
 }
 
 // ===== REENVIAR WHATSAPP MANUALMENTE =====
@@ -2926,6 +2970,15 @@ function updateWaAlertPanel(){
 }
 
 // ============ INIT ============
+// Mover todos os modais para body para garantir stacking context
+(function(){
+  setTimeout(function(){
+    ['modalPaciente','modalConfirm','modalTracking','modalTrocaFase','modalTuss','modalOpmeBusca'].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el && el.parentElement!==document.body) document.body.appendChild(el);
+    });
+  },0);
+})();
 loadStorage();
 goToDashboard();
 renderAnexos();
