@@ -101,7 +101,7 @@ textarea{resize:vertical;min-height:80px}
 .badge-pendente{background:#6c757d}
 
 /* GRID / TABLE */
-.table-wrapper{overflow-x:auto}
+.table-wrapper{overflow-x:auto;overflow-y:visible}
 table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
 thead th{background:#f8f9fa;border-bottom:2px solid var(--border);padding:9px 10px;text-align:left;font-size:11px;font-weight:700;color:#555;white-space:nowrap;cursor:pointer;user-select:none}
 thead th:hover{background:#e9ecef}
@@ -248,10 +248,10 @@ tbody tr:hover{background:#f8fbff}
 .hidden{display:none!important}
 
 /* MENU DROPDOWN DO GRID */
-.row-menu-wrap{position:relative;display:inline-block}
+.row-menu-wrap{position:relative;display:inline-block;overflow:visible}
 .row-menu-btn{background:none;border:1px solid #dee2e6;border-radius:4px;padding:4px 8px;cursor:pointer;color:#555;font-size:13px;transition:.15s}
 .row-menu-btn:hover{background:#f0f4f8;border-color:#2E7FB8;color:#2E7FB8}
-.row-menu-dropdown{position:fixed;background:#fff;border:1px solid #dee2e6;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:8500;min-width:220px;padding:6px 0;display:none}
+.row-menu-dropdown{position:absolute;right:0;top:100%;background:#fff;border:1px solid #dee2e6;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:1000;min-width:220px;padding:6px 0;display:none;margin-top:2px}
 .row-menu-dropdown.open{display:block}
 .row-menu-item{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:#333;cursor:pointer;transition:.1s;white-space:nowrap}
 .row-menu-item:hover{background:#f0f4f8;color:#2E7FB8}
@@ -2866,33 +2866,43 @@ function verificarValidade(){
 
 // ===== MENU DROPDOWN DO GRID =====
 function toggleRowMenu(id, btn){
-  closeAllMenus();
   const menu = document.getElementById('menu_'+id);
   if(!menu) return;
-  const rect = btn.getBoundingClientRect();
-  const menuW = 260;
-  menu.style.position = 'fixed';
-  menu.style.top = (rect.bottom + 4) + 'px';
-  menu.style.zIndex = '99500';
-  // Se não couber à direita, abrir à esquerda
-  if(rect.right + menuW > window.innerWidth){
-    menu.style.right = (window.innerWidth - rect.right) + 'px';
-    menu.style.left = 'auto';
-  } else {
-    menu.style.left = rect.left + 'px';
-    menu.style.right = 'auto';
+
+  // TOGGLE: se já está aberto, fecha e sai
+  if(menu.classList.contains('open')){
+    menu.classList.remove('open');
+    return;
   }
-  // Garantir que não passa do fundo da tela
+
+  // Fechar qualquer outro menu aberto
+  closeAllMenus();
+
+  // Abrir este menu (position:absolute relativo ao .row-menu-wrap)
+  // Verificar se o menu sairia para fora da tela pela direita
+  menu.style.right = '0';
+  menu.style.left = 'auto';
   menu.classList.add('open');
-  setTimeout(()=>{
+
+  // Após abrir, checar se saiu da tela e ajustar
+  requestAnimationFrame(()=>{
     const mRect = menu.getBoundingClientRect();
-    if(mRect.bottom > window.innerHeight){
-      menu.style.top = (rect.top - mRect.height - 4) + 'px';
+    if(mRect.left < 0){
+      menu.style.right = 'auto';
+      menu.style.left = '0';
     }
-  },0);
+  });
+
+  // Fechar ao clicar fora (exceto no próprio botão)
+  function outsideClick(e){
+    if(!btn.contains(e.target) && !menu.contains(e.target)){
+      menu.classList.remove('open');
+      document.removeEventListener('click', outsideClick);
+    }
+  }
   setTimeout(()=>{
-    document.addEventListener('click', closeAllMenus, {once:true});
-  },50);
+    document.addEventListener('click', outsideClick);
+  }, 50);
 }
 
 function closeAllMenus(){
