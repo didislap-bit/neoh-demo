@@ -251,7 +251,7 @@ tbody tr:hover{background:#f8fbff}
 .row-menu-wrap{position:relative;display:inline-block;overflow:visible}
 .row-menu-btn{background:none;border:1px solid #dee2e6;border-radius:4px;padding:4px 8px;cursor:pointer;color:#555;font-size:13px;transition:.15s}
 .row-menu-btn:hover{background:#f0f4f8;border-color:#2E7FB8;color:#2E7FB8}
-.row-menu-dropdown{position:absolute;right:0;top:100%;background:#fff;border:1px solid #dee2e6;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:1000;min-width:220px;padding:6px 0;display:none;margin-top:2px}
+.row-menu-dropdown{position:fixed;background:#fff;border:1px solid #dee2e6;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9500;padding:0;display:none;margin-top:2px}
 .row-menu-dropdown.open{display:block}
 .row-menu-item{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:#333;cursor:pointer;transition:.1s;white-space:nowrap}
 .row-menu-item:hover{background:#f0f4f8;color:#2E7FB8}
@@ -1409,25 +1409,7 @@ function checkLockPwd(){
   </div>
 </div>
 
-<!-- FASE TROCA MODAL -->
-<div class="modal-overlay hidden" id="modalTrocaFase">
-  <div class="modal-box" style="max-width:640px;margin:auto">
-    <div class="modal-header">
-      <h4><i class="fa fa-exchange-alt" style="color:#2E7FB8;margin-right:8px"></i> Troca de fase</h4>
-      <button class="modal-close" onclick="closeTrocaFase()">×</button>
-    </div>
-    <div class="modal-body" style="padding:0">
-      <div style="border-bottom:2px solid #2E7FB8;margin:0 20px"></div>
-
-      <!-- Dados do pedido -->
-      <div style="padding:16px 20px;border-bottom:1px solid #f0f0f0">
-        <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Dados do pedido</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px">
-          <div><strong style="color:#555">Número do pedido:</strong> <span id="tfNumPedido" style="color:#2E7FB8"></span></div>
-          <div><strong style="color:#555">Paciente:</strong> <span id="tfPaciente"></span></div>
-          <div><strong style="color:#555">Médico:</strong> <span id="tfMedico"></span></div>
-          <div><strong style="color:#555">Convênio:</strong> <span id="tfConvenio"></span></div>
-        </div>
+<!-- modalTrocaFase criado via JS -->
       </div>
 
       <!-- Fase atual / Nova fase -->
@@ -1833,57 +1815,39 @@ function renderGrid(search=''){
           <button class="row-menu-btn" onclick="event.stopPropagation();toggleRowMenu('${p.id}',this)" title="Ações" style="padding:3px 7px">
             <i class="fa fa-bars" style="font-size:13px"></i>
           </button>
-          <div class="row-menu-dropdown" id="menu_${p.id}">
-            <div style="padding:6px 14px 4px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px">Outros</div>
-            <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();setTimeout(()=>openTracking('${p.id}'),50)">
-              <i class="fa fa-search"></i> Consultar Pedido
-            </div>
-            <div class="row-menu-item" onclick="closeAllMenus()">
-              <i class="fa fa-paperclip"></i> Anexos
-            </div>
-            <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();setTimeout(()=>openTracking('${p.id}'),50)">
-              <i class="fa fa-route"></i> Rastrear Pedido
-            </div>
-            <div class="row-menu-item" onclick="closeAllMenus()">
-              <i class="fa fa-history"></i> Histórico Trocar de Fase
-            </div>
-            <div class="row-menu-item" onclick="closeAllMenus()">
-              <i class="fa fa-share-alt"></i> Compartilhar Confirmação
-            </div>
-            <div class="row-menu-divider-section" style="padding:6px 14px 4px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;border-top:1px solid #f0f0f0;margin-top:4px">Agenda</div>
-            <div class="row-menu-item" onclick="closeAllMenus()">
-              <i class="fa fa-calendar-check"></i> Confirmar agendamento
-            </div>
-            <div class="row-menu-item" onclick="closeAllMenus()">
-              <i class="fa fa-calendar-times"></i> Suspender agend.
-            </div>
-            <div class="row-menu-item" onclick="closeAllMenus()">
-              <i class="fa fa-clock"></i> Alterar Duração
-            </div>
-            <div class="row-menu-item" onclick="closeAllMenus()">
-              <i class="fa fa-ban"></i> Cancelar
-            </div>
-            <div class="row-menu-item" onclick="closeAllMenus()">
-              <i class="fa fa-calendar-alt"></i> Mapa cirúrgico
-            </div>
-            <div style="padding:6px 14px 4px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;border-top:1px solid #f0f0f0;margin-top:4px">Ações</div>
-            <div class="row-menu-item" onclick="closeAllMenus()">
-              <i class="fa fa-edit"></i> Revisar
-            </div>
-            <div class="row-menu-item" onclick="closeAllMenus()">
-              <i class="fa fa-check-square"></i> Pendência
-            </div>
-            <div class="row-menu-item" onclick="closeAllMenus()">
-              <i class="fa fa-sticky-note"></i> Tomar nota
-            </div>
-            <div class="row-menu-item" onclick="closeAllMenus()">
-              <i class="fa fa-comment"></i> Chat
-            </div>
-            <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();setTimeout(()=>openTrocaFaseModal('${p.id}'),50)">
-              <i class="fa fa-exchange-alt" style="color:#2E7FB8"></i> <strong>Trocar fase</strong>
-            </div>
-            <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();setTimeout(()=>reenviarWhatsApp('${p.id}'),50)">
-              <i class="fab fa-whatsapp" style="color:#25D366"></i> Reenviar WhatsApp
+          <div class="row-menu-dropdown" id="menu_${p.id}" style="min-width:620px;right:0;left:auto">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;padding:8px 0">
+              <div style="padding:0 8px;border-right:1px solid #f0f0f0">
+                <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;padding:4px 8px 8px">Outros</div>
+                <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();setTimeout(()=>openTracking('${p.id}'),50)"><i class="fa fa-search"></i> Consultar Pedido</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-paperclip"></i> Anexos</div>
+                <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();setTimeout(()=>openTracking('${p.id}'),50)"><i class="fa fa-route"></i> Rastrear Pedido</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-history"></i> Histórico Trocar de Fase</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-file-alt"></i> Regerar Relatórios</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-share-alt"></i> Compartilhar Confirmação</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-clock"></i> Histórico de atualizações</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-star"></i> Adicionar aos Favoritos</div>
+              </div>
+              <div style="padding:0 8px;border-right:1px solid #f0f0f0">
+                <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;padding:4px 8px 8px">Agenda</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-calendar-check"></i> Confirmar agendamento</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-calendar-times"></i> Suspender agend.</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-clock"></i> Alterar Duração</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-sync"></i> Atualizar Status Pedido</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-ban"></i> Cancelar</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-hospital"></i> Trocar Hospital</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-users"></i> Fila de Espera</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-calendar-alt"></i> Mapa cirúrgico</div>
+              </div>
+              <div style="padding:0 8px">
+                <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;padding:4px 8px 8px">Ações</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-edit"></i> Revisar</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-check-square"></i> Pendência</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-user"></i> Tomar nota</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-comment"></i> Chat</div>
+                <div class="row-menu-item" onclick="event.stopPropagation();closeAllMenus();setTimeout(()=>openTrocaFaseModal('${p.id}'),50)"><i class="fa fa-exchange-alt" style="color:#2E7FB8"></i> Trocar fase</div>
+                <div class="row-menu-item" onclick="closeAllMenus()"><i class="fa fa-file"></i> Guias de solicitação</div>
+              </div>
             </div>
           </div>
         </div>
@@ -2610,14 +2574,13 @@ function openTrocaFase(){
   const p=currentPedido||pedidos[0];
   if(!p) return;
   currentTrackingId=p.id;
-  document.getElementById('modalTrocaFase').classList.remove('hidden');
+  // modal criado via JS em openTrocaFaseModal
   document.body.style.overflow='hidden';
 }
 
 function closeTrocaFase(){
-  const modal = document.getElementById('modalTrocaFase');
-  modal.style.cssText = 'display:none';
-  modal.classList.add('hidden');
+  const modal = document.getElementById('__modalTrocaFase');
+  if(modal) modal.remove();
   document.body.style.overflow = '';
 }
 
@@ -2637,13 +2600,13 @@ function confirmarTrocaFase(){
     showToast('⚠️ Paciente já notificado sobre esta fase. Duplicata evitada.','warning');
     waLog.unshift({dt:now(),pedidoId:p.id,paciente:p.paciente,fase:novaFase,numero:p.celular?'+55'+p.celular:'—',msg:'DUPLICADO',status:'DUPLICADO'});
     saveStorage();
-    document.getElementById('modalTrocaFase').classList.add('hidden');
+    closeTrocaFase();
     return;
   }
   p.fase=novaFase;
   p.fases.push({fase:novaFase,dt:now()});
   saveStorage();
-  document.getElementById('modalTrocaFase').classList.add('hidden');
+  closeTrocaFase();
   if(p.celular){
     sendWhatsAppUpdate(p,novaFase);
   } else {
@@ -2878,31 +2841,40 @@ function toggleRowMenu(id, btn){
   // Fechar qualquer outro menu aberto
   closeAllMenus();
 
-  // Abrir este menu (position:absolute relativo ao .row-menu-wrap)
-  // Verificar se o menu sairia para fora da tela pela direita
-  menu.style.right = '0';
-  menu.style.left = 'auto';
+  // Calcular posição com base no botão (position:fixed)
+  const rect = btn.getBoundingClientRect();
+  const menuW = 620; // largura do menu 3 colunas
+  menu.style.top = (rect.bottom + 2) + 'px';
+
+  // Posicionar: preferir alinhar à direita do botão
+  // Se não couber à esquerda, alinhar à direita da tela
+  const spaceLeft = rect.right - menuW;
+  if(spaceLeft < 10){
+    menu.style.left = '10px';
+    menu.style.right = 'auto';
+  } else {
+    menu.style.left = 'auto';
+    menu.style.right = (window.innerWidth - rect.right) + 'px';
+  }
+
   menu.classList.add('open');
 
-  // Após abrir, checar se saiu da tela e ajustar
+  // Se passar do fundo, subir
   requestAnimationFrame(()=>{
     const mRect = menu.getBoundingClientRect();
-    if(mRect.left < 0){
-      menu.style.right = 'auto';
-      menu.style.left = '0';
+    if(mRect.bottom > window.innerHeight - 10){
+      menu.style.top = (rect.top - mRect.height - 2) + 'px';
     }
   });
 
-  // Fechar ao clicar fora (exceto no próprio botão)
+  // Fechar ao clicar fora
   function outsideClick(e){
     if(!btn.contains(e.target) && !menu.contains(e.target)){
       menu.classList.remove('open');
       document.removeEventListener('click', outsideClick);
     }
   }
-  setTimeout(()=>{
-    document.addEventListener('click', outsideClick);
-  }, 50);
+  setTimeout(()=>{ document.addEventListener('click', outsideClick); }, 50);
 }
 
 function closeAllMenus(){
