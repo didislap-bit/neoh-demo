@@ -251,7 +251,7 @@ tbody tr:hover{background:#f8fbff}
 .row-menu-wrap{position:relative;display:inline-block}
 .row-menu-btn{background:none;border:1px solid #dee2e6;border-radius:4px;padding:4px 8px;cursor:pointer;color:#555;font-size:13px;transition:.15s}
 .row-menu-btn:hover{background:#f0f4f8;border-color:#2E7FB8;color:#2E7FB8}
-.row-menu-dropdown{position:fixed;background:#fff;border:1px solid #dee2e6;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:8000;min-width:200px;padding:6px 0;display:none}
+.row-menu-dropdown{position:fixed;background:#fff;border:1px solid #dee2e6;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:8500;min-width:220px;padding:6px 0;display:none}
 .row-menu-dropdown.open{display:block}
 .row-menu-item{display:flex;align-items:center;gap:10px;padding:9px 16px;font-size:13px;color:#333;cursor:pointer;transition:.1s;white-space:nowrap}
 .row-menu-item:hover{background:#f0f4f8;color:#2E7FB8}
@@ -1704,8 +1704,8 @@ function loadStorage(){
     // Add mock initial data if empty
     if(pedidos.length === 0){
       pedidos = [
-        {id:'2026010700032',aviso:'2026010700032',dt:'24/06/2026 09:15',bloco:'CENTRO CIRURGICO',paciente:'MARIA SILVA SANTOS',cirurgia:'COLECISTECTOMIA VIDEOLAPAROSCOPICA',cirurgiao:'ANTONIO JORGE FERREIRA DA SILVA JUNIOR',convenio:'UNIMED',dtPrevista:'30/06/2026 08:00',fase:'AGENDADO',celular:'91977776666',fases:[{fase:'SOLICITADO',dt:now()},{fase:'EM CONFERÊNCIA',dt:now()},{fase:'REVISADO',dt:now()},{fase:'AGENDADO',dt:now()}],trackId:genId(),urgencia:null},
-        {id:'2026010600019',aviso:'2026010600019',dt:'23/06/2026 14:30',bloco:'CENTRO CIRURGICO',paciente:'JOÃO PEDRO OLIVEIRA',cirurgia:'APENDICECTOMIA',cirurgiao:'BARBARA GONCALVES RODRIGUES',convenio:'ALBRAS',dtPrevista:'28/06/2026 10:00',fase:'EM CONFERÊNCIA',celular:'91966665555',fases:[{fase:'SOLICITADO',dt:now()},{fase:'EM CONFERÊNCIA',dt:now()}],trackId:genId(),urgencia:'urgencia'}
+        {id:'2026010700032',aviso:'111432',dt:'24/06/2026 09:15',bloco:'CENTRO CIRURGICO',paciente:'MARIA SILVA SANTOS',cirurgia:'COLECISTECTOMIA VIDEOLAPAROSCOPICA',cirurgiao:'ANTONIO JORGE FERREIRA DA SILVA JUNIOR',convenio:'UNIMED',dtPrevista:'30/06/2026 08:00',fase:'AGENDADO',celular:'91977776666',fases:[{fase:'SOLICITADO',dt:now()},{fase:'EM CONFERÊNCIA',dt:now()},{fase:'REVISADO',dt:now()},{fase:'AGENDADO',dt:now()}],trackId:genId(),urgencia:null},
+        {id:'2026010600019',aviso:'111419',dt:'23/06/2026 14:30',bloco:'CENTRO CIRURGICO',paciente:'JOÃO PEDRO OLIVEIRA',cirurgia:'APENDICECTOMIA',cirurgiao:'BARBARA GONCALVES RODRIGUES',convenio:'ALBRAS',dtPrevista:'28/06/2026 10:00',fase:'EM CONFERÊNCIA',celular:'91966665555',fases:[{fase:'SOLICITADO',dt:now()},{fase:'EM CONFERÊNCIA',dt:now()}],trackId:genId(),urgencia:'urgencia'}
       ];
       saveStorage();
     }
@@ -1719,7 +1719,11 @@ function saveStorage(){
 
 function genId(){return Math.random().toString(36).substr(2,8).toUpperCase()}
 function now(){return new Date().toLocaleString('pt-BR')}
-function genPedidoNum(){return '2026010800' + String(50+pedidos.length+1).padStart(3,'0')}
+function genPedidoNum(){
+  const num = '2026010800' + String(50+pedidos.length+1).padStart(3,'0');
+  const aviso = String(111434 + pedidos.length + 1);
+  return {num, aviso};
+}
 
 // ============ PAGES ============
 function showPage(id){
@@ -1815,26 +1819,68 @@ function renderGrid(search=''){
       <td><a class="link-blue">${p.convenio}</a></td>
       <td>${p.dtPrevista||'—'}</td>
       <td>—</td>
-      <td><span class="chat-bubble"><i class="fa fa-comment" style="font-size:10px"></i></span> 0</td>
-      <td><i class="fa fa-user" style="color:#888"></i></td>
+      <td style="text-align:center">
+        <span class="chat-bubble" title="Chat">0</span>
+        <span style="margin-left:4px" title="${waTitle}">${waIcon}</span>
+      </td>
+      <td style="text-align:center"><i class="fa fa-user" style="color:#aaa;font-size:13px"></i></td>
       <td><span class="${getBadgeClass(p.fase)}">${p.fase}</span></td>
       <td><span class="st-circle">A</span></td>
-      <td title="${waTitle}">${waIcon}</td>
-      <td>
-        <div class="row-menu-wrap">
-          <button class="row-menu-btn" onclick="event.stopPropagation();toggleRowMenu('${p.id}',this)" title="Ações">
-            <i class="fa fa-bars"></i>
+      <td style="text-align:center"><i class="fa fa-check" style="color:#28A745;font-size:13px" title="Sem pendências"></i></td>
+      <td style="white-space:nowrap;text-align:center">
+        <i class="fa fa-lock" style="color:#888;font-size:13px;margin-right:6px;cursor:pointer" title="Perfil" onclick="event.stopPropagation()"></i>
+        <div class="row-menu-wrap" style="display:inline-block">
+          <button class="row-menu-btn" onclick="event.stopPropagation();toggleRowMenu('${p.id}',this)" title="Ações" style="padding:3px 7px">
+            <i class="fa fa-bars" style="font-size:13px"></i>
           </button>
           <div class="row-menu-dropdown" id="menu_${p.id}">
+            <div style="padding:6px 14px 4px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px">Outros</div>
+            <div class="row-menu-item" onclick="closeAllMenus();openTracking('${p.id}')">
+              <i class="fa fa-search"></i> Consultar Pedido
+            </div>
+            <div class="row-menu-item" onclick="closeAllMenus()">
+              <i class="fa fa-paperclip"></i> Anexos
+            </div>
             <div class="row-menu-item" onclick="closeAllMenus();openTracking('${p.id}')">
               <i class="fa fa-route"></i> Rastrear Pedido
             </div>
-            <div class="row-menu-item" onclick="closeAllMenus();openTrocaFaseModal('${p.id}')">
-              <i class="fa fa-exchange-alt"></i> Trocar fase
+            <div class="row-menu-item" onclick="closeAllMenus()">
+              <i class="fa fa-history"></i> Histórico Trocar de Fase
             </div>
-            <hr class="row-menu-divider">
-            <div class="row-menu-item" onclick="closeAllMenus();openTracking('${p.id}')">
-              <i class="fa fa-search"></i> Consultar Pedido
+            <div class="row-menu-item" onclick="closeAllMenus()">
+              <i class="fa fa-share-alt"></i> Compartilhar Confirmação
+            </div>
+            <div class="row-menu-divider-section" style="padding:6px 14px 4px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;border-top:1px solid #f0f0f0;margin-top:4px">Agenda</div>
+            <div class="row-menu-item" onclick="closeAllMenus()">
+              <i class="fa fa-calendar-check"></i> Confirmar agendamento
+            </div>
+            <div class="row-menu-item" onclick="closeAllMenus()">
+              <i class="fa fa-calendar-times"></i> Suspender agend.
+            </div>
+            <div class="row-menu-item" onclick="closeAllMenus()">
+              <i class="fa fa-clock"></i> Alterar Duração
+            </div>
+            <div class="row-menu-item" onclick="closeAllMenus()">
+              <i class="fa fa-ban"></i> Cancelar
+            </div>
+            <div class="row-menu-item" onclick="closeAllMenus()">
+              <i class="fa fa-calendar-alt"></i> Mapa cirúrgico
+            </div>
+            <div style="padding:6px 14px 4px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;border-top:1px solid #f0f0f0;margin-top:4px">Ações</div>
+            <div class="row-menu-item" onclick="closeAllMenus()">
+              <i class="fa fa-edit"></i> Revisar
+            </div>
+            <div class="row-menu-item" onclick="closeAllMenus()">
+              <i class="fa fa-check-square"></i> Pendência
+            </div>
+            <div class="row-menu-item" onclick="closeAllMenus()">
+              <i class="fa fa-sticky-note"></i> Tomar nota
+            </div>
+            <div class="row-menu-item" onclick="closeAllMenus()">
+              <i class="fa fa-comment"></i> Chat
+            </div>
+            <div class="row-menu-item" onclick="closeAllMenus();openTrocaFaseModal('${p.id}')">
+              <i class="fa fa-exchange-alt" style="color:#2E7FB8"></i> <strong>Trocar fase</strong>
             </div>
             <div class="row-menu-item" onclick="closeAllMenus();reenviarWhatsApp('${p.id}')">
               <i class="fab fa-whatsapp" style="color:#25D366"></i> Reenviar WhatsApp
@@ -2364,7 +2410,9 @@ function closeConfirm(){document.getElementById('modalConfirm').classList.add('h
 
 function confirmSave(){
   closeConfirm();
-  const num=genPedidoNum();
+  const pedidoNums=genPedidoNum();
+  const num=pedidoNums.num;
+  const avisoNum=pedidoNums.aviso;
   const pNome=document.getElementById('fPacienteNome').value;
   const pCel=document.getElementById('fCelular').value.replace(/\D/g,'');
   const conv=document.getElementById('fConvenio').value;
@@ -2374,7 +2422,7 @@ function confirmSave(){
   const cirurgia=procedimentos.length?procedimentos[0].desc:'(SEM PROCEDIMENTO)';
   const bloco=document.getElementById('fBloco').value;
   const novoPedido={
-    id:num,aviso:num,
+    id:num,aviso:avisoNum,
     dt:new Date().toLocaleString('pt-BR'),
     bloco,paciente:pNome,
     cirurgia,cirurgiao:'BARBARA GONCALVES RODRIGUES',
