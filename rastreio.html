@@ -72,14 +72,16 @@ function cor(f){return CORES[f]||'#2E7FB8';}
 
 function renderPedido(pac,cir,fase,dt,proto,fasesArr){
   const done=fasesArr.map(f=>f.fase);
-  const curIdx=FASES.indexOf(fase);
-  const showFases=FASES.slice(0,Math.min(curIdx+3,FASES.length));
+  // Mostrar APENAS fases que já ocorreram + fase atual
+  const showFases=fasesArr.map(f=>f.fase);
+  // Garantir que a fase atual está incluída (pode não estar em fasesArr se vier via URL curta)
+  if(!showFases.includes(fase)) showFases.push(fase);
   let tl='';
   showFases.forEach((f,i)=>{
-    const isDone=done.includes(f)&&f!==fase;
+    const isDone=f!==fase;
     const isCur=f===fase;
-    const cls=isDone?'done':isCur?'current':'pending';
-    const icon=isDone?'<i class="fa fa-check"></i>':isCur?'<i class="fa fa-circle pulse" style="font-size:10px"></i>':'<i class="fa fa-circle" style="font-size:8px"></i>';
+    const cls=isDone?'done':'current';
+    const icon=isDone?'<i class="fa fa-check"></i>':'<i class="fa fa-circle pulse" style="font-size:10px"></i>';
     const fi=fasesArr.find(x=>x.fase===f);
     const isLast=i===showFases.length-1;
     tl+=`<div class="tl-item">
