@@ -114,20 +114,36 @@ function renderPedido(pac,cir,fase,dt,proto,fasesArr){
 }
 
 function init(){
-  const p=new URLSearchParams(window.location.search);
-  const id=p.get('id') || p.get('rastreio'); // suporte ?id= (novo) e ?rastreio= (legado)
+  // Capturar id de múltiplas fontes
+  const search = window.location.search || window.location.hash.replace('#','?');
+  const p = new URLSearchParams(search);
+  const id = p.get('id') || p.get('rastreio') || new URLSearchParams(document.location.search).get('id');
 
   if(!id){
-    document.getElementById('cardBody').innerHTML=`<div class="not-found"><i class="fa fa-link-slash"></i><h3>Link inválido</h3><p>Este link não contém um código de rastreio válido.<br>Verifique a mensagem recebida no WhatsApp.</p></div>`;
-    return;
+    // Tentar extrair da URL manualmente como último recurso
+    const urlStr = window.location.href;
+    const matchId = urlStr.match(/[?&]id=([^&]+)/);
+    const matchR  = urlStr.match(/[?&]rastreio=([^&]+)/);
+    const fallbackId = matchId ? matchId[1] : (matchR ? matchR[1] : null);
+    if(!fallbackId){
+      document.getElementById('cardBody').innerHTML='<div class="not-found"><i class="fa fa-link-slash"></i><h3>Link inválido</h3><p>Este link não contém um código de rastreio válido.<br>Verifique a mensagem recebida no WhatsApp.</p></div>';
+      return;
+    }
+    // Usar o fallbackId e continuar
+    return initWithId(fallbackId);
   }
+  initWithId(id);
+}
 
-  // 1) Tentar dados embutidos na URL (funciona em qualquer dispositivo)
+function initWithId(id){
+  const p = new URLSearchParams(window.location.search);
+
+  // 1) Dados embutidos na URL (formato antigo longo)
   const pac=p.get('pac');
   const cir=p.get('cir');
   const fase=p.get('fase');
   const dt=p.get('dt');
-  const proto=p.get('id');
+  const proto=p.get('id') || id;
   let fasesArr=[];
   try{ fasesArr=JSON.parse(p.get('fases')||'[]'); }catch(e){ fasesArr=fase?[{fase:fase,dt:new Date().toLocaleString('pt-BR')}]:[]; }
 
@@ -136,7 +152,7 @@ function init(){
     return;
   }
 
-  // 2) Fallback: tentar localStorage (mesmo dispositivo)
+  // 2) localStorage (mesmo dispositivo/navegador)
   let pedidos=[];
   try{
     const raw=localStorage.getItem('neoh_pedidos2')||localStorage.getItem('neoh_pedidos');
@@ -149,8 +165,27 @@ function init(){
     return;
   }
 
-  // 3) Não encontrado
-  document.getElementById('cardBody').innerHTML=`<div class="not-found"><i class="fa fa-magnifying-glass"></i><h3>Pedido não localizado</h3><p>Não foi possível encontrar o pedido <strong>#${id}</strong>.<br>Verifique o link recebido no WhatsApp ou entre em contato com o hospital.</p></div>`;
+  // 3) Pedido válido mas não disponível neste dispositivo
+  document.getElementById('cardBody').innerHTML=`
+    <div style="text-align:center;padding:24px 16px">
+      <i class="fa fa-clock" style="font-size:44px;color:#2E7FB8;margin-bottom:16px;display:block"></i>
+      <h3 style="font-size:15px;color:#1A2B3C;margin-bottom:8px;font-weight:700">Pedido em processamento</h3>
+      <p style="font-size:13px;color:#888;line-height:1.7;margin-bottom:16px">
+        Protocolo: <strong style="color:#2E7FB8">#${id}</strong><br>
+        Seu pedido cirúrgico está sendo processado.<br>
+        Você receberá atualizações via WhatsApp a cada mudança de status.
+      </p>
+      <div style="background:#EAF3FD;border-radius:8px;padding:14px;font-size:13px;color:#555;text-align:left">
+        <div style="font-weight:700;margin-bottom:6px;color:#1A2B3C">
+          <span style="background:#2E7FB8;color:#fff;border-radius:12px;padding:2px 10px;font-size:11px">SOLICITADO</span>
+        </div>
+        <div style="margin-top:6px">Hospital Adventista de Belém — Sistema Neoh</div>
+      </div>
+      <div class="wa-note" style="margin-top:16px">
+        <i class="fab fa-whatsapp" style="font-size:20px;color:#25D366;flex-shrink:0"></i>
+        <span>Atualizações automáticas serão enviadas para o seu WhatsApp.</span>
+      </div>
+    </div>`;
 }
 
 window.addEventListener('load',()=>setTimeout(init,300));
