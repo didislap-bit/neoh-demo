@@ -2510,7 +2510,15 @@ function confirmSave(){
   // WhatsApp logic
   const baseUrl = window.location.href.split('?')[0];
   const rastreioBase = baseUrl.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
-  const rastreioUrl = rastreioBase + '?id=' + trackId;
+  const rastreioParams = new URLSearchParams({
+    id: trackId,
+    p: pNome,
+    c: cirurgia,
+    f: 'SOLICITADO',
+    d: dtFmt,
+    n: num
+  });
+  const rastreioUrl = rastreioBase + '?' + rastreioParams.toString();
   const waMsg=`Olá, ${pNome}!
 
 Informamos que a sua cirurgia foi atualizada para a fase *SOLICITADO*.
@@ -2564,7 +2572,17 @@ function sendWhatsAppUpdate(pedido, fase){
     saveStorage();return;}
   const baseUrl2 = window.location.href.split('?')[0];
   const rastreioBase2 = baseUrl2.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
-  const rastreioUrl2 = rastreioBase2 + '?id=' + pedido.trackId;
+  const fasesStr = JSON.stringify((pedido.fases||[]).map(function(f){return {fase:f.fase,dt:f.dt};}));
+  const rastreioParams2 = new URLSearchParams({
+    id: pedido.trackId,
+    p: pedido.paciente,
+    c: pedido.cirurgia,
+    f: fase,
+    d: pedido.dtPrevista||'',
+    n: pedido.id,
+    h: pedido.fases ? fasesStr : ''
+  });
+  const rastreioUrl2 = rastreioBase2 + '?' + rastreioParams2.toString();
   const msg=`Olá, ${pedido.paciente}!
 
 Informamos que a sua cirurgia foi atualizada para a fase *${fase}*.
@@ -2589,7 +2607,17 @@ function openTracking(id){
   document.getElementById('tkData').textContent=p.dtPrevista||'—';
   const baseUrlTk = window.location.href.split('?')[0];
   const rastreioBaseTk = baseUrlTk.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
-  const rastreioUrlTk = rastreioBaseTk + '?id=' + p.trackId;
+  const fasesStrTk = JSON.stringify((p.fases||[]).map(function(f){return {fase:f.fase,dt:f.dt};}));
+  const rastreioParamsTk = new URLSearchParams({
+    id: p.trackId,
+    p: p.paciente,
+    c: p.cirurgia,
+    f: p.fase,
+    d: p.dtPrevista||'',
+    n: p.id,
+    h: p.fases ? fasesStrTk : ''
+  });
+  const rastreioUrlTk = rastreioBaseTk + '?' + rastreioParamsTk.toString();
   document.getElementById('tkLink').textContent=rastreioUrlTk;
   document.getElementById('linkCopiadoBadge').classList.add('hidden');
   renderTimeline(p);
@@ -2629,7 +2657,12 @@ function copyTrackingLink(){
   const p=pedidos.find(x=>x.id===currentTrackingId);
   if(!p) return;
   const baseUrlCopy = window.location.href.split('?')[0];
-  const link = baseUrlCopy.replace('index.html','').replace(/\/$/,'') + '/rastreio.html?id=' + p.trackId;
+  const rastreioBaseCopy = baseUrlCopy.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
+  const fasesStrCopy = JSON.stringify((p.fases||[]).map(function(f){return {fase:f.fase,dt:f.dt};}));
+  const link = rastreioBaseCopy + '?' + new URLSearchParams({
+    id: p.trackId, p: p.paciente, c: p.cirurgia, f: p.fase,
+    d: p.dtPrevista||'', n: p.id, h: fasesStrCopy
+  }).toString();
   navigator.clipboard.writeText(link).then(()=>{
     document.getElementById('linkCopiadoBadge').classList.remove('hidden');
     setTimeout(()=>document.getElementById('linkCopiadoBadge').classList.add('hidden'),3000);
