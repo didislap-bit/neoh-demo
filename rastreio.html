@@ -140,14 +140,20 @@ function init(){
 function initWithId(id){
   const p = new URLSearchParams(window.location.search);
 
-  // 1) Dados embutidos na URL (formato antigo longo)
-  const pac=p.get('pac');
-  const cir=p.get('cir');
-  const fase=p.get('fase');
-  const dt=p.get('dt');
-  const proto=p.get('id') || id;
+  // 1) Parâmetros compactos novos: ?id=X&p=PAC&c=CIR&f=FASE&d=DT&n=NUM&h=FASES_JSON
+  const pac  = p.get('p') || p.get('pac');
+  const cir  = p.get('c') || p.get('cir');
+  const fase = p.get('f') || p.get('fase');
+  const dt   = p.get('d') || p.get('dt');
+  const proto= p.get('n') || p.get('id') || id;
   let fasesArr=[];
-  try{ fasesArr=JSON.parse(p.get('fases')||'[]'); }catch(e){ fasesArr=fase?[{fase:fase,dt:new Date().toLocaleString('pt-BR')}]:[]; }
+  try{
+    const hRaw = p.get('h') || p.get('fases') || '[]';
+    fasesArr = JSON.parse(hRaw);
+  }catch(e){}
+  if(!fasesArr.length && fase){
+    fasesArr = [{fase:fase, dt:new Date().toLocaleString('pt-BR')}];
+  }
 
   if(pac && cir && fase){
     renderPedido(pac,cir,fase,dt,proto,fasesArr);
