@@ -1986,25 +1986,32 @@ function printWaLog(){
 }
 
 function exportWaLogExcel(){
-  const headers = ['Hospital','Data/Hora','Evento','Numero','Mensagem','Nr Pedido','Medico','Paciente','Convenio','Cirurgia','Fase','Status'];
-  const rows = waLog.map(function(l){
-    const ped = pedidos.find(function(p){return p.id===l.pedidoId;})||{};
-    const msg = (l.msg||'').split('\n').join(' ').split(',').join(';');
-    return [
-      'ADVENTISTA DE BELEM', l.dt,
+  var headers = ['Hospital','Data Hora','Evento','Numero','Mensagem','Nr Pedido','Medico','Paciente','Convenio','Cirurgia','Fase','Status'];
+  var rows = waLog.map(function(l){
+    var ped = pedidos.find(function(p){return p.id===l.pedidoId;})||{};
+    var msgClean = String(l.msg||'').split('\n').join(' ').split(',').join(';').split('"').join("'");
+    var row = [
+      'ADVENTISTA DE BELEM',
+      l.dt,
       l.status==='ENVIADO'?'Notificacao WA':l.status==='SEM NUMERO'?'Falha sem numero':'Duplicado',
-      l.numero||'', msg,
-      l.pedidoId, ped.cirurgiao||'', l.paciente||'',
-      ped.convenio||'', ped.cirurgia||'', l.fase||'', l.status
-    ].map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');
+      l.numero||'',
+      msgClean,
+      l.pedidoId,
+      ped.cirurgiao||'',
+      l.paciente||'',
+      ped.convenio||'',
+      ped.cirurgia||'',
+      l.fase||'',
+      l.status
+    ];
+    return row.map(function(v){return '"'+String(v)+'"';}).join(',');
   });
-  const csv = [headers.join(',')].concat(rows).join('\n');
-  const a = document.createElement('a');
+  var csv = [headers.join(',')].concat(rows).join('\n');
+  var a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
   a.download = 'log_whatsapp_neoh.csv';
   a.click();
 }
-
 
 function goWizard(step){
   currentStep=step;
@@ -3120,9 +3127,189 @@ function confirmarTrocaFaseInline(){
 function reenviarWhatsApp(id){
   const p = pedidos.find(x=>x.id===id);
   if(!p){ showToast('Pedido não encontrado','error'); return; }
-  if(!p.celular){ showToast('Paciente sem celular cadastrado. Não é possível enviar.','warning'); return; }
+  abrirModalReenvio(p);
+}
+
+function abrirModalReenvio(p){
+  // Remover modal anterior
+  const old = document.getElementById('__modalReenvio');
+  if(old) old.remove();
+
+  const celAtual = p.celular || '';
+  const celFmt   = celAtual ? formatPhone(celAtual) : '';
+  const isMobile = window.innerWidth <= 600;
+
+  // Gerar prévia da mensagem
+  const baseUrl = window.location.href.split('?')[0];
+  const rastreioUrl = baseUrl.replace('index.html','').replace(/\/$/,'') + '/rastreio.html?id=' + (p.trackId||p.id);
+  const msgPreview = `Olá, ${p.paciente}!\n\nInformamos que a sua cirurgia foi atualizada para a fase *${p.fase}*.\n\nAcompanhe o status do seu agendamento pelo link abaixo:\n${rastreioUrl}\n\nHospital Adventista de Belém — Sistema Neoh`;
+
+  const overlay = document.createElement('div');
+  overlay.id = '__modalReenvio';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999999;display:flex;align-items:'+(isMobile?'flex-end':'center')+';justify-content:center;padding:'+(isMobile?'0':'20px')+';box-sizing:border-box';
+
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:${isMobile?'16px 16px 0 0':'8px'};width:100%;max-width:520px;box-shadow:0 8px 32px rgba(0,0,0,0.3);overflow:hidden;max-height:95vh;overflow-y:auto">
+      
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#2E7FB8;color:#fff">
+        <div style="display:flex;align-items:center;gap:10px">
+          <i class="fab fa-whatsapp" style="font-size:20px;color:#25D366;background:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center"></i>
+          <div>
+            <div style="font-size:15px;font-weight:700">Reenviar via WhatsApp</div>
+            <div style="font-size:11px;opacity:.85">${p.paciente}</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('__modalReenvio').remove();document.body.style.overflow='';"
+          style="background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center">×</button>
+      </div>
+
+      <!-- Dados do pedido -->
+      <div style="padding:14px 20px;background:#EAF3FD;border-bottom:1px solid #d0e6f7;font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:4px">
+        <div><strong style="color:#555">Pedido:</strong> <span style="color:#2E7FB8">${p.id}</span></div>
+        <div><strong style="color:#555">Fase:</strong> <span style="font-weight:600">${p.fase}</span></div>
+        <div><strong style="color:#555">Cirurgia:</strong> ${p.cirurgia}</div>
+        <div><strong style="color:#555">Convênio:</strong> ${p.convenio}</div>
+      </div>
+
+      <div style="padding:20px">
+
+        <!-- Celular do paciente -->
+        <div style="margin-bottom:20px">
+          <label style="font-size:12px;font-weight:700;color:#333;display:block;margin-bottom:8px">
+            📱 Celular do paciente
+            ${celAtual ? '<span style="background:#e8f8ed;color:#28A745;border-radius:4px;padding:1px 8px;font-size:11px;margin-left:6px;font-weight:600">✓ Cadastrado</span>' : '<span style="background:#fde8e8;color:#DC3545;border-radius:4px;padding:1px 8px;font-size:11px;margin-left:6px;font-weight:600">✗ Sem número</span>'}
+          </label>
+          
+          <div style="display:flex;gap:8px;align-items:flex-start">
+            <div style="flex:1">
+              <div style="display:flex;border:2px solid #ced4da;border-radius:6px;overflow:hidden;transition:.2s" id="celInputWrap">
+                <span style="background:#f8f9fa;padding:0 12px;display:flex;align-items:center;font-size:13px;color:#555;border-right:1px solid #dee2e6;white-space:nowrap">🇧🇷 +55</span>
+                <input type="tel" id="celReenvio" value="${celFmt}" 
+                  placeholder="(00) 00000-0000" maxlength="15"
+                  style="flex:1;border:none;padding:10px 12px;font-size:14px;outline:none;background:#fff"
+                  oninput="validarCelReenvio(this)"
+                  onfocus="document.getElementById('celInputWrap').style.borderColor='#2E7FB8'"
+                  onblur="document.getElementById('celInputWrap').style.borderColor='#ced4da'">
+              </div>
+              <div id="celReenvioMsg" style="font-size:11px;margin-top:4px;min-height:16px"></div>
+            </div>
+          </div>
+
+          <!-- Dica de boas práticas -->
+          <div style="margin-top:10px;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:10px 12px;font-size:11px;color:#856404;line-height:1.6">
+            <strong>💡 Dica:</strong> Use o número com DDD. Ex: <code style="background:rgba(0,0,0,.06);padding:1px 4px;border-radius:3px">(91) 99999-8888</code><br>
+            O número será salvo no cadastro do paciente para próximas notificações.
+          </div>
+        </div>
+
+        <!-- Prévia da mensagem -->
+        <div style="margin-bottom:20px">
+          <label style="font-size:12px;font-weight:700;color:#333;display:block;margin-bottom:8px">
+            💬 Prévia da mensagem
+          </label>
+          <div style="background:#e5ddd5;border-radius:8px;padding:12px;font-size:12px">
+            <div style="background:#fff;border-radius:0 8px 8px 8px;padding:10px 12px;max-width:90%;box-shadow:0 1px 2px rgba(0,0,0,.1);line-height:1.6;color:#333;white-space:pre-line">${msgPreview.replace(/\n/g,'\n')}</div>
+            <div style="text-align:right;font-size:10px;color:#888;margin-top:4px">Enviado agora ✓</div>
+          </div>
+        </div>
+
+        <!-- Ações -->
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button onclick="document.getElementById('__modalReenvio').remove();document.body.style.overflow='';"
+            style="padding:10px 20px;border-radius:6px;border:1px solid #6c757d;background:#fff;color:#555;font-size:13px;font-weight:600;cursor:pointer">
+            Cancelar
+          </button>
+          <button id="btnConfirmarReenvio" onclick="confirmarReenvio('${p.id}')"
+            style="padding:10px 20px;border-radius:6px;border:none;background:#25D366;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">
+            <i class="fab fa-whatsapp" style="font-size:16px"></i> Enviar WhatsApp
+          </button>
+        </div>
+
+      </div>
+    </div>`;
+
+  overlay.addEventListener('click', function(e){
+    if(e.target === overlay){ overlay.remove(); document.body.style.overflow=''; }
+  });
+
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+
+  // Focar no campo de celular se vazio
+  setTimeout(function(){
+    const inp = document.getElementById('celReenvio');
+    if(inp){ 
+      if(!celAtual) inp.focus();
+      validarCelReenvio(inp);
+    }
+  }, 100);
+}
+
+function validarCelReenvio(inp){
+  // Formatar automaticamente: (00) 00000-0000
+  let v = inp.value.replace(/\D/g,'');
+  if(v.length > 11) v = v.substring(0,11);
+  let fmt = '';
+  if(v.length > 0)  fmt = '(' + v.substring(0,2);
+  if(v.length > 2)  fmt += ') ' + v.substring(2, v.length <= 10 ? 6 : 7);
+  if(v.length > 6)  fmt += '-' + v.substring(v.length <= 10 ? 6 : 7);
+  inp.value = fmt;
+
+  const msg = document.getElementById('celReenvioMsg');
+  const btn = document.getElementById('btnConfirmarReenvio');
+  if(!msg || !btn) return;
+
+  if(v.length === 0){
+    msg.innerHTML = '';
+    btn.disabled = true;
+    btn.style.opacity = '.5';
+    btn.style.cursor = 'not-allowed';
+  } else if(v.length < 10){
+    msg.innerHTML = '<span style="color:#DC3545"><i class="fa fa-times-circle"></i> Número incompleto</span>';
+    btn.disabled = true;
+    btn.style.opacity = '.5';
+    btn.style.cursor = 'not-allowed';
+  } else {
+    msg.innerHTML = '<span style="color:#28A745"><i class="fa fa-check-circle"></i> Número válido</span>';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+  }
+}
+
+function confirmarReenvio(pedidoId){
+  const inp = document.getElementById('celReenvio');
+  if(!inp) return;
+  const digits = inp.value.replace(/\D/g,'');
+  if(digits.length < 10){ showToast('Informe um número válido','error'); return; }
+
+  const p = pedidos.find(x=>x.id===pedidoId);
+  if(!p){ showToast('Pedido não encontrado','error'); return; }
+
+  // Atualizar celular no cadastro do pedido
+  const celAnterior = p.celular;
+  p.celular = digits;
+  saveStorage();
+
+  // Fechar modal
+  const modal = document.getElementById('__modalReenvio');
+  if(modal){ modal.remove(); document.body.style.overflow=''; }
+
+  // Enviar WhatsApp
   sendWhatsAppUpdate(p, p.fase);
-  showToast('WhatsApp reenviado para '+p.paciente,'success');
+  
+  if(!celAnterior){
+    showToast('✓ Número cadastrado e WhatsApp enviado para '+p.paciente,'success');
+  } else if(celAnterior !== digits){
+    showToast('✓ Número atualizado e WhatsApp reenviado','success');
+  } else {
+    showToast('✓ WhatsApp reenviado para '+p.paciente,'success');
+  }
+
+  // Atualizar grid e métricas
+  renderGrid();
+  updateMetrics();
 }
 
 
