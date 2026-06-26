@@ -147,10 +147,23 @@ function initWithId(id){
   const dt   = p.get('d') || p.get('dt');
   const proto= p.get('n') || p.get('id') || id;
   let fasesArr=[];
+  // 1) Tentar histórico do localStorage (mesmo dispositivo)
   try{
-    const hRaw = p.get('h') || p.get('fases') || '[]';
-    fasesArr = JSON.parse(hRaw);
+    const raw=localStorage.getItem('neoh_pedidos2')||localStorage.getItem('neoh_pedidos');
+    if(raw){
+      const peds=JSON.parse(raw);
+      const ped=peds.find(function(pd){return pd.trackId===id||pd.id===proto;});
+      if(ped && ped.fases && ped.fases.length) fasesArr=ped.fases;
+    }
   }catch(e){}
+  // 2) Tentar parâmetro h= da URL (legado)
+  if(!fasesArr.length){
+    try{
+      const hRaw = p.get('h') || p.get('fases') || '';
+      if(hRaw) fasesArr = JSON.parse(hRaw);
+    }catch(e){}
+  }
+  // 3) Fallback: montar com fase atual apenas
   if(!fasesArr.length && fase){
     fasesArr = [{fase:fase, dt:new Date().toLocaleString('pt-BR')}];
   }
