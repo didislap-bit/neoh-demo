@@ -2510,15 +2510,11 @@ function confirmSave(){
   // WhatsApp logic
   const baseUrl = window.location.href.split('?')[0];
   const rastreioBase = baseUrl.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
-  const rastreioParams = new URLSearchParams({
-    id: trackId,
-    p: pNome,
-    c: cirurgia,
-    f: 'SOLICITADO',
-    d: dtFmt,
-    n: num
-  });
-  const rastreioUrl = rastreioBase + '?' + rastreioParams.toString();
+  const rastreioUrl = rastreioBase + '?id=' + trackId +
+    '&p=' + encodeURIComponent(pNome) +
+    '&c=' + encodeURIComponent(cirurgia.substring(0,40)) +
+    '&f=SOLICITADO' +
+    '&n=' + num;
   const waMsg=`Olá, ${pNome}!
 
 Informamos que a sua cirurgia foi atualizada para a fase *SOLICITADO*.
@@ -2572,17 +2568,13 @@ function sendWhatsAppUpdate(pedido, fase){
     saveStorage();return;}
   const baseUrl2 = window.location.href.split('?')[0];
   const rastreioBase2 = baseUrl2.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
-  const fasesStr = JSON.stringify((pedido.fases||[]).map(function(f){return {fase:f.fase,dt:f.dt};}));
-  const rastreioParams2 = new URLSearchParams({
-    id: pedido.trackId,
-    p: pedido.paciente,
-    c: pedido.cirurgia,
-    f: fase,
-    d: pedido.dtPrevista||'',
-    n: pedido.id,
-    h: pedido.fases ? fasesStr : ''
-  });
-  const rastreioUrl2 = rastreioBase2 + '?' + rastreioParams2.toString();
+  // URL compacta: apenas fase atual (sem histórico para não estourar limite WA)
+  const rastreioUrl2 = rastreioBase2 + '?id=' + pedido.trackId +
+    '&p=' + encodeURIComponent((pedido.paciente||'').substring(0,40)) +
+    '&c=' + encodeURIComponent((pedido.cirurgia||'').substring(0,40)) +
+    '&f=' + encodeURIComponent(fase) +
+    '&d=' + encodeURIComponent(pedido.dtPrevista||'') +
+    '&n=' + pedido.id;
   const msg=`Olá, ${pedido.paciente}!
 
 Informamos que a sua cirurgia foi atualizada para a fase *${fase}*.
@@ -2607,17 +2599,12 @@ function openTracking(id){
   document.getElementById('tkData').textContent=p.dtPrevista||'—';
   const baseUrlTk = window.location.href.split('?')[0];
   const rastreioBaseTk = baseUrlTk.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
-  const fasesStrTk = JSON.stringify((p.fases||[]).map(function(f){return {fase:f.fase,dt:f.dt};}));
-  const rastreioParamsTk = new URLSearchParams({
-    id: p.trackId,
-    p: p.paciente,
-    c: p.cirurgia,
-    f: p.fase,
-    d: p.dtPrevista||'',
-    n: p.id,
-    h: p.fases ? fasesStrTk : ''
-  });
-  const rastreioUrlTk = rastreioBaseTk + '?' + rastreioParamsTk.toString();
+  const rastreioUrlTk = rastreioBaseTk + '?id=' + p.trackId +
+    '&p=' + encodeURIComponent((p.paciente||'').substring(0,40)) +
+    '&c=' + encodeURIComponent((p.cirurgia||'').substring(0,40)) +
+    '&f=' + encodeURIComponent(p.fase||'') +
+    '&d=' + encodeURIComponent(p.dtPrevista||'') +
+    '&n=' + p.id;
   document.getElementById('tkLink').textContent=rastreioUrlTk;
   document.getElementById('linkCopiadoBadge').classList.add('hidden');
   renderTimeline(p);
@@ -2658,11 +2645,12 @@ function copyTrackingLink(){
   if(!p) return;
   const baseUrlCopy = window.location.href.split('?')[0];
   const rastreioBaseCopy = baseUrlCopy.replace('index.html','').replace(/\/$/,'') + '/rastreio.html';
-  const fasesStrCopy = JSON.stringify((p.fases||[]).map(function(f){return {fase:f.fase,dt:f.dt};}));
-  const link = rastreioBaseCopy + '?' + new URLSearchParams({
-    id: p.trackId, p: p.paciente, c: p.cirurgia, f: p.fase,
-    d: p.dtPrevista||'', n: p.id, h: fasesStrCopy
-  }).toString();
+  const link = rastreioBaseCopy + '?id=' + p.trackId +
+    '&p=' + encodeURIComponent((p.paciente||'').substring(0,40)) +
+    '&c=' + encodeURIComponent((p.cirurgia||'').substring(0,40)) +
+    '&f=' + encodeURIComponent(p.fase||'') +
+    '&d=' + encodeURIComponent(p.dtPrevista||'') +
+    '&n=' + p.id;
   navigator.clipboard.writeText(link).then(()=>{
     document.getElementById('linkCopiadoBadge').classList.remove('hidden');
     setTimeout(()=>document.getElementById('linkCopiadoBadge').classList.add('hidden'),3000);
