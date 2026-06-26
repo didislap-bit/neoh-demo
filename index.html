@@ -1437,6 +1437,23 @@ function checkLockPwd(){
     </div>
   </div>
 
+  <!-- Card: Gerenciador de Hospitais -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <i class="fa fa-hospital" style="color:#2E7FB8"></i>
+        <strong>Hospitais Cadastrados</strong>
+        <span id="cfgHospitalCount" style="background:#2E7FB8;color:#fff;border-radius:12px;padding:1px 10px;font-size:11px;font-weight:700">1</span>
+      </div>
+      <button onclick="abrirModalNovoHospital()" style="padding:6px 14px;background:#2E7FB8;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">
+        <i class="fa fa-plus"></i> Novo Hospital
+      </button>
+    </div>
+    <div class="card-body" style="padding:0">
+      <div id="cfgHospitalList"></div>
+    </div>
+  </div>
+
   <!-- Card: WhatsApp Multi-Provider -->
   <div class="card" style="margin-bottom:16px">
     <div class="card-header" style="display:flex;align-items:center;gap:10px">
@@ -3980,6 +3997,389 @@ function fecharModal() {
   document.body.style.overflow = '';
 }
 
+// ===== GERENCIADOR DE HOSPITAIS =====
+
+function getHospitais(){
+  try{
+    const h = localStorage.getItem('neoh_hospitais');
+    if(h) return JSON.parse(h);
+  }catch(e){}
+  // Hospital padrão
+  return [{
+    id: 'h1',
+    nome: 'Hospital Adventista de Belém',
+    sigla: 'ADVENTISTA',
+    ambiente: 'HML',
+    logoBase64: '',
+    logoUrl: '',
+    waProvider: 'simulado',
+    waPhoneId: '',
+    waToken: '',
+    waTemplate: 'hello_world',
+    waLang: 'pt_BR',
+    ultraInstance: '',
+    ultraToken: '',
+    maytapiProduct: '',
+    maytapiPhone: '1',
+    maytapiToken: '',
+    ativo: true,
+    cor: '#2E7FB8'
+  }];
+}
+
+function saveHospitais(lista){
+  try{ localStorage.setItem('neoh_hospitais', JSON.stringify(lista)); }catch(e){}
+}
+
+function getHospitalAtivo(){
+  return getHospitais().find(function(h){ return h.ativo; }) || getHospitais()[0];
+}
+
+function renderHospitais(){
+  var lista = getHospitais();
+  var el = document.getElementById('cfgHospitalList');
+  var count = document.getElementById('cfgHospitalCount');
+  if(count) count.textContent = lista.length;
+  if(!el) return;
+
+  el.innerHTML = '';
+  lista.forEach(function(h){
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid #f0f0f0' + (h.ativo ? ';background:#f0f7ff' : '');
+
+    // Logo
+    var logoDiv = document.createElement('div');
+    logoDiv.style.cssText = 'width:40px;height:40px;border-radius:50%;background:'+(h.cor||'#2E7FB8')+';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;border:2px solid #fff;flex-shrink:0;overflow:hidden';
+    if(h.logoBase64){
+      var img = document.createElement('img');
+      img.src = h.logoBase64;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+      logoDiv.appendChild(img);
+    } else {
+      logoDiv.textContent = (h.nome||'H').charAt(0);
+    }
+    row.appendChild(logoDiv);
+
+    // Info
+    var info = document.createElement('div');
+    info.style.flex = '1';
+    var provLabels = {simulado:'🎭 Simulado', ultramsg:'📱 UltraMsg', maytapi:'🔌 Maytapi', meta:'🏢 Meta API'};
+    info.innerHTML = '<div style="font-size:13px;font-weight:700;color:#1A2B3C">'+h.nome+(h.ativo?'<span style="background:#28A745;color:#fff;border-radius:10px;padding:1px 8px;font-size:10px;margin-left:8px">Ativo</span>':'')+'</div>'+
+      '<div style="font-size:11px;color:#888;margin-top:3px">'+(provLabels[h.waProvider||'simulado']||'Simulado')+' · '+h.ambiente+'</div>';
+    row.appendChild(info);
+
+    // Buttons
+    var btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;gap:6px';
+
+    if(!h.ativo){
+      var btnAtiv = document.createElement('button');
+      btnAtiv.textContent = 'Ativar';
+      btnAtiv.style.cssText = 'padding:5px 12px;border:1px solid #2E7FB8;color:#2E7FB8;background:#fff;border-radius:4px;font-size:11px;cursor:pointer';
+      btnAtiv.onclick = (function(hid){ return function(){ ativarHospital(hid); }; })(h.id);
+      btns.appendChild(btnAtiv);
+    }
+
+    var btnEdit = document.createElement('button');
+    btnEdit.innerHTML = '<i class="fa fa-edit"></i>';
+    btnEdit.style.cssText = 'padding:5px 10px;border:1px solid #dee2e6;background:#fff;border-radius:4px;font-size:11px;cursor:pointer';
+    btnEdit.onclick = (function(hid){ return function(){ editarHospital(hid); }; })(h.id);
+    btns.appendChild(btnEdit);
+
+    if(lista.length > 1){
+      var btnDel = document.createElement('button');
+      btnDel.innerHTML = '<i class="fa fa-trash"></i>';
+      btnDel.style.cssText = 'padding:5px 10px;border:1px solid #DC3545;color:#DC3545;background:#fff;border-radius:4px;font-size:11px;cursor:pointer';
+      btnDel.onclick = (function(hid){ return function(){ removerHospital(hid); }; })(h.id);
+      btns.appendChild(btnDel);
+    }
+
+    row.appendChild(btns);
+    el.appendChild(row);
+  });
+}
+
+function ativarHospital(id){
+  const lista = getHospitais();
+  lista.forEach(function(h){ h.ativo = (h.id === id); });
+  saveHospitais(lista);
+  renderHospitais();
+  aplicarHospitalAtivo();
+  showToast('Hospital ativado com sucesso','success');
+}
+
+function removerHospital(id){
+  let lista = getHospitais();
+  lista = lista.filter(function(h){ return h.id !== id; });
+  if(lista.length && !lista.some(function(h){return h.ativo;})) lista[0].ativo = true;
+  saveHospitais(lista);
+  renderHospitais();
+  showToast('Hospital removido','info');
+}
+
+function aplicarHospitalAtivo(){
+  const h = getHospitalAtivo();
+  if(!h) return;
+  // Atualizar topbar
+  const nameEl = document.querySelector('.hospital-name');
+  if(nameEl) nameEl.textContent = h.nome.toUpperCase() + ' - ' + h.ambiente;
+  // Atualizar logo
+  if(h.logoBase64) atualizarLogoTopbar(h.logoBase64);
+  else if(h.logoUrl) atualizarLogoTopbar(h.logoUrl);
+}
+
+function fecharModalHospital(){
+  var m = document.getElementById('__modalHospital');
+  if(m) m.remove();
+  document.body.style.overflow = '';
+}
+
+function abrirModalNovoHospital(idEditar){
+  fecharModalHospital();
+  var lista = getHospitais();
+  var h = idEditar ? lista.find(function(x){return x.id===idEditar;}) : null;
+  var titulo = h ? 'Editar Hospital' : 'Novo Hospital';
+  var cores = ['#2E7FB8','#28A745','#F47920','#9B59B6','#DC3545','#17A2B8','#1A2B3C'];
+  var corAtual = (h&&h.cor) ? h.cor : '#2E7FB8';
+  var provAtual = (h&&h.waProvider) ? h.waProvider : 'simulado';
+
+  var overlay = document.createElement('div');
+  overlay.id = '__modalHospital';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;overflow-y:auto';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:10px;width:100%;max-width:560px;box-shadow:0 8px 32px rgba(0,0,0,.3);overflow:hidden;max-height:90vh;overflow-y:auto';
+
+  // Header
+  var header = document.createElement('div');
+  header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#2E7FB8;color:#fff';
+  var hTitle = document.createElement('div');
+  hTitle.style.cssText = 'font-size:15px;font-weight:700';
+  hTitle.innerHTML = '<i class="fa fa-hospital" style="margin-right:8px"></i>' + titulo;
+  var hClose = document.createElement('button');
+  hClose.innerHTML = '×';
+  hClose.style.cssText = 'background:rgba(255,255,255,.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:18px';
+  hClose.onclick = fecharModalHospital;
+  header.appendChild(hTitle);
+  header.appendChild(hClose);
+  box.appendChild(header);
+
+  // Body
+  var body = document.createElement('div');
+  body.style.padding = '20px';
+
+  // Logo row
+  var logoRow = document.createElement('div');
+  logoRow.style.cssText = 'display:flex;align-items:center;gap:16px;margin-bottom:16px';
+  var logoWrap = document.createElement('div');
+  logoWrap.style.cssText = 'position:relative;flex-shrink:0';
+  var logoPrev = document.createElement('div');
+  logoPrev.id = 'mhLogoPreview';
+  logoPrev.style.cssText = 'width:60px;height:60px;border-radius:50%;background:'+corAtual+';display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff;overflow:hidden;border:3px solid #e9ecef';
+  if(h && h.logoBase64){
+    var pimg = document.createElement('img');
+    pimg.src = h.logoBase64;
+    pimg.style.cssText = 'width:100%;height:100%;object-fit:cover';
+    logoPrev.appendChild(pimg);
+  } else {
+    logoPrev.textContent = h ? h.nome.charAt(0) : 'H';
+  }
+  var camLabel = document.createElement('label');
+  camLabel.htmlFor = 'mhLogoUpload';
+  camLabel.style.cssText = 'position:absolute;bottom:-2px;right:-2px;background:#25D366;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px solid #fff';
+  camLabel.innerHTML = '<i class="fa fa-camera" style="color:#fff;font-size:10px"></i>';
+  var camInput = document.createElement('input');
+  camInput.type = 'file'; camInput.id = 'mhLogoUpload'; camInput.accept = 'image/*';
+  camInput.style.display = 'none';
+  camInput.onchange = function(){ carregarLogoModal(this); };
+  logoWrap.appendChild(logoPrev);
+  logoWrap.appendChild(camLabel);
+  logoWrap.appendChild(camInput);
+
+  var nomeWrap = document.createElement('div');
+  nomeWrap.style.flex = '1';
+  var nomeLabel = document.createElement('label');
+  nomeLabel.style.cssText = 'font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:4px';
+  nomeLabel.textContent = 'Nome do Hospital *';
+  var nomeInput = document.createElement('input');
+  nomeInput.type = 'text'; nomeInput.id = 'mhNome';
+  nomeInput.value = h ? h.nome : '';
+  nomeInput.placeholder = 'Ex: Hospital São Lucas';
+  nomeInput.style.cssText = 'width:100%;border:1px solid #ced4da;border-radius:4px;padding:8px 10px;font-size:13px;outline:none;box-sizing:border-box';
+  nomeInput.oninput = function(){ atualizarPreviewModal(this.value); };
+  nomeWrap.appendChild(nomeLabel);
+  nomeWrap.appendChild(nomeInput);
+  logoRow.appendChild(logoWrap);
+  logoRow.appendChild(nomeWrap);
+  body.appendChild(logoRow);
+
+  // Sigla + Ambiente
+  var row2 = document.createElement('div');
+  row2.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px';
+  row2.innerHTML = '<div><label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:4px">Sigla</label><input type="text" id="mhSigla" value="'+(h?h.sigla:'')+'" placeholder="Ex: SAO-LUCAS" maxlength="20" style="width:100%;border:1px solid #ced4da;border-radius:4px;padding:8px 10px;font-size:13px;outline:none;box-sizing:border-box"></div>'+
+    '<div><label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:4px">Ambiente</label><select id="mhAmbiente" style="width:100%;border:1px solid #ced4da;border-radius:4px;padding:8px 10px;font-size:13px;outline:none"><option value="HML"'+(h&&h.ambiente==='HML'?' selected':'')+'>HML — Homologação</option><option value="PRD"'+(h&&h.ambiente==='PRD'?' selected':'')+'>PRD — Produção</option></select></div>';
+  body.appendChild(row2);
+
+  // Cores
+  var coresDiv = document.createElement('div');
+  coresDiv.style.marginBottom = '14px';
+  coresDiv.innerHTML = '<label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:6px">Cor do ícone</label>';
+  var coresRow = document.createElement('div');
+  coresRow.style.cssText = 'display:flex;gap:8px';
+  cores.forEach(function(c){
+    var cb = document.createElement('div');
+    cb.id = 'corBtn_' + c.replace('#','');
+    cb.style.cssText = 'width:28px;height:28px;border-radius:50%;background:'+c+';cursor:pointer;border:'+(c===corAtual?'3px solid #333':'2px solid transparent');
+    cb.onclick = function(){ selecionarCorModal(c); };
+    coresRow.appendChild(cb);
+  });
+  coresDiv.appendChild(coresRow);
+  body.appendChild(coresDiv);
+
+  // Providers
+  var provDiv = document.createElement('div');
+  provDiv.style.marginBottom = '14px';
+  provDiv.innerHTML = '<label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:6px">Envio WhatsApp</label>';
+  var provGrid = document.createElement('div');
+  provGrid.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:8px';
+  [['simulado','🎭','Simulado'],['ultramsg','📱','UltraMsg'],['maytapi','🔌','Maytapi'],['meta','🏢','Meta API']].forEach(function(p){
+    var card = document.createElement('div');
+    card.id = 'provBtn_' + p[0];
+    var sel = p[0] === provAtual;
+    card.style.cssText = 'border:2px solid '+(sel?'#2E7FB8':'#dee2e6')+';border-radius:6px;padding:8px 4px;text-align:center;cursor:pointer;background:'+(sel?'#EAF3FD':'#fff');
+    card.innerHTML = '<div style="font-size:18px">'+p[1]+'</div><div style="font-size:10px;font-weight:600;margin-top:3px;color:'+(sel?'#2E7FB8':'#555')+'">'+p[2]+'</div>';
+    card.onclick = (function(pv){ return function(){ selecionarProvModal(pv); }; })(p[0]);
+    provGrid.appendChild(card);
+  });
+  provDiv.appendChild(provGrid);
+  body.appendChild(provDiv);
+
+  // Hidden inputs
+  ['mhId','mhCor','mhProv','mhLogoB64'].forEach(function(iid){
+    var inp = document.createElement('input');
+    inp.type = 'hidden'; inp.id = iid;
+    inp.value = iid==='mhId'?(h?h.id:'') : iid==='mhCor'?corAtual : iid==='mhProv'?provAtual : '';
+    body.appendChild(inp);
+  });
+
+  // Footer buttons
+  var footer = document.createElement('div');
+  footer.style.cssText = 'display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #f0f0f0';
+  var btnCancel = document.createElement('button');
+  btnCancel.textContent = 'Cancelar';
+  btnCancel.style.cssText = 'padding:9px 20px;border:1px solid #6c757d;background:#fff;color:#555;border-radius:6px;font-size:13px;cursor:pointer';
+  btnCancel.onclick = fecharModalHospital;
+  var btnSave = document.createElement('button');
+  btnSave.innerHTML = '<i class="fa fa-save"></i> Salvar';
+  btnSave.style.cssText = 'padding:9px 20px;background:#2E7FB8;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer';
+  btnSave.onclick = salvarHospital;
+  footer.appendChild(btnCancel);
+  footer.appendChild(btnSave);
+  body.appendChild(footer);
+
+  box.appendChild(body);
+  overlay.appendChild(box);
+  overlay.onclick = function(e){ if(e.target===overlay) fecharModalHospital(); };
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+}
+
+
+function editarHospital(id){ abrirModalNovoHospital(id); }
+
+function atualizarPreviewModal(nome){
+  const prev = document.getElementById('mhLogoPreview');
+  if(!prev) return;
+  const b64 = document.getElementById('mhLogoB64')?.value;
+  if(!b64) prev.textContent = (nome||'H').charAt(0).toUpperCase();
+}
+
+function carregarLogoModal(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const dataUrl = e.target.result;
+    const prev = document.getElementById('mhLogoPreview');
+    if(prev) prev.innerHTML = '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover">';
+    const b64Input = document.getElementById('mhLogoB64');
+    if(b64Input) b64Input.value = dataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+function selecionarCorModal(cor){
+  document.getElementById('mhCor').value = cor;
+  const prev = document.getElementById('mhLogoPreview');
+  const b64 = document.getElementById('mhLogoB64')?.value;
+  if(prev && !b64) prev.style.background = cor;
+  // Highlight selected
+  ['#2E7FB8','#28A745','#F47920','#9B59B6','#DC3545','#17A2B8','#1A2B3C'].forEach(function(c){
+    const btn = document.getElementById('corBtn_'+c.replace('#',''));
+    if(btn) btn.style.border = c===cor ? '3px solid #333' : '2px solid transparent';
+  });
+}
+
+function selecionarProvModal(prov){
+  document.getElementById('mhProv').value = prov;
+  ['simulado','ultramsg','maytapi','meta'].forEach(function(p){
+    const btn = document.getElementById('provBtn_'+p);
+    if(btn){
+      btn.style.border = p===prov ? '2px solid #2E7FB8' : '2px solid #dee2e6';
+      btn.style.background = p===prov ? '#EAF3FD' : '#fff';
+    }
+  });
+}
+
+function salvarHospital(){
+  const id    = document.getElementById('mhId')?.value;
+  const nome  = document.getElementById('mhNome')?.value?.trim();
+  const sigla = document.getElementById('mhSigla')?.value?.trim();
+  const amb   = document.getElementById('mhAmbiente')?.value;
+  const cor   = document.getElementById('mhCor')?.value || '#2E7FB8';
+  const prov  = document.getElementById('mhProv')?.value || 'simulado';
+  const b64   = document.getElementById('mhLogoB64')?.value;
+
+  if(!nome){ showToast('Informe o nome do hospital','error'); return; }
+
+  const lista = getHospitais();
+
+  if(id){
+    // Editar existente
+    const idx = lista.findIndex(function(h){return h.id===id;});
+    if(idx>=0){
+      lista[idx].nome = nome;
+      lista[idx].sigla = sigla||(nome.toUpperCase().split(' ').join('-').substring(0,15));
+      lista[idx].ambiente = amb;
+      lista[idx].cor = cor;
+      lista[idx].waProvider = prov;
+      if(b64) lista[idx].logoBase64 = b64;
+    }
+  } else {
+    // Novo hospital
+    const novoId = 'h'+Date.now();
+    lista.push({
+      id: novoId,
+      nome: nome,
+      sigla: sigla||(nome.toUpperCase().split(' ').join('-').substring(0,15)),
+      ambiente: amb,
+      cor: cor,
+      logoBase64: b64||'',
+      logoUrl: '',
+      waProvider: prov,
+      waPhoneId: '', waToken: '', waTemplate: 'hello_world', waLang: 'pt_BR',
+      ultraInstance: '', ultraToken: '',
+      maytapiProduct: '', maytapiPhone: '1', maytapiToken: '',
+      ativo: false
+    });
+  }
+
+  saveHospitais(lista);
+  fecharModalHospital();
+  renderHospitais();
+  showToast(id ? '✓ Hospital atualizado' : '✓ Hospital cadastrado','success');
+}
+
 // ===== CONFIGURAÇÕES =====
 function previewLogoUrl(url){
   const preview = document.getElementById('cfgLogoPreview');
@@ -4038,6 +4438,7 @@ function atualizarLogoTopbar(src){
 }
 
 function carregarConfiguracoes(){
+  renderHospitais();
   const cfg = getSysConfig();
   if(document.getElementById('cfgHospitalNome')) document.getElementById('cfgHospitalNome').value = cfg.hospitalNome||'Hospital Adventista de Belém';
   if(document.getElementById('cfgAmbiente')) document.getElementById('cfgAmbiente').value = cfg.ambiente||'HML';
