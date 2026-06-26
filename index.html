@@ -632,15 +632,87 @@ function checkLockPwd(){
 
         <!-- LOG WHATSAPP TAB -->
         <div id="tabLog" class="hidden">
-          <div class="table-wrapper">
-            <table>
-              <thead><tr>
-                <th>Data/Hora</th><th>Nº Pedido</th><th>Paciente</th><th>Fase</th><th>Nº Destino</th><th>Status</th><th>Mensagem</th>
-              </tr></thead>
+          <!-- Filtros do Log -->
+          <div style="background:#f8f9fa;border:1px solid #e9ecef;border-radius:8px;padding:14px 16px;margin-bottom:16px">
+            <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Filtros</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+              <div style="flex:1;min-width:160px">
+                <label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Hospital</label>
+                <select id="logFiltroHospital" style="width:100%;padding:7px 10px;border:1px solid #ced4da;border-radius:4px;font-size:13px;outline:none" onchange="renderWaLog()">
+                  <option value="">TODOS</option>
+                  <option value="ADVENTISTA" selected>ADVENTISTA DE BELÉM</option>
+                </select>
+              </div>
+              <div style="flex:1;min-width:160px">
+                <label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Tipo notificação</label>
+                <select id="logFiltroTipo" style="width:100%;padding:7px 10px;border:1px solid #ced4da;border-radius:4px;font-size:13px;outline:none" onchange="renderWaLog()">
+                  <option value="">TODOS</option>
+                  <option value="ENVIADO" selected>WHATSAPP ENVIADO</option>
+                  <option value="SEM NÚMERO">SEM NÚMERO</option>
+                  <option value="DUPLICADO">DUPLICADO</option>
+                </select>
+              </div>
+              <div style="flex:1;min-width:200px">
+                <label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Período</label>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input type="date" id="logDtInicio" style="flex:1;padding:7px 8px;border:1px solid #ced4da;border-radius:4px;font-size:13px;outline:none" onchange="renderWaLog()">
+                  <span style="color:#888;font-size:12px">até</span>
+                  <input type="date" id="logDtFim" style="flex:1;padding:7px 8px;border:1px solid #ced4da;border-radius:4px;font-size:13px;outline:none" onchange="renderWaLog()">
+                </div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button onclick="exportWaLogExcel()" style="padding:7px 12px;border:1px solid #ced4da;border-radius:4px;background:#fff;cursor:pointer;font-size:13px" title="Exportar Excel">
+                  <i class="fa fa-file-excel" style="color:#217346"></i>
+                </button>
+                <button onclick="printWaLog()" style="padding:7px 12px;border:1px solid #ced4da;border-radius:4px;background:#fff;cursor:pointer;font-size:13px" title="Imprimir">
+                  <i class="fa fa-print" style="color:#555"></i>
+                </button>
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Pesquisar</label>
+                <input type="text" id="logSearch" placeholder="Paciente, pedido..." style="padding:7px 10px;border:1px solid #ced4da;border-radius:4px;font-size:13px;outline:none;width:180px" oninput="renderWaLog()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Totalizadores -->
+          <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+            <div id="logTotEnviado" style="background:#e8f8ed;border:1px solid #c3e6cb;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:700;color:#155724">
+              <i class="fab fa-whatsapp" style="color:#25D366"></i> Enviados: <span id="logCntEnviado">0</span>
+            </div>
+            <div id="logTotSemNum" style="background:#ffeeba;border:1px solid #ffc107;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:700;color:#856404">
+              <i class="fa fa-exclamation-triangle"></i> Sem número: <span id="logCntSemNum">0</span>
+            </div>
+            <div id="logTotDup" style="background:#f8d7da;border:1px solid #f5c6cb;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:700;color:#721c24">
+              <i class="fa fa-ban"></i> Duplicados: <span id="logCntDup">0</span>
+            </div>
+          </div>
+
+          <!-- Tabela -->
+          <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+            <table id="waLogTable" style="min-width:1100px;font-size:12px">
+              <thead>
+                <tr>
+                  <th style="white-space:nowrap">Hospital</th>
+                  <th style="white-space:nowrap">Data/Hora</th>
+                  <th style="white-space:nowrap">Evento</th>
+                  <th style="min-width:280px">Conteúdo</th>
+                  <th style="white-space:nowrap">Nº Pedido</th>
+                  <th style="white-space:nowrap">Médico</th>
+                  <th style="white-space:nowrap">Paciente</th>
+                  <th style="white-space:nowrap">Convênio</th>
+                  <th style="white-space:nowrap">Cirurgia</th>
+                  <th style="white-space:nowrap">Fase</th>
+                  <th style="white-space:nowrap">Status</th>
+                </tr>
+              </thead>
               <tbody id="waLogBody"></tbody>
             </table>
           </div>
-          <p id="waLogEmpty" class="hidden" style="color:#888;text-align:center;padding:40px;font-size:13px">Nenhum registro no log.</p>
+          <p id="waLogEmpty" class="hidden" style="color:#888;text-align:center;padding:40px;font-size:13px">
+            <i class="fab fa-whatsapp" style="font-size:32px;color:#ddd;display:block;margin-bottom:8px"></i>
+            Nenhum registro encontrado.
+          </p>
         </div>
       </div>
     </div>
@@ -1839,20 +1911,103 @@ function filterSemWhatsapp(el){
 }
 
 function renderWaLog(){
-  const tbody=document.getElementById('waLogBody');
-  const empty=document.getElementById('waLogEmpty');
-  if(!waLog.length){tbody.innerHTML='';empty.classList.remove('hidden');return;}
+  const tbody = document.getElementById('waLogBody');
+  const empty = document.getElementById('waLogEmpty');
+
+  // Ler filtros
+  const filtroTipo   = (document.getElementById('logFiltroTipo')?.value  || '').toLowerCase();
+  const filtroSearch = (document.getElementById('logSearch')?.value       || '').toLowerCase();
+  const dtInicio     =  document.getElementById('logDtInicio')?.value     || '';
+  const dtFim        =  document.getElementById('logDtFim')?.value        || '';
+
+  // Filtrar waLog
+  let lista = waLog.filter(l => {
+    if(filtroTipo   && l.status.toLowerCase() !== filtroTipo) return false;
+    if(filtroSearch && !(
+      (l.paciente||'').toLowerCase().includes(filtroSearch) ||
+      (l.pedidoId||'').toLowerCase().includes(filtroSearch) ||
+      (l.numero||'').toLowerCase().includes(filtroSearch)
+    )) return false;
+    return true;
+  });
+
+  // Totalizadores
+  const cntEnv  = waLog.filter(l=>l.status==='ENVIADO').length;
+  const cntSem  = waLog.filter(l=>l.status==='SEM NÚMERO').length;
+  const cntDup  = waLog.filter(l=>l.status==='DUPLICADO').length;
+  const elEnv = document.getElementById('logCntEnviado');
+  const elSem = document.getElementById('logCntSemNum');
+  const elDup = document.getElementById('logCntDup');
+  if(elEnv) elEnv.textContent = cntEnv;
+  if(elSem) elSem.textContent = cntSem;
+  if(elDup) elDup.textContent = cntDup;
+
+  if(!lista.length){
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
   empty.classList.add('hidden');
-  tbody.innerHTML=waLog.map(l=>`<tr>
-    <td>${l.dt}</td><td>${l.pedidoId}</td><td>${l.paciente}</td>
-    <td><span class="${getBadgeClass(l.fase)}" style="font-size:10px">${l.fase}</span></td>
-    <td>${l.numero}</td>
-    <td><span class="badge badge-${l.status.toLowerCase().replace(' ','-')}">${l.status}</span></td>
-    <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px">${l.msg}</td>
-  </tr>`).join('');
+
+  tbody.innerHTML = lista.map(l => {
+    // Buscar dados do pedido para preencher colunas extras
+    const ped = pedidos.find(p => p.id === l.pedidoId) || {};
+    const statusColor = l.status==='ENVIADO' ? '#28A745' : l.status==='SEM NÚMERO' ? '#DC3545' : '#FFC107';
+    const statusBg    = l.status==='ENVIADO' ? '#e8f8ed' : l.status==='SEM NÚMERO' ? '#fde8e8' : '#fff8e1';
+    const evento = l.status==='ENVIADO' ? 'Notificação WA' : l.status==='SEM NÚMERO' ? 'Falha — sem número' : 'Duplicado bloqueado';
+    const conteudo = l.status==='ENVIADO'
+      ? `<span style="color:#555">CEL: <strong>${l.numero}</strong> ➜ <strong>MENSAGEM:</strong> ${(l.msg||'').substring(0,120)}${(l.msg||'').length>120?'…':''}</span>`
+      : `<span style="color:#DC3545">${l.msg||'Sem número de celular cadastrado'}</span>`;
+
+    return `<tr style="border-bottom:1px solid #f0f0f0">
+      <td style="white-space:nowrap;font-size:11px;color:#555">ADVENTISTA DE BELÉM</td>
+      <td style="white-space:nowrap;font-size:11px">${l.dt}</td>
+      <td style="white-space:nowrap">
+        <span style="background:${statusBg};color:${statusColor};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">${evento}</span>
+      </td>
+      <td style="font-size:11px;max-width:300px;line-height:1.4">${conteudo}</td>
+      <td style="white-space:nowrap"><a class="link-blue" onclick="openTracking('${l.pedidoId}')" style="font-size:11px">${l.pedidoId}</a></td>
+      <td style="font-size:11px;white-space:nowrap">${ped.cirurgiao||'—'}</td>
+      <td style="font-size:11px;white-space:nowrap;font-weight:600">${l.paciente||'—'}</td>
+      <td style="font-size:11px;white-space:nowrap">${ped.convenio||'—'}</td>
+      <td style="font-size:11px;max-width:180px">${ped.cirurgia||'—'}</td>
+      <td style="white-space:nowrap">
+        <span class="${getBadgeClass(l.fase)}" style="font-size:10px">${l.fase||'—'}</span>
+      </td>
+      <td style="white-space:nowrap">
+        <span style="background:${statusBg};color:${statusColor};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">${l.status}</span>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
-// ============ WIZARD ============
+function printWaLog(){
+  window.print();
+}
+
+function exportWaLogExcel(){
+  // Exportar como CSV simples
+  const headers = ['Hospital','Data/Hora','Evento','Número','Mensagem','Nº Pedido','Médico','Paciente','Convênio','Cirurgia','Fase','Status'];
+  const rows = waLog.map(l => {
+    const ped = pedidos.find(p=>p.id===l.pedidoId)||{};
+    return [
+      'ADVENTISTA DE BELÉM', l.dt,
+      l.status==='ENVIADO'?'Notificação WA':l.status==='SEM NÚMERO'?'Falha sem número':'Duplicado',
+      l.numero||'', (l.msg||'').replace(/,/g,';').replace(/
+/g,' '),
+      l.pedidoId, ped.cirurgiao||'', l.paciente||'',
+      ped.convenio||'', ped.cirurgia||'', l.fase||'', l.status
+    ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('
+');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(csv);
+  a.download = 'log_whatsapp_neoh.csv';
+  a.click();
+}
+
+
 function goWizard(step){
   currentStep=step;
   for(let i=1;i<=5;i++){
