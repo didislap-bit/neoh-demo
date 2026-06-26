@@ -1557,11 +1557,23 @@ function checkLockPwd(){
             </select>
           </div>
         </div>
+        <div style="margin-bottom:10px">
+          <label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:4px">
+            📱 Seu número para receber o teste
+          </label>
+          <div style="display:flex;border:1px solid #ced4da;border-radius:4px;overflow:hidden;max-width:280px">
+            <span style="background:#f8f9fa;padding:0 10px;display:flex;align-items:center;font-size:13px;color:#555;border-right:1px solid #dee2e6">+55</span>
+            <input type="tel" id="cfgWaTestPhone" placeholder="(91) 99999-8888" 
+              style="flex:1;border:none;padding:8px 10px;font-size:13px;outline:none">
+          </div>
+          <small style="color:#888;font-size:11px">Número que receberá a mensagem de teste</small>
+        </div>
         <div style="display:flex;gap:10px;align-items:center">
           <button onclick="testarMetaWA()" style="padding:8px 16px;background:#25D366;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">
             <i class="fab fa-whatsapp"></i> Testar
           </button>
           <span id="cfgTestResult3" style="font-size:12px"></span>
+          <span id="cfgTestResult" style="font-size:12px"></span>
         </div>
       </div>
 
