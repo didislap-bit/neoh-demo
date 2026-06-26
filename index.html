@@ -4127,12 +4127,9 @@ function removerHospital(id){
 function aplicarHospitalAtivo(){
   const h = getHospitalAtivo();
   if(!h) return;
+  // Atualizar apenas o NOME do hospital na topbar — logo do Neoh permanece fixo
   const nameEl = document.querySelector('.hospital-name');
   if(nameEl) nameEl.textContent = h.nome.toUpperCase() + ' - ' + h.ambiente;
-  // Prioridade: hospital.logoBase64 > cfg.logoBase64 > hospital.logoUrl
-  const cfg = getSysConfig();
-  const logoSrc = h.logoBase64 || cfg.logoBase64 || h.logoUrl || '';
-  if(logoSrc) atualizarLogoTopbar(logoSrc);
 }
 
 function fecharModalHospital(){
@@ -4506,13 +4503,8 @@ function carregarLogo(input){
 }
 
 function atualizarLogoTopbar(src){
-  const logo = document.querySelector('.logo');
-  if(!logo) return;
-  if(src){
-    logo.innerHTML = '<img src="'+src+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">';
-    logo.style.padding = '0';
-    logo.style.overflow = 'hidden';
-  }
+  // Intencional: NÃO alterar o logo do sistema Neoh na topbar
+  // O logo do hospital aparece apenas no card e perfil WhatsApp
 }
 
 function carregarConfiguracoes(){
@@ -4525,13 +4517,13 @@ function carregarConfiguracoes(){
   // Preview do nome
   const nomeEl = document.getElementById('cfgNomePreview');
   if(nomeEl) nomeEl.textContent = cfg.hospitalNome||'Hospital Adventista de Belém';
-  // Preview da logo — usar hospital ativo como fonte primária
+  // Preview da logo na tela de configurações (não altera topbar do sistema)
   const hAtivoCfg = getHospitalAtivo();
   const logoSrc = (hAtivoCfg && hAtivoCfg.logoBase64) ? hAtivoCfg.logoBase64 : (cfg.logoBase64 || cfg.logoUrl || '');
   if(logoSrc){
     const prev = document.getElementById('cfgLogoPreview');
     if(prev) prev.innerHTML = '<img src="'+logoSrc+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
-    atualizarLogoTopbar(logoSrc);
+    // NÃO chamar atualizarLogoTopbar — logo Neoh é fixo
   }
   if(document.getElementById('cfgWaPhoneId')) document.getElementById('cfgWaPhoneId').value = cfg.waPhoneId||'';
   if(document.getElementById('cfgWaToken')) document.getElementById('cfgWaToken').value = cfg.waToken||'';
