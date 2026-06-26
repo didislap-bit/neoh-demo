@@ -4511,209 +4511,140 @@ function atualizarLogoTopbar(src){
 
 function carregarConfiguracoes(){
   renderHospitais();
+  
+  // FONTE PRIMÁRIA: hospital ativo (tem prioridade sobre config global)
+  const h = getHospitalAtivo() || {};
   const cfg = getSysConfig();
-  if(document.getElementById('cfgHospitalNome')) document.getElementById('cfgHospitalNome').value = cfg.hospitalNome||'Hospital Adventista de Belém';
-  if(document.getElementById('cfgAmbiente')) document.getElementById('cfgAmbiente').value = cfg.ambiente||'HML';
-  if(document.getElementById('cfgLogoUrl')) document.getElementById('cfgLogoUrl').value = cfg.logoUrl||'';
-  if(document.getElementById('cfgDescricao')) document.getElementById('cfgDescricao').value = cfg.descricao||'';
-  // Preview do nome
+  
+  // Identidade: usar dados do hospital ativo
+  const nome = h.nome || cfg.hospitalNome || 'Hospital Adventista de Belém';
+  const amb  = h.ambiente || cfg.ambiente || 'HML';
+  
+  if(document.getElementById('cfgHospitalNome')) document.getElementById('cfgHospitalNome').value = nome;
+  if(document.getElementById('cfgAmbiente'))     document.getElementById('cfgAmbiente').value = amb;
+  if(document.getElementById('cfgLogoUrl'))      document.getElementById('cfgLogoUrl').value = h.logoUrl || cfg.logoUrl || '';
+  if(document.getElementById('cfgDescricao'))    document.getElementById('cfgDescricao').value = h.descricao || cfg.descricao || '';
+  
   const nomeEl = document.getElementById('cfgNomePreview');
-  if(nomeEl) nomeEl.textContent = cfg.hospitalNome||'Hospital Adventista de Belém';
-  // Preview da logo na tela de configurações (não altera topbar do sistema)
-  const hAtivoCfg = getHospitalAtivo();
-  const logoSrc = (hAtivoCfg && hAtivoCfg.logoBase64) ? hAtivoCfg.logoBase64 : (cfg.logoBase64 || cfg.logoUrl || '');
+  if(nomeEl) nomeEl.textContent = nome;
+  
+  // Preview logo
+  const logoSrc = h.logoBase64 || cfg.logoBase64 || h.logoUrl || '';
   if(logoSrc){
     const prev = document.getElementById('cfgLogoPreview');
-    if(prev) prev.innerHTML = '<img src="'+logoSrc+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
-    // NÃO chamar atualizarLogoTopbar — logo Neoh é fixo
+    if(prev){
+      prev.style.background = 'transparent';
+      prev.innerHTML = '<img src="'+logoSrc+'" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%">';
+    }
   }
-  if(document.getElementById('cfgWaPhoneId')) document.getElementById('cfgWaPhoneId').value = cfg.waPhoneId||'';
-  if(document.getElementById('cfgWaToken')) document.getElementById('cfgWaToken').value = cfg.waToken||'';
-  if(document.getElementById('cfgWaTemplate')) document.getElementById('cfgWaTemplate').value = cfg.waTemplate||'hello_world';
-  if(document.getElementById('cfgWaLang')) document.getElementById('cfgWaLang').value = cfg.waLang||'pt_BR';
-  // Inicializar provider selecionado
-  const prov = cfg.waProvider || 'simulado';
+  
+  // Provider WA: usar do hospital ativo
+  const prov = h.waProvider || cfg.waProvider || 'simulado';
   selectProvider(prov);
-  // Preencher campos dos providers
-  if(document.getElementById('cfgUltraInstance')) document.getElementById('cfgUltraInstance').value = cfg.ultraInstance||'';
-  if(document.getElementById('cfgUltraToken'))    document.getElementById('cfgUltraToken').value    = cfg.ultraToken||'';
-  if(document.getElementById('cfgMaytapiProduct'))document.getElementById('cfgMaytapiProduct').value= cfg.maytapiProduct||'';
-  if(document.getElementById('cfgMaytapiPhone'))  document.getElementById('cfgMaytapiPhone').value  = cfg.maytapiPhone||'1';
-  if(document.getElementById('cfgMaytapiToken'))  document.getElementById('cfgMaytapiToken').value  = cfg.maytapiToken||'';
-  if(document.getElementById('cfgJsonbinKey')) document.getElementById('cfgJsonbinKey').value = cfg.jsonbinKey||'';
+  
+  // Credenciais Meta: do hospital ativo
+  if(document.getElementById('cfgWaPhoneId'))  document.getElementById('cfgWaPhoneId').value  = h.waPhoneId  || cfg.waPhoneId  || '';
+  if(document.getElementById('cfgWaToken'))    document.getElementById('cfgWaToken').value    = h.waToken    || cfg.waToken    || '';
+  if(document.getElementById('cfgWaTemplate')) document.getElementById('cfgWaTemplate').value = h.waTemplate || cfg.waTemplate || 'hello_world';
+  if(document.getElementById('cfgWaLang'))     document.getElementById('cfgWaLang').value     = h.waLang     || cfg.waLang     || 'pt_BR';
+  
+  // UltraMsg
+  if(document.getElementById('cfgUltraInstance')) document.getElementById('cfgUltraInstance').value = h.ultraInstance || cfg.ultraInstance || '';
+  if(document.getElementById('cfgUltraToken'))    document.getElementById('cfgUltraToken').value    = h.ultraToken    || cfg.ultraToken    || '';
+  
+  // Maytapi
+  if(document.getElementById('cfgMaytapiProduct')) document.getElementById('cfgMaytapiProduct').value = h.maytapiProduct || cfg.maytapiProduct || '';
+  if(document.getElementById('cfgMaytapiPhone'))   document.getElementById('cfgMaytapiPhone').value   = h.maytapiPhone  || cfg.maytapiPhone  || '1';
+  if(document.getElementById('cfgMaytapiToken'))   document.getElementById('cfgMaytapiToken').value   = h.maytapiToken  || cfg.maytapiToken  || '';
+  
+  if(document.getElementById('cfgJsonbinKey')) document.getElementById('cfgJsonbinKey').value = cfg.jsonbinKey || '';
+  
+  atualizarStatusWA(prov);
 }
 
 function salvarConfiguracoes(){
+  // Salvar na config global
   const cfgAtual = getSysConfig();
   const cfg = Object.assign(cfgAtual, {
     hospitalNome: document.getElementById('cfgHospitalNome')?.value||'',
-    ambiente: document.getElementById('cfgAmbiente')?.value||'HML',
-    logoUrl: document.getElementById('cfgLogoUrl')?.value||'',
-    descricao: document.getElementById('cfgDescricao')?.value||''
+    ambiente:     document.getElementById('cfgAmbiente')?.value||'HML',
+    logoUrl:      document.getElementById('cfgLogoUrl')?.value||'',
+    descricao:    document.getElementById('cfgDescricao')?.value||''
   });
   saveSysConfig(cfg);
   
-  // Atualizar topbar com nome do hospital
-  if(cfg.hospitalNome){
-    const el = document.querySelector('.hospital-name');
-    if(el) el.textContent = cfg.hospitalNome.toUpperCase() + ' - ' + cfg.ambiente;
+  // Sincronizar credenciais WA com hospital ativo
+  const lista = getHospitais();
+  const hIdx = lista.findIndex(function(x){ return x.ativo; });
+  if(hIdx >= 0){
+    const prov = cfg.waProvider || lista[hIdx].waProvider || 'simulado';
+    lista[hIdx].nome      = cfg.hospitalNome || lista[hIdx].nome;
+    lista[hIdx].ambiente  = cfg.ambiente || lista[hIdx].ambiente;
+    lista[hIdx].waProvider= prov;
+    if(prov === 'meta'){
+      lista[hIdx].waPhoneId  = document.getElementById('cfgWaPhoneId')?.value||'';
+      lista[hIdx].waToken    = document.getElementById('cfgWaToken')?.value||'';
+      lista[hIdx].waTemplate = document.getElementById('cfgWaTemplate')?.value||'hello_world';
+      lista[hIdx].waLang     = document.getElementById('cfgWaLang')?.value||'pt_BR';
+    } else if(prov === 'ultramsg'){
+      lista[hIdx].ultraInstance = document.getElementById('cfgUltraInstance')?.value||'';
+      lista[hIdx].ultraToken    = document.getElementById('cfgUltraToken')?.value||'';
+    } else if(prov === 'maytapi'){
+      lista[hIdx].maytapiProduct = document.getElementById('cfgMaytapiProduct')?.value||'';
+      lista[hIdx].maytapiPhone   = document.getElementById('cfgMaytapiPhone')?.value||'1';
+      lista[hIdx].maytapiToken   = document.getElementById('cfgMaytapiToken')?.value||'';
+    }
+    saveHospitais(lista);
   }
+  
+  // Atualizar topbar (só nome)
+  aplicarHospitalAtivo();
+  renderHospitais();
   showToast('✓ Configurações salvas com sucesso!','success');
   setTimeout(goToDashboard, 1000);
 }
 
-async function testarMetaWA(){
-  const phoneId = document.getElementById('cfgWaPhoneId')?.value||'';
-  const token   = document.getElementById('cfgWaToken')?.value||'';
-  // Ler número de teste - buscar o elemento correto no painel Meta
-  const waTestEl = document.getElementById('cfgWaTestPhone') || document.getElementById('cfgWaTestPhone2');
-  const testPhone = ((waTestEl?.value)||'').replace(/\D/g,'');
-  const result  = document.getElementById('cfgTestResultMeta') || document.getElementById('cfgTestResult3') || document.getElementById('cfgTestResultUltra');
-
-  if(!phoneId || !token){ 
-    if(result) result.innerHTML = '<span style="color:#DC3545">⚠️ Preencha o Phone ID e o Token</span>'; 
-    return; 
-  }
-  if(!testPhone){ 
-    if(result) result.innerHTML = '<span style="color:#DC3545">⚠️ Informe um número de teste</span>'; 
-    return; 
-  }
-
-  if(result) result.innerHTML = '<span style="color:#888">⏳ Testando conexão...</span>';
-  
-  const num = testPhone.startsWith('55') ? testPhone : '55'+testPhone;
-  const cfg = { waPhoneId: phoneId, waToken: token, waTemplate: 'hello_world', waLang: 'pt_BR' };
-  
-  try {
-    const resp = await fetch('https://graph.facebook.com/v19.0/' + phoneId + '/messages', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: num,
-        type: 'template',
-        template: { name: 'hello_world', language: { code: 'en_US' } }
-      })
-    });
-    const data = await resp.json();
-    if(resp.ok){
-      if(result) result.innerHTML = '<span style="color:#28A745">✅ Mensagem enviada! Verifique o WhatsApp +' + num + '</span>';
-    } else {
-      const err = data.error ? data.error.message : JSON.stringify(data);
-      if(result) result.innerHTML = '<span style="color:#DC3545">✗ Erro: ' + err + '</span>';
-    }
-  } catch(e) {
-    if(result) result.innerHTML = '<span style="color:#DC3545">✗ Erro de conexão: ' + e.message + '</span>';
-  }
-}
-
-function showWaTab(step){
-  ['step1','step2','step3'].forEach(function(s){
-    const el = document.getElementById('waStep'+s.replace('step',''));
-    if(el) el.classList.toggle('hidden', s !== step);
-    const tab = document.getElementById('waTab'+s.replace('step',''));
-    if(tab){
-      tab.style.borderBottomColor = s===step ? '#2E7FB8' : 'transparent';
-      tab.style.color = s===step ? '#2E7FB8' : '#888';
-      tab.style.fontWeight = s===step ? '700' : '400';
-    }
-  });
-}
-
-function toggleTokenVisibility(){
-  const inp = document.getElementById('cfgWaToken');
-  const icon = document.getElementById('tokenEyeIcon');
-  if(!inp) return;
-  inp.type = inp.type==='password' ? 'text' : 'password';
-  if(icon) icon.className = inp.type==='password' ? 'fa fa-eye' : 'fa fa-eye-slash';
-}
-
-function selectProvider(prov){
-  ['simulado','ultramsg','maytapi','meta'].forEach(function(p){
-    const card = document.getElementById('provCard_'+p);
-    const panel = document.getElementById('provPanel_'+p);
-    const active = p === prov;
-    if(card){ card.style.borderColor = active ? '#2E7FB8' : '#dee2e6'; card.style.background = active ? '#EAF3FD' : '#fff'; }
-    if(panel){ if(active) panel.classList.remove('hidden'); else panel.classList.add('hidden'); }
-  });
-  const cfg = getSysConfig();
-  cfg.waProvider = prov;
-  saveSysConfig(cfg);
-  atualizarStatusWA(prov);
-}
-
-function atualizarStatusWA(prov){
-  const dot  = document.getElementById('waStatusDot');
-  const text = document.getElementById('waStatusText');
-  const msgs = {
-    simulado: ['#2E7FB8','🎭 Modo simulado — envio visual para demonstrações'],
-    ultramsg: ['#F47920','📱 UltraMsg configurado — número real via QR Code'],
-    maytapi:  ['#F47920','🔌 Maytapi configurado — número real via QR Code'],
-    meta:     ['#28A745','🏢 WhatsApp Cloud API Meta — número verificado']
-  };
-  const cfg2 = getSysConfig();
-  const connected =
-    (prov==='simulado') ||
-    (prov==='ultramsg' && cfg2.ultraInstance && cfg2.ultraToken) ||
-    (prov==='maytapi'  && cfg2.maytapiProduct && cfg2.maytapiToken) ||
-    (prov==='meta'     && cfg2.waPhoneId && cfg2.waToken);
-  const info = msgs[prov] || ['#aaa','Não configurado'];
-  if(dot)  dot.style.background = connected ? info[0] : '#aaa';
-  if(text) text.innerHTML = connected ? '<strong>✓</strong> ' + info[1] : 'Não configurado';
-}
-
-async function testarUltraMsg(){
-  const inst  = document.getElementById('cfgUltraInstance')?.value||'';
-  const token = document.getElementById('cfgUltraToken')?.value||'';
-  const result = document.getElementById('cfgTestResultUltra');
-  if(!inst||!token){ if(result) result.innerHTML='<span style="color:#DC3545">⚠️ Preencha Instance ID e Token</span>'; return; }
-  if(result) result.innerHTML='<span style="color:#888">⏳ Testando...</span>';
-  try{
-    const resp = await fetch('https://api.ultramsg.com/'+inst+'/instance/status?token='+token);
-    const data = await resp.json();
-    if(data.status && data.status.accountStatus && data.status.accountStatus.substatus === 'connected'){
-      if(result) result.innerHTML='<span style="color:#28A745">✅ Conectado! '+data.status.accountStatus.substatus+'</span>';
-    } else {
-      if(result) result.innerHTML='<span style="color:#DC3545">✗ '+JSON.stringify(data.status||data)+'</span>';
-    }
-  }catch(e){ if(result) result.innerHTML='<span style="color:#DC3545">✗ '+e.message+'</span>'; }
-}
-
-async function testarMaytapi(){
-  const prod  = document.getElementById('cfgMaytapiProduct')?.value||'';
-  const phone = document.getElementById('cfgMaytapiPhone')?.value||'1';
-  const token = document.getElementById('cfgMaytapiToken')?.value||'';
-  const result = document.getElementById('cfgTestResultMaytapi');
-  if(!prod||!token){ if(result) result.innerHTML='<span style="color:#DC3545">⚠️ Preencha os campos</span>'; return; }
-  if(result) result.innerHTML='<span style="color:#888">⏳ Testando...</span>';
-  try{
-    const resp = await fetch('https://api.maytapi.com/api/'+prod+'/'+phone+'/getPhone',
-      { headers:{'x-maytapi-key':token} });
-    const data = await resp.json();
-    if(data.success){ if(result) result.innerHTML='<span style="color:#28A745">✅ Conectado!</span>'; }
-    else { if(result) result.innerHTML='<span style="color:#DC3545">✗ '+JSON.stringify(data)+'</span>'; }
-  }catch(e){ if(result) result.innerHTML='<span style="color:#DC3545">✗ '+e.message+'</span>'; }
-}
 
 function salvarConfigWA(){
   const cfg = getSysConfig();
-  const prov = cfg.waProvider || 'simulado';
-  // Salvar campos do provider ativo
-  if(prov==='ultramsg'){
+  const prov = document.querySelector('[id^="provCard_"]') ? 
+    (cfg.waProvider || 'simulado') : (cfg.waProvider || 'simulado');
+  
+  // Salvar na config global
+  if(prov==='meta'){
+    cfg.waPhoneId  = document.getElementById('cfgWaPhoneId')?.value||'';
+    cfg.waToken    = document.getElementById('cfgWaToken')?.value||'';
+    cfg.waTemplate = document.getElementById('cfgWaTemplate')?.value||'hello_world';
+    cfg.waLang     = document.getElementById('cfgWaLang')?.value||'pt_BR';
+  } else if(prov==='ultramsg'){
     cfg.ultraInstance = document.getElementById('cfgUltraInstance')?.value||'';
     cfg.ultraToken    = document.getElementById('cfgUltraToken')?.value||'';
   } else if(prov==='maytapi'){
     cfg.maytapiProduct = document.getElementById('cfgMaytapiProduct')?.value||'';
     cfg.maytapiPhone   = document.getElementById('cfgMaytapiPhone')?.value||'1';
     cfg.maytapiToken   = document.getElementById('cfgMaytapiToken')?.value||'';
-  } else if(prov==='meta'){
-    cfg.waPhoneId  = document.getElementById('cfgWaPhoneId')?.value||'';
-    cfg.waToken    = document.getElementById('cfgWaToken')?.value||'';
-    cfg.waTemplate = document.getElementById('cfgWaTemplate')?.value||'hello_world';
-    cfg.waLang     = document.getElementById('cfgWaLang')?.value||'pt_BR';
   }
   saveSysConfig(cfg);
+  
+  // Sincronizar com hospital ativo
+  const lista = getHospitais();
+  const hIdx = lista.findIndex(function(x){ return x.ativo; });
+  if(hIdx >= 0){
+    lista[hIdx].waProvider   = prov;
+    lista[hIdx].waPhoneId    = cfg.waPhoneId||'';
+    lista[hIdx].waToken      = cfg.waToken||'';
+    lista[hIdx].waTemplate   = cfg.waTemplate||'hello_world';
+    lista[hIdx].waLang       = cfg.waLang||'pt_BR';
+    lista[hIdx].ultraInstance= cfg.ultraInstance||'';
+    lista[hIdx].ultraToken   = cfg.ultraToken||'';
+    lista[hIdx].maytapiProduct= cfg.maytapiProduct||'';
+    lista[hIdx].maytapiPhone  = cfg.maytapiPhone||'1';
+    lista[hIdx].maytapiToken  = cfg.maytapiToken||'';
+    saveHospitais(lista);
+  }
+  
   atualizarStatusWA(prov);
+  renderHospitais();
   showToast('✓ Configurações WhatsApp salvas!','success');
 }
 
