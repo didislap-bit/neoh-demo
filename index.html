@@ -1404,49 +1404,138 @@ function checkLockPwd(){
     </div>
   </div>
 
-  <!-- Card: WhatsApp / CallMeBot -->
+  <!-- Card: WhatsApp Cloud API (Meta) -->
   <div class="card" style="margin-bottom:16px">
     <div class="card-header" style="display:flex;align-items:center;gap:10px">
       <i class="fab fa-whatsapp" style="color:#25D366;font-size:18px"></i>
-      <strong>WhatsApp — Envio Automático</strong>
-      <span style="background:#e8f8ed;color:#28A745;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700;margin-left:4px">Gratuito via CallMeBot</span>
+      <strong>WhatsApp — Cloud API oficial Meta</strong>
+      <span style="background:#e8f8ed;color:#28A745;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700;margin-left:4px">✓ Gratuito até 1.000/mês</span>
+      <span style="background:#EAF3FD;color:#2E7FB8;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700">🔒 Seguro</span>
     </div>
     <div class="card-body">
 
-      <div style="background:#EAF3FD;border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.7">
-        <strong style="color:#1A2B3C">Como ativar o envio automático:</strong><br>
-        1. Salve o número <strong>+34 644 82 47 62</strong> na sua agenda com o nome <em>CallMeBot</em><br>
-        2. Envie a mensagem: <code style="background:#fff;padding:1px 6px;border-radius:4px;font-size:12px">I allow callmebot to send me messages</code><br>
-        3. Você receberá a <strong>API Key</strong> em alguns minutos<br>
-        4. Preencha os campos abaixo e clique em Salvar
+      <!-- Status de conexão -->
+      <div id="waStatusBar" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;margin-bottom:16px;background:#f8f9fa;border:1px solid #dee2e6;font-size:13px">
+        <div id="waStatusDot" style="width:10px;height:10px;border-radius:50%;background:#aaa;flex-shrink:0"></div>
+        <span id="waStatusText">Não configurado</span>
       </div>
 
-      <div class="form-row">
-        <div class="form-group" style="flex:1">
-          <label>📱 Número remetente (com DDD)</label>
-          <div style="display:flex;border:1px solid #ced4da;border-radius:4px;overflow:hidden">
-            <span style="background:#f8f9fa;padding:0 12px;display:flex;align-items:center;font-size:13px;color:#555;border-right:1px solid #dee2e6">🇧🇷 +55</span>
-            <input type="tel" id="cfgCallmebotPhone" placeholder="(91) 99999-8888" style="flex:1;border:none;padding:8px 12px;font-size:13px;outline:none">
-          </div>
-          <small style="color:#888;font-size:11px">Número do WhatsApp que enviará as mensagens</small>
-        </div>
-        <div class="form-group" style="flex:1">
-          <label>🔑 API Key do CallMeBot</label>
-          <input type="text" id="cfgCallmebotKey" placeholder="Ex: 1234567" style="width:100%;font-family:monospace">
-          <small style="color:#888;font-size:11px">Recebida via WhatsApp após ativação</small>
-        </div>
-      </div>
-
-      <div style="display:flex;gap:10px;align-items:center;margin-top:4px">
-        <button onclick="testarCallMeBot()" style="padding:8px 16px;background:#25D366;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">
-          <i class="fab fa-whatsapp"></i> Testar envio
+      <!-- Abas de configuração -->
+      <div style="display:flex;gap:0;border-bottom:2px solid #dee2e6;margin-bottom:16px">
+        <button onclick="showWaTab('step1')" id="waTab1" style="padding:8px 16px;border:none;border-bottom:2px solid #2E7FB8;margin-bottom:-2px;background:none;color:#2E7FB8;font-size:13px;font-weight:700;cursor:pointer">
+          1. Criar conta
         </button>
-        <span id="cfgTestResult" style="font-size:12px;color:#888"></span>
+        <button onclick="showWaTab('step2')" id="waTab2" style="padding:8px 16px;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;background:none;color:#888;font-size:13px;cursor:pointer">
+          2. Credenciais
+        </button>
+        <button onclick="showWaTab('step3')" id="waTab3" style="padding:8px 16px;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;background:none;color:#888;font-size:13px;cursor:pointer">
+          3. Template
+        </button>
       </div>
 
-      <div style="margin-top:16px;padding:12px 16px;background:#fff8e1;border-radius:8px;border-left:3px solid #FFC107;font-size:12px;color:#856404">
-        <strong>Para produção real</strong> com logomarca do hospital e número verificado, recomendamos:<br>
-        <strong>Evolution API</strong> (gratuito, self-hosted) · <strong>Z-API</strong> (R$97/mês) · <strong>WhatsApp Cloud API</strong> (Meta, gratuito até 1k/mês)
+      <!-- Step 1: Criar conta -->
+      <div id="waStep1">
+        <div style="font-size:13px;line-height:1.9;color:#333">
+          <div style="display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;margin-bottom:10px">
+            <span style="background:#2E7FB8;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">1</span>
+            <div>Acesse <a href="https://developers.facebook.com" target="_blank" style="color:#2E7FB8;font-weight:600">developers.facebook.com</a> e crie um app do tipo <strong>Business</strong></div>
+          </div>
+          <div style="display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;margin-bottom:10px">
+            <span style="background:#2E7FB8;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">2</span>
+            <div>Adicione o produto <strong>WhatsApp</strong> ao seu app</div>
+          </div>
+          <div style="display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;margin-bottom:10px">
+            <span style="background:#2E7FB8;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">3</span>
+            <div>Em <strong>WhatsApp → Primeiros passos</strong>, copie o <strong>Token de acesso temporário</strong> e o <strong>Phone number ID</strong></div>
+          </div>
+          <div style="display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;margin-bottom:10px">
+            <span style="background:#2E7FB8;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">4</span>
+            <div>Para produção: adicione um número real de telefone do hospital e solicite a verificação da empresa</div>
+          </div>
+          <div style="display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start">
+            <span style="background:#28A745;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">✓</span>
+            <div><strong>Gratuito</strong> para até 1.000 conversas/mês · Criptografia end-to-end · Número verificado com nome e logo do hospital</div>
+          </div>
+        </div>
+        <button onclick="showWaTab('step2')" style="margin-top:16px;padding:9px 20px;background:#2E7FB8;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">
+          Próximo →
+        </button>
+      </div>
+
+      <!-- Step 2: Credenciais -->
+      <div id="waStep2" class="hidden">
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label>📞 Phone Number ID <span style="color:#DC3545">*</span></label>
+            <input type="text" id="cfgWaPhoneId" placeholder="Ex: 123456789012345" style="width:100%;font-family:monospace">
+            <small style="color:#888;font-size:11px">Encontrado em WhatsApp → Primeiros passos no painel Meta</small>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label>🔑 Token de acesso <span style="color:#DC3545">*</span></label>
+            <div style="position:relative">
+              <input type="password" id="cfgWaToken" placeholder="EAAxxxxxxxx..." style="width:100%;font-family:monospace;padding-right:40px">
+              <button onclick="toggleTokenVisibility()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888">
+                <i class="fa fa-eye" id="tokenEyeIcon"></i>
+              </button>
+            </div>
+            <small style="color:#888;font-size:11px">Token temporário (72h) ou token permanente de sistema</small>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label>📱 Número de teste (para validar)</label>
+            <div style="display:flex;border:1px solid #ced4da;border-radius:4px;overflow:hidden">
+              <span style="background:#f8f9fa;padding:0 12px;display:flex;align-items:center;font-size:13px;color:#555;border-right:1px solid #dee2e6">+55</span>
+              <input type="tel" id="cfgWaTestPhone" placeholder="(91) 99999-8888" style="flex:1;border:none;padding:8px 12px;font-size:13px;outline:none">
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px">
+          <button onclick="testarMetaWA()" style="padding:9px 18px;background:#25D366;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">
+            <i class="fab fa-whatsapp"></i> Testar conexão
+          </button>
+          <span id="cfgTestResult" style="font-size:12px"></span>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button onclick="showWaTab('step1')" style="padding:9px 16px;border:1px solid #6c757d;background:#fff;color:#555;border-radius:6px;font-size:13px;cursor:pointer">← Voltar</button>
+          <button onclick="showWaTab('step3')" style="padding:9px 20px;background:#2E7FB8;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">Próximo →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Template -->
+      <div id="waStep3" class="hidden">
+        <div style="background:#EAF3FD;border-radius:8px;padding:14px;margin-bottom:14px;font-size:13px;color:#1A2B3C;line-height:1.7">
+          <strong>💡 Templates de mensagem:</strong> A API Meta exige templates pré-aprovados para iniciar conversa. 
+          Para testes, use o template padrão <code style="background:#fff;padding:1px 6px;border-radius:3px">hello_world</code> 
+          ou crie um template personalizado em <strong>WhatsApp → Modelos de mensagem</strong>.
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="flex:1">
+            <label>📋 Nome do template <span style="color:#DC3545">*</span></label>
+            <input type="text" id="cfgWaTemplate" value="hello_world" placeholder="Ex: notificacao_cirurgia" style="width:100%;font-family:monospace">
+            <small style="color:#888;font-size:11px">Template aprovado em WhatsApp → Modelos de mensagem</small>
+          </div>
+          <div class="form-group" style="flex:0 0 120px">
+            <label>Idioma</label>
+            <select id="cfgWaLang" style="width:100%">
+              <option value="pt_BR">pt_BR</option>
+              <option value="en_US">en_US</option>
+            </select>
+          </div>
+        </div>
+        <div style="background:#fff8e1;border-radius:8px;padding:12px 14px;font-size:12px;color:#856404;line-height:1.7">
+          <strong>⚠️ Modo sandbox:</strong> Sem template aprovado, o sistema usa mensagens livres apenas para números 
+          adicionados como testadores no painel Meta. Para enviar a qualquer número, é necessário ter um template aprovado 
+          e conta Business verificada (processo de ~2 dias úteis).
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px">
+          <button onclick="showWaTab('step2')" style="padding:9px 16px;border:1px solid #6c757d;background:#fff;color:#555;border-radius:6px;font-size:13px;cursor:pointer">← Voltar</button>
+          <button onclick="salvarConfigWA()" style="padding:9px 20px;background:#28A745;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">
+            <i class="fa fa-save"></i> Salvar e ativar
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -2665,8 +2754,8 @@ function sendRealWhatsApp(celular, mensagem){
 
   // Verificar se tem CallMeBot configurado
   const cfg = getSysConfig();
-  if(cfg.callmebotKey && cfg.callmebotPhone){
-    enviarCallMeBot(numFormatado, mensagem, cfg);
+  if(cfg.waPhoneId && cfg.waToken){
+    enviarMetaWhatsApp(numFormatado, mensagem, cfg);
   } else {
     // Fallback: abrir wa.me
     const waUrl = 'https://wa.me/' + numFormatado + '?text=' + encodeURIComponent(mensagem);
@@ -2686,36 +2775,69 @@ function saveSysConfig(cfg){
   try{ localStorage.setItem('neoh_config', JSON.stringify(cfg)); }catch(e){}
 }
 
-function enviarCallMeBot(numDestino, mensagem, cfg){
-  // CallMeBot API - envia via número configurado
-  // CORS limitation: usar iframe trick ou proxy
-  // Para o mockup: simular envio visual + abrir em background
-  
+async function enviarMetaWhatsApp(numDestino, mensagem, cfg){
   mostrarEnviando();
-
-  // Tentar envio real via CallMeBot (pode falhar por CORS em alguns browsers)
-  const apiUrl = 'https://api.callmebot.com/whatsapp.php' +
-    '?phone=' + encodeURIComponent(numDestino) +
-    '&text=' + encodeURIComponent(mensagem) +
-    '&apikey=' + encodeURIComponent(cfg.callmebotKey);
-
-  // Usar fetch com no-cors (não retorna resposta mas envia)
-  fetch(apiUrl, { method: 'GET', mode: 'no-cors' })
-    .then(function(){
-      setTimeout(function(){
-        esconderEnviando(true, numDestino);
-      }, 1500);
-    })
-    .catch(function(){
-      // Tentar via img tag (contorna CORS completamente)
-      const img = new Image();
-      img.onload = img.onerror = function(){
-        setTimeout(function(){
-          esconderEnviando(true, numDestino);
-        }, 1500);
+  
+  try {
+    // WhatsApp Cloud API - Meta oficial
+    // NOTA: em produção esta chamada deve ser feita pelo backend
+    // para proteger o token. Aqui é demonstração.
+    const url = 'https://graph.facebook.com/v19.0/' + cfg.waPhoneId + '/messages';
+    
+    // Montar payload - usa template se configurado, senão texto livre
+    let payload;
+    const templateNome = cfg.waTemplate || '';
+    
+    if(templateNome && templateNome !== 'hello_world'){
+      // Template personalizado com variáveis
+      payload = {
+        messaging_product: 'whatsapp',
+        to: numDestino,
+        type: 'template',
+        template: {
+          name: templateNome,
+          language: { code: cfg.waLang || 'pt_BR' },
+          components: [{
+            type: 'body',
+            parameters: [{ type: 'text', text: mensagem }]
+          }]
+        }
       };
-      img.src = apiUrl;
+    } else {
+      // Mensagem de texto livre (apenas para números testadores)
+      payload = {
+        messaging_product: 'whatsapp',
+        to: numDestino,
+        type: 'text',
+        text: { body: mensagem }
+      };
+    }
+
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + cfg.waToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
     });
+
+    const data = await resp.json();
+    
+    if(resp.ok && data.messages && data.messages[0]){
+      esconderEnviando(true, numDestino);
+    } else {
+      const errMsg = data.error ? data.error.message : 'Erro desconhecido';
+      esconderEnviando(false, numDestino, errMsg);
+    }
+    
+  } catch(err) {
+    console.error('Meta WA error:', err);
+    // Fallback para wa.me se falhar
+    esconderEnviando(false, numDestino, err.message);
+    const waUrl = 'https://wa.me/' + numDestino + '?text=' + encodeURIComponent(mensagem);
+    window.open(waUrl, '_blank');
+  }
 }
 
 function mostrarEnviando(){
@@ -2729,7 +2851,7 @@ function mostrarEnviando(){
   document.body.appendChild(el);
 }
 
-function esconderEnviando(sucesso, num){
+function esconderEnviando(sucesso, num, errMsg){
   const el = document.getElementById('__sendingOverlay');
   if(!el) return;
   if(sucesso){
@@ -2740,7 +2862,7 @@ function esconderEnviando(sucesso, num){
     setTimeout(function(){ if(el.parentNode) el.remove(); }, 3000);
   } else {
     el.remove();
-    showToast('Falha ao enviar. Verifique as configurações CallMeBot.','error');
+    showToast('Falha: ' + (errMsg||'Verifique as configurações WhatsApp.'), 'error');
   }
 }
 
@@ -3610,8 +3732,14 @@ function carregarConfiguracoes(){
   if(document.getElementById('cfgHospitalNome')) document.getElementById('cfgHospitalNome').value = cfg.hospitalNome||'Hospital Adventista de Belém';
   if(document.getElementById('cfgAmbiente')) document.getElementById('cfgAmbiente').value = cfg.ambiente||'HML';
   if(document.getElementById('cfgLogoUrl')) document.getElementById('cfgLogoUrl').value = cfg.logoUrl||'';
-  if(document.getElementById('cfgCallmebotPhone')) document.getElementById('cfgCallmebotPhone').value = cfg.callmebotPhone||'';
-  if(document.getElementById('cfgCallmebotKey')) document.getElementById('cfgCallmebotKey').value = cfg.callmebotKey||'';
+  if(document.getElementById('cfgWaPhoneId')) document.getElementById('cfgWaPhoneId').value = cfg.waPhoneId||'';
+  if(document.getElementById('cfgWaToken')) document.getElementById('cfgWaToken').value = cfg.waToken||'';
+  if(document.getElementById('cfgWaTemplate')) document.getElementById('cfgWaTemplate').value = cfg.waTemplate||'hello_world';
+  if(document.getElementById('cfgWaLang')) document.getElementById('cfgWaLang').value = cfg.waLang||'pt_BR';
+  // Atualizar status
+  const dot=document.getElementById('waStatusDot');const txt=document.getElementById('waStatusText');
+  if(cfg.waPhoneId&&cfg.waToken){if(dot)dot.style.background='#28A745';if(txt)txt.innerHTML='<strong style="color:#28A745">✓ Conectado</strong> — WhatsApp Cloud API Meta';}
+  else{if(dot)dot.style.background='#aaa';if(txt)txt.textContent='Não configurado';}
   if(document.getElementById('cfgJsonbinKey')) document.getElementById('cfgJsonbinKey').value = cfg.jsonbinKey||'';
 }
 
@@ -3635,20 +3763,86 @@ function salvarConfiguracoes(){
   setTimeout(goToDashboard, 1000);
 }
 
-function testarCallMeBot(){
-  const phone = (document.getElementById('cfgCallmebotPhone')?.value||'').replace(/\D/g,'');
-  const key   =  document.getElementById('cfgCallmebotKey')?.value||'';
-  const result = document.getElementById('cfgTestResult');
-  if(!phone || !key){ if(result) result.textContent = '⚠️ Preencha o número e a API Key'; return; }
-  if(result) result.textContent = '⏳ Enviando mensagem de teste...';
-  const num = phone.startsWith('55') ? phone : '55'+phone;
-  const msg = 'Olá! Esta é uma mensagem de teste do Sistema Neoh. Se recebeu, o envio automático está configurado corretamente! ✅';
-  const url = 'https://api.callmebot.com/whatsapp.php?phone='+num+'&text='+encodeURIComponent(msg)+'&apikey='+key;
-  const img = new Image();
-  img.onload = img.onerror = function(){
-    if(result) result.innerHTML = '<span style="color:#28A745">✓ Solicitação enviada! Verifique seu WhatsApp.</span>';
-  };
-  img.src = url;
+async function testarMetaWA(){
+  const phoneId = document.getElementById('cfgWaPhoneId')?.value||'';
+  const token   = document.getElementById('cfgWaToken')?.value||'';
+  const testPhone = (document.getElementById('cfgWaTestPhone')?.value||'').replace(/\D/g,'');
+  const result  = document.getElementById('cfgTestResult');
+
+  if(!phoneId || !token){ 
+    if(result) result.innerHTML = '<span style="color:#DC3545">⚠️ Preencha o Phone ID e o Token</span>'; 
+    return; 
+  }
+  if(!testPhone){ 
+    if(result) result.innerHTML = '<span style="color:#DC3545">⚠️ Informe um número de teste</span>'; 
+    return; 
+  }
+
+  if(result) result.innerHTML = '<span style="color:#888">⏳ Testando conexão...</span>';
+  
+  const num = testPhone.startsWith('55') ? testPhone : '55'+testPhone;
+  const cfg = { waPhoneId: phoneId, waToken: token, waTemplate: 'hello_world', waLang: 'pt_BR' };
+  
+  try {
+    const resp = await fetch('https://graph.facebook.com/v19.0/' + phoneId + '/messages', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: num,
+        type: 'template',
+        template: { name: 'hello_world', language: { code: 'en_US' } }
+      })
+    });
+    const data = await resp.json();
+    if(resp.ok){
+      if(result) result.innerHTML = '<span style="color:#28A745">✅ Mensagem enviada! Verifique o WhatsApp +' + num + '</span>';
+    } else {
+      const err = data.error ? data.error.message : JSON.stringify(data);
+      if(result) result.innerHTML = '<span style="color:#DC3545">✗ Erro: ' + err + '</span>';
+    }
+  } catch(e) {
+    if(result) result.innerHTML = '<span style="color:#DC3545">✗ Erro de conexão: ' + e.message + '</span>';
+  }
+}
+
+function showWaTab(step){
+  ['step1','step2','step3'].forEach(function(s){
+    const el = document.getElementById('waStep'+s.replace('step',''));
+    if(el) el.classList.toggle('hidden', s !== step);
+    const tab = document.getElementById('waTab'+s.replace('step',''));
+    if(tab){
+      tab.style.borderBottomColor = s===step ? '#2E7FB8' : 'transparent';
+      tab.style.color = s===step ? '#2E7FB8' : '#888';
+      tab.style.fontWeight = s===step ? '700' : '400';
+    }
+  });
+}
+
+function toggleTokenVisibility(){
+  const inp = document.getElementById('cfgWaToken');
+  const icon = document.getElementById('tokenEyeIcon');
+  if(!inp) return;
+  inp.type = inp.type==='password' ? 'text' : 'password';
+  if(icon) icon.className = inp.type==='password' ? 'fa fa-eye' : 'fa fa-eye-slash';
+}
+
+function salvarConfigWA(){
+  const cfg = getSysConfig();
+  cfg.waPhoneId  = document.getElementById('cfgWaPhoneId')?.value||'';
+  cfg.waToken    = document.getElementById('cfgWaToken')?.value||'';
+  cfg.waTemplate = document.getElementById('cfgWaTemplate')?.value||'hello_world';
+  cfg.waLang     = document.getElementById('cfgWaLang')?.value||'pt_BR';
+  saveSysConfig(cfg);
+  
+  // Atualizar status bar
+  const dot  = document.getElementById('waStatusDot');
+  const text = document.getElementById('waStatusText');
+  if(cfg.waPhoneId && cfg.waToken){
+    if(dot)  dot.style.background = '#28A745';
+    if(text) text.innerHTML = '<strong style="color:#28A745">✓ Conectado</strong> — WhatsApp Cloud API Meta';
+  }
+  showToast('✓ Configurações WhatsApp salvas!','success');
 }
 
 // Carregar configurações ao abrir a página
