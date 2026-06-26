@@ -1591,7 +1591,7 @@ function checkLockPwd(){
             <label>Token de acesso
               <button onclick="toggleTokenVisibility()" style="background:none;border:none;cursor:pointer;color:#888;margin-left:6px"><i class="fa fa-eye" id="tokenEyeIcon"></i></button>
             </label>
-            <input type="password" id="cfgWaToken" placeholder="EAAxxxxxxxx..." style="width:100%;font-family:monospace">
+            <input type="password" id="cfgWaToken2" placeholder="EAAxxxxxxxx..." style="width:100%;font-family:monospace">
           </div>
         </div>
         <div class="form-row">
@@ -1678,7 +1678,7 @@ function checkLockPwd(){
         <div class="form-row">
           <div class="form-group" style="flex:1">
             <label>📞 Phone Number ID <span style="color:#DC3545">*</span></label>
-            <input type="text" id="cfgWaPhoneId" placeholder="Ex: 123456789012345" style="width:100%;font-family:monospace">
+            <input type="text" id="cfgWaPhoneId2" placeholder="Ex: 123456789012345" style="width:100%;font-family:monospace">
             <small style="color:#888;font-size:11px">Encontrado em WhatsApp → Primeiros passos no painel Meta</small>
           </div>
         </div>
@@ -1686,7 +1686,7 @@ function checkLockPwd(){
           <div class="form-group" style="flex:1">
             <label>🔑 Token de acesso <span style="color:#DC3545">*</span></label>
             <div style="position:relative">
-              <input type="password" id="cfgWaToken" placeholder="EAAxxxxxxxx..." style="width:100%;font-family:monospace;padding-right:40px">
+              <input type="password" id="cfgWaToken2" placeholder="EAAxxxxxxxx..." style="width:100%;font-family:monospace;padding-right:40px">
               <button onclick="toggleTokenVisibility()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888">
                 <i class="fa fa-eye" id="tokenEyeIcon"></i>
               </button>
@@ -3049,10 +3049,19 @@ async function enviarMetaWhatsApp(numDestino, mensagem, cfg){
   mostrarEnviando();
   
   try {
-    // WhatsApp Cloud API - Meta oficial
-    // NOTA: em produção esta chamada deve ser feita pelo backend
-    // para proteger o token. Aqui é demonstração.
-    const url = 'https://graph.facebook.com/v19.0/' + cfg.waPhoneId + '/messages';
+    // Garantir credenciais do hospital ativo
+    const hAtivo = getHospitalAtivo();
+    const phoneId = cfg.waPhoneId || (hAtivo&&hAtivo.waPhoneId) || '';
+    const token   = cfg.waToken   || (hAtivo&&hAtivo.waToken)   || '';
+    const template= cfg.waTemplate|| (hAtivo&&hAtivo.waTemplate)|| 'hello_world';
+    const lang    = cfg.waLang    || (hAtivo&&hAtivo.waLang)    || 'pt_BR';
+    
+    if(!phoneId || !token){
+      esconderEnviando(false, numDestino, 'Credenciais Meta não configuradas');
+      return;
+    }
+    
+    const url = 'https://graph.facebook.com/v19.0/' + phoneId + '/messages';
     
     // Montar payload - usa template se configurado, senão texto livre
     let payload;
@@ -4399,8 +4408,9 @@ function salvarHospital(){
   const lista = getHospitais();
 
   // Ler credenciais Meta se provider = meta
-  const mhPhoneId  = document.getElementById('mhWaPhoneId')?.value?.trim()||'';
-  const mhToken    = document.getElementById('mhWaToken')?.value?.trim()||'';
+  const mhPhoneId  = (document.getElementById('mhWaPhoneId')?.value||'').trim();
+  const mhToken    = (document.getElementById('mhWaToken')?.value||'').trim();
+  console.log('[Neoh] salvarHospital - prov:', prov, 'phoneId:', mhPhoneId.substring(0,8)+'...', 'hasToken:', mhToken.length>0);
   const mhTemplate = document.getElementById('mhWaTemplate')?.value?.trim()||'hello_world';
   const mhLang     = document.getElementById('mhWaLang')?.value||'pt_BR';
 
@@ -4567,8 +4577,13 @@ function carregarConfiguracoes(){
   const prov = h.waProvider || cfg.waProvider || 'simulado';
   selectProvider(prov);
   
-  // Credenciais Meta: do hospital ativo
-  if(document.getElementById('cfgWaPhoneId'))  document.getElementById('cfgWaPhoneId').value  = h.waPhoneId  || cfg.waPhoneId  || '';
+  console.log('[Neoh] carregarConfiguracoes - h.waPhoneId:', (h.waPhoneId||'').substring(0,8)+'...', 'h.waProvider:', h.waProvider);
+  // Credenciais Meta: setar em TODOS os elementos com esses IDs (pode haver duplicatas)
+  const phoneIdVal = h.waPhoneId  || cfg.waPhoneId  || '';
+  const tokenVal   = h.waToken    || cfg.waToken    || '';
+  document.querySelectorAll('[id="cfgWaPhoneId"]').forEach(function(el){ el.value = phoneIdVal; });
+  document.querySelectorAll('[id="cfgWaToken"]').forEach(function(el){ el.value = tokenVal; });
+  if(false && document.getElementById('cfgWaPhoneId'))  document.getElementById('cfgWaPhoneId').value  = phoneIdVal;
   if(document.getElementById('cfgWaToken'))    document.getElementById('cfgWaToken').value    = h.waToken    || cfg.waToken    || '';
   if(document.getElementById('cfgWaTemplate')) document.getElementById('cfgWaTemplate').value = h.waTemplate || cfg.waTemplate || 'hello_world';
   if(document.getElementById('cfgWaLang'))     document.getElementById('cfgWaLang').value     = h.waLang     || cfg.waLang     || 'pt_BR';
