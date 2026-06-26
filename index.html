@@ -4225,8 +4225,11 @@ function abrirModalNovoHospital(idEditar){
 
   // Cores
   var coresDiv = document.createElement('div');
+  coresDiv.id = 'mhCoresDiv';
   coresDiv.style.marginBottom = '14px';
-  coresDiv.innerHTML = '<label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:6px">Cor do ícone</label>';
+  // Ocultar seletor de cor se já tem logomarca
+  coresDiv.style.display = (h && h.logoBase64) ? 'none' : 'block';
+  coresDiv.innerHTML = '<label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:6px">Cor do ícone <span style="font-size:10px;color:#888;font-weight:400">(exibida quando não há logomarca)</span></label>';
   var coresRow = document.createElement('div');
   coresRow.style.cssText = 'display:flex;gap:8px';
   cores.forEach(function(c){
@@ -4332,9 +4335,12 @@ function carregarLogoModal(input){
   reader.onload = function(e){
     const dataUrl = e.target.result;
     const prev = document.getElementById('mhLogoPreview');
-    if(prev) prev.innerHTML = '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover">';
+    if(prev) prev.innerHTML = '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
     const b64Input = document.getElementById('mhLogoB64');
     if(b64Input) b64Input.value = dataUrl;
+    // Ocultar seletor de cor — logo tem suas próprias cores
+    const coresDiv = document.getElementById('mhCoresDiv');
+    if(coresDiv) coresDiv.style.display = 'none';
   };
   reader.readAsDataURL(file);
 }
