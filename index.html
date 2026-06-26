@@ -2967,17 +2967,20 @@ function sendRealWhatsApp(celular, mensagem){
   let numFormatado = numLimpo;
   if(!numFormatado.startsWith('55')) numFormatado = '55' + numFormatado;
 
+  // Usar configurações do hospital ativo (tem prioridade sobre config global)
+  const hospitalAtivo = getHospitalAtivo();
   const cfg = getSysConfig();
-  const provider = cfg.waProvider || 'simulado';
+  // Mesclar: hospital ativo sobrescreve config global
+  const cfgEfetivo = Object.assign({}, cfg, hospitalAtivo||{});
+  const provider = cfgEfetivo.waProvider || 'simulado';
 
-  if(provider === 'meta' && cfg.waPhoneId && cfg.waToken){
-    enviarMetaWhatsApp(numFormatado, mensagem, cfg);
-  } else if(provider === 'ultramsg' && cfg.ultraInstance && cfg.ultraToken){
-    enviarUltraMsg(numFormatado, mensagem, cfg);
-  } else if(provider === 'maytapi' && cfg.maytapiProduct && cfg.maytapiToken){
-    enviarMaytapi(numFormatado, mensagem, cfg);
+  if(provider === 'meta' && cfgEfetivo.waPhoneId && cfgEfetivo.waToken){
+    enviarMetaWhatsApp(numFormatado, mensagem, cfgEfetivo);
+  } else if(provider === 'ultramsg' && cfgEfetivo.ultraInstance && cfgEfetivo.ultraToken){
+    enviarUltraMsg(numFormatado, mensagem, cfgEfetivo);
+  } else if(provider === 'maytapi' && cfgEfetivo.maytapiProduct && cfgEfetivo.maytapiToken){
+    enviarMaytapi(numFormatado, mensagem, cfgEfetivo);
   } else {
-    // Modo simulado: animação visual profissional
     enviarSimulado(numFormatado, mensagem);
   }
 }
@@ -4254,6 +4257,34 @@ function abrirModalNovoHospital(idEditar){
   provDiv.appendChild(provGrid);
   body.appendChild(provDiv);
 
+  // Meta API fields (mostrar só se Meta selecionado)
+  var metaFields = document.createElement('div');
+  metaFields.id = 'mhMetaFields';
+  metaFields.style.cssText = 'background:#EAF3FD;border-radius:8px;padding:14px;margin-bottom:14px;display:' + (provAtual==='meta'?'block':'none');
+  metaFields.innerHTML = '<div style="font-size:11px;font-weight:700;color:#2E7FB8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Credenciais Meta Cloud API</div>'+
+    '<div style="margin-bottom:10px">'+
+      '<label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:4px">Phone Number ID</label>'+
+      '<input type="text" id="mhWaPhoneId" value="'+(h&&h.waPhoneId?h.waPhoneId:'')+'" placeholder="Ex: 1214336381754856" style="width:100%;border:1px solid #ced4da;border-radius:4px;padding:8px 10px;font-size:12px;outline:none;box-sizing:border-box;font-family:monospace">'+
+    '</div>'+
+    '<div style="margin-bottom:10px">'+
+      '<label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:4px">Token de acesso</label>'+
+      '<input type="password" id="mhWaToken" value="'+(h&&h.waToken?h.waToken:'')+'" placeholder="EAAxxxxxxxx..." style="width:100%;border:1px solid #ced4da;border-radius:4px;padding:8px 10px;font-size:12px;outline:none;box-sizing:border-box;font-family:monospace">'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 100px;gap:10px">'+
+      '<div>'+
+        '<label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:4px">Template</label>'+
+        '<input type="text" id="mhWaTemplate" value="'+(h&&h.waTemplate?h.waTemplate:'hello_world')+'" style="width:100%;border:1px solid #ced4da;border-radius:4px;padding:8px 10px;font-size:12px;outline:none;box-sizing:border-box;font-family:monospace">'+
+      '</div>'+
+      '<div>'+
+        '<label style="font-size:12px;font-weight:600;color:#333;display:block;margin-bottom:4px">Idioma</label>'+
+        '<select id="mhWaLang" style="width:100%;border:1px solid #ced4da;border-radius:4px;padding:8px 6px;font-size:12px;outline:none">'+
+          '<option value="pt_BR"'+(h&&h.waLang==='pt_BR'?' selected':'')+'>pt_BR</option>'+
+          '<option value="en_US"'+(h&&h.waLang==='en_US'?' selected':'')+'>en_US</option>'+
+        '</select>'+
+      '</div>'+
+    '</div>';
+  body.appendChild(metaFields);
+
   // Hidden inputs
   ['mhId','mhCor','mhProv','mhLogoB64'].forEach(function(iid){
     var inp = document.createElement('input');
@@ -4327,8 +4358,13 @@ function selecionarProvModal(prov){
     if(btn){
       btn.style.border = p===prov ? '2px solid #2E7FB8' : '2px solid #dee2e6';
       btn.style.background = p===prov ? '#EAF3FD' : '#fff';
+      const label = btn.querySelector('div:last-child');
+      if(label) label.style.color = p===prov ? '#2E7FB8' : '#555';
     }
   });
+  // Mostrar/ocultar campos Meta API
+  const metaFields = document.getElementById('mhMetaFields');
+  if(metaFields) metaFields.style.display = prov==='meta' ? 'block' : 'none';
 }
 
 function salvarHospital(){
@@ -4344,8 +4380,13 @@ function salvarHospital(){
 
   const lista = getHospitais();
 
+  // Ler credenciais Meta se provider = meta
+  const mhPhoneId  = document.getElementById('mhWaPhoneId')?.value?.trim()||'';
+  const mhToken    = document.getElementById('mhWaToken')?.value?.trim()||'';
+  const mhTemplate = document.getElementById('mhWaTemplate')?.value?.trim()||'hello_world';
+  const mhLang     = document.getElementById('mhWaLang')?.value||'pt_BR';
+
   if(id){
-    // Editar existente
     const idx = lista.findIndex(function(h){return h.id===id;});
     if(idx>=0){
       lista[idx].nome = nome;
@@ -4354,9 +4395,15 @@ function salvarHospital(){
       lista[idx].cor = cor;
       lista[idx].waProvider = prov;
       if(b64) lista[idx].logoBase64 = b64;
+      // Salvar credenciais Meta deste hospital
+      if(prov === 'meta'){
+        lista[idx].waPhoneId  = mhPhoneId;
+        lista[idx].waToken    = mhToken;
+        lista[idx].waTemplate = mhTemplate;
+        lista[idx].waLang     = mhLang;
+      }
     }
   } else {
-    // Novo hospital
     const novoId = 'h'+Date.now();
     lista.push({
       id: novoId,
@@ -4367,7 +4414,10 @@ function salvarHospital(){
       logoBase64: b64||'',
       logoUrl: '',
       waProvider: prov,
-      waPhoneId: '', waToken: '', waTemplate: 'hello_world', waLang: 'pt_BR',
+      waPhoneId: prov==='meta'?mhPhoneId:'',
+      waToken:   prov==='meta'?mhToken:'',
+      waTemplate: mhTemplate,
+      waLang: mhLang,
       ultraInstance: '', ultraToken: '',
       maytapiProduct: '', maytapiPhone: '1', maytapiToken: '',
       ativo: false
