@@ -1905,7 +1905,7 @@ function filterSemWhatsapp(el){
       <td><span class="${getBadgeClass(p.fase)}">${p.fase}</span></td>
       <td><span class="st-circle">A</span></td>
       <td><i class="fab fa-whatsapp" style="color:#DC3545;font-size:14px" title="${semNum?'Sem número cadastrado':'Sem envio registrado'}"></i></td>
-      <td><button class="btn btn-primary btn-sm" onclick="openTrocaFaseModal('${p.id}')"><i class="fab fa-whatsapp"></i> Reenviar</button></td>
+      <td><button class="btn btn-primary btn-sm" onclick="reenviarWhatsApp('${p.id}')"><i class="fab fa-whatsapp"></i> Reenviar</button></td>
     </tr>`;
   }).join('');
 }
@@ -3338,8 +3338,8 @@ function updateWaAlertPanel(){
       <td style="padding:7px 10px;font-size:12px"><span style="background:#fff0f0;color:#DC3545;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">${pr.problema}</span></td>
       <td style="padding:7px 10px;font-size:12px;color:#888">${pr.dt}</td>
       <td style="padding:7px 10px">
-        <button class="btn btn-sm" style="font-size:11px;padding:3px 10px;background:#2E7FB8;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="openTrocaFaseModal('${pr.id}')">
-          <i class="fab fa-whatsapp"></i> Corrigir
+        <button class="btn btn-sm" style="font-size:11px;padding:3px 10px;background:#2E7FB8;color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="reenviarWhatsApp('${pr.id}')">
+          <i class="fab fa-whatsapp"></i> Reenviar
         </button>
       </td>
     </tr>`).join('');
