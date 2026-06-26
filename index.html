@@ -4131,12 +4131,12 @@ function removerHospital(id){
 function aplicarHospitalAtivo(){
   const h = getHospitalAtivo();
   if(!h) return;
-  // Atualizar topbar
   const nameEl = document.querySelector('.hospital-name');
   if(nameEl) nameEl.textContent = h.nome.toUpperCase() + ' - ' + h.ambiente;
-  // Atualizar logo
-  if(h.logoBase64) atualizarLogoTopbar(h.logoBase64);
-  else if(h.logoUrl) atualizarLogoTopbar(h.logoUrl);
+  // Prioridade: hospital.logoBase64 > cfg.logoBase64 > hospital.logoUrl
+  const cfg = getSysConfig();
+  const logoSrc = h.logoBase64 || cfg.logoBase64 || h.logoUrl || '';
+  if(logoSrc) atualizarLogoTopbar(logoSrc);
 }
 
 function fecharModalHospital(){
@@ -4492,12 +4492,19 @@ function carregarLogo(input){
     const dataUrl = e.target.result;
     const preview = document.getElementById('cfgLogoPreview');
     if(preview) preview.innerHTML = '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
-    // Salvar logo em base64 na config
+    // Salvar no hospital ativo (fonte primária)
+    const lista = getHospitais();
+    const hAtivo = lista.find(function(x){ return x.ativo; });
+    if(hAtivo){
+      hAtivo.logoBase64 = dataUrl;
+      saveHospitais(lista);
+    }
+    // Salvar também na config global (retrocompatibilidade)
     const cfg = getSysConfig();
     cfg.logoBase64 = dataUrl;
     saveSysConfig(cfg);
-    // Atualizar também o logo na topbar
     atualizarLogoTopbar(dataUrl);
+    renderHospitais();
   };
   reader.readAsDataURL(file);
 }
@@ -4522,13 +4529,13 @@ function carregarConfiguracoes(){
   // Preview do nome
   const nomeEl = document.getElementById('cfgNomePreview');
   if(nomeEl) nomeEl.textContent = cfg.hospitalNome||'Hospital Adventista de Belém';
-  // Preview da logo
-  if(cfg.logoBase64) {
+  // Preview da logo — usar hospital ativo como fonte primária
+  const hAtivoCfg = getHospitalAtivo();
+  const logoSrc = (hAtivoCfg && hAtivoCfg.logoBase64) ? hAtivoCfg.logoBase64 : (cfg.logoBase64 || cfg.logoUrl || '');
+  if(logoSrc){
     const prev = document.getElementById('cfgLogoPreview');
-    if(prev) prev.innerHTML = '<img src="'+cfg.logoBase64+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
-    atualizarLogoTopbar(cfg.logoBase64);
-  } else if(cfg.logoUrl) {
-    previewLogoUrl(cfg.logoUrl);
+    if(prev) prev.innerHTML = '<img src="'+logoSrc+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    atualizarLogoTopbar(logoSrc);
   }
   if(document.getElementById('cfgWaPhoneId')) document.getElementById('cfgWaPhoneId').value = cfg.waPhoneId||'';
   if(document.getElementById('cfgWaToken')) document.getElementById('cfgWaToken').value = cfg.waToken||'';
