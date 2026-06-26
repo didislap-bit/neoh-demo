@@ -1540,7 +1540,7 @@ function checkLockPwd(){
           <button onclick="testarUltraMsg()" style="padding:8px 16px;background:#25D366;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">
             <i class="fab fa-whatsapp"></i> Testar
           </button>
-          <span id="cfgTestResult" style="font-size:12px"></span>
+          <span id="cfgTestResultUltra" style="font-size:12px"></span>
         </div>
       </div>
 
@@ -1613,7 +1613,7 @@ function checkLockPwd(){
           </label>
           <div style="display:flex;border:1px solid #ced4da;border-radius:4px;overflow:hidden;max-width:280px">
             <span style="background:#f8f9fa;padding:0 10px;display:flex;align-items:center;font-size:13px;color:#555;border-right:1px solid #dee2e6">+55</span>
-            <input type="tel" id="cfgWaTestPhone" placeholder="(91) 99999-8888" 
+            <input type="tel" id="cfgWaTestPhone2" placeholder="(91) 99999-8888" 
               style="flex:1;border:none;padding:8px 10px;font-size:13px;outline:none">
           </div>
           <small style="color:#888;font-size:11px">Número que receberá a mensagem de teste</small>
@@ -1622,8 +1622,8 @@ function checkLockPwd(){
           <button onclick="testarMetaWA()" style="padding:8px 16px;background:#25D366;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">
             <i class="fab fa-whatsapp"></i> Testar
           </button>
-          <span id="cfgTestResult3" style="font-size:12px"></span>
-          <span id="cfgTestResult" style="font-size:12px"></span>
+          <span id="cfgTestResultMaytapi" style="font-size:12px"></span>
+          <span id="cfgTestResultMaytapi" style="font-size:12px"></span>
         </div>
       </div>
 
@@ -1711,7 +1711,7 @@ function checkLockPwd(){
           <button onclick="testarMetaWA()" style="padding:9px 18px;background:#25D366;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">
             <i class="fab fa-whatsapp"></i> Testar conexão
           </button>
-          <span id="cfgTestResult" style="font-size:12px"></span>
+          <span id="cfgTestResultMeta" style="font-size:12px"></span>
         </div>
         <div style="display:flex;gap:10px;margin-top:12px">
           <button onclick="showWaTab('step1')" style="padding:9px 16px;border:1px solid #6c757d;background:#fff;color:#555;border-radius:6px;font-size:13px;cursor:pointer">← Voltar</button>
@@ -4549,8 +4549,10 @@ function salvarConfiguracoes(){
 async function testarMetaWA(){
   const phoneId = document.getElementById('cfgWaPhoneId')?.value||'';
   const token   = document.getElementById('cfgWaToken')?.value||'';
-  const testPhone = (document.getElementById('cfgWaTestPhone')?.value||'').replace(/\D/g,'');
-  const result  = document.getElementById('cfgTestResult');
+  // Ler número de teste - buscar o elemento correto no painel Meta
+  const waTestEl = document.getElementById('cfgWaTestPhone') || document.getElementById('cfgWaTestPhone2');
+  const testPhone = ((waTestEl?.value)||'').replace(/\D/g,'');
+  const result  = document.getElementById('cfgTestResultMeta') || document.getElementById('cfgTestResult3') || document.getElementById('cfgTestResultUltra');
 
   if(!phoneId || !token){ 
     if(result) result.innerHTML = '<span style="color:#DC3545">⚠️ Preencha o Phone ID e o Token</span>'; 
@@ -4647,7 +4649,7 @@ function atualizarStatusWA(prov){
 async function testarUltraMsg(){
   const inst  = document.getElementById('cfgUltraInstance')?.value||'';
   const token = document.getElementById('cfgUltraToken')?.value||'';
-  const result = document.getElementById('cfgTestResult');
+  const result = document.getElementById('cfgTestResultUltra');
   if(!inst||!token){ if(result) result.innerHTML='<span style="color:#DC3545">⚠️ Preencha Instance ID e Token</span>'; return; }
   if(result) result.innerHTML='<span style="color:#888">⏳ Testando...</span>';
   try{
@@ -4665,7 +4667,7 @@ async function testarMaytapi(){
   const prod  = document.getElementById('cfgMaytapiProduct')?.value||'';
   const phone = document.getElementById('cfgMaytapiPhone')?.value||'1';
   const token = document.getElementById('cfgMaytapiToken')?.value||'';
-  const result = document.getElementById('cfgTestResult2');
+  const result = document.getElementById('cfgTestResultMaytapi');
   if(!prod||!token){ if(result) result.innerHTML='<span style="color:#DC3545">⚠️ Preencha os campos</span>'; return; }
   if(result) result.innerHTML='<span style="color:#888">⏳ Testando...</span>';
   try{
