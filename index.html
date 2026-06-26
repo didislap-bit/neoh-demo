@@ -4509,6 +4509,31 @@ function atualizarLogoTopbar(src){
   // O logo do hospital aparece apenas no card e perfil WhatsApp
 }
 
+function selectProvider(prov){
+  ['simulado','ultramsg','maytapi','meta'].forEach(function(p){
+    const card = document.getElementById('provCard_'+p);
+    const panel = document.getElementById('provPanel_'+p);
+    const active = p === prov;
+    if(card){
+      card.style.borderColor = active ? '#2E7FB8' : '#dee2e6';
+      card.style.background  = active ? '#EAF3FD' : '#fff';
+    }
+    if(panel){
+      if(active) panel.classList.remove('hidden');
+      else panel.classList.add('hidden');
+    }
+  });
+  // Salvar na config global
+  const cfg = getSysConfig();
+  cfg.waProvider = prov;
+  saveSysConfig(cfg);
+  // Sincronizar com hospital ativo
+  const lista = getHospitais();
+  const hAtivoProv = lista.find(function(x){ return x.ativo; });
+  if(hAtivoProv){ hAtivoProv.waProvider = prov; saveHospitais(lista); }
+  atualizarStatusWA(prov);
+}
+
 function carregarConfiguracoes(){
   renderHospitais();
   
