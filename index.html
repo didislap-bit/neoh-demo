@@ -1986,23 +1986,21 @@ function printWaLog(){
 }
 
 function exportWaLogExcel(){
-  // Exportar como CSV simples
-  const headers = ['Hospital','Data/Hora','Evento','Número','Mensagem','Nº Pedido','Médico','Paciente','Convênio','Cirurgia','Fase','Status'];
-  const rows = waLog.map(l => {
-    const ped = pedidos.find(p=>p.id===l.pedidoId)||{};
+  const headers = ['Hospital','Data/Hora','Evento','Numero','Mensagem','Nr Pedido','Medico','Paciente','Convenio','Cirurgia','Fase','Status'];
+  const rows = waLog.map(function(l){
+    const ped = pedidos.find(function(p){return p.id===l.pedidoId;})||{};
+    const msg = (l.msg||'').split('\n').join(' ').split(',').join(';');
     return [
-      'ADVENTISTA DE BELÉM', l.dt,
-      l.status==='ENVIADO'?'Notificação WA':l.status==='SEM NÚMERO'?'Falha sem número':'Duplicado',
-      l.numero||'', (l.msg||'').replace(/,/g,';').replace(/
-/g,' '),
+      'ADVENTISTA DE BELEM', l.dt,
+      l.status==='ENVIADO'?'Notificacao WA':l.status==='SEM NUMERO'?'Falha sem numero':'Duplicado',
+      l.numero||'', msg,
       l.pedidoId, ped.cirurgiao||'', l.paciente||'',
       ped.convenio||'', ped.cirurgia||'', l.fase||'', l.status
-    ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',');
+    ].map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');
   });
-  const csv = [headers.join(','), ...rows].join('
-');
+  const csv = [headers.join(',')].concat(rows).join('\n');
   const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,﻿' + encodeURIComponent(csv);
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
   a.download = 'log_whatsapp_neoh.csv';
   a.click();
 }
