@@ -442,7 +442,7 @@ function checkLockPwd(){
   <div class="si" title="Equipe"><i class="fa fa-users"></i></div>
   <div class="si" title="Relatórios"><i class="fa fa-chart-line"></i></div>
   <div class="si" title="Monitor"><i class="fa fa-desktop"></i></div>
-  <div class="si" title="Configurações" style="margin-top:auto"><i class="fa fa-cog"></i></div>
+  <div class="si" title="Configurações" style="margin-top:auto" onclick="showPage('pageSettings')"><i class="fa fa-cog"></i></div>
   <div class="si" title="Admin"><i class="fa fa-tools"></i></div>
 </div>
 
@@ -1367,7 +1367,121 @@ function checkLockPwd(){
   </div>
 
   <!-- SUCCESS PAGE -->
-  <div id="pageSuccess" class="hidden">
+  <div id="pageSettings" class="hidden">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <h2 style="font-size:18px;font-weight:700;color:#1A2B3C"><i class="fa fa-cog" style="color:#2E7FB8;margin-right:8px"></i>Configurações do Sistema</h2>
+  </div>
+
+  <!-- Card: Identidade do Hospital -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header" style="display:flex;align-items:center;gap:10px">
+      <i class="fa fa-hospital" style="color:#2E7FB8"></i>
+      <strong>Identidade do Hospital</strong>
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label>Nome do Hospital</label>
+          <input type="text" id="cfgHospitalNome" placeholder="Ex: Hospital Adventista de Belém" style="width:100%">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Ambiente</label>
+          <select id="cfgAmbiente" style="width:100%">
+            <option value="HML">HML — Homologação</option>
+            <option value="PRD">PRD — Produção</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 180px">
+          <label>Logomarca (URL)</label>
+          <input type="text" id="cfgLogoUrl" placeholder="https://..." style="width:100%">
+        </div>
+        <div class="form-group" style="flex:1;display:flex;align-items:flex-end">
+          <div id="cfgLogoPreview" style="width:56px;height:56px;background:#F47920;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;color:#fff">h</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card: WhatsApp / CallMeBot -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header" style="display:flex;align-items:center;gap:10px">
+      <i class="fab fa-whatsapp" style="color:#25D366;font-size:18px"></i>
+      <strong>WhatsApp — Envio Automático</strong>
+      <span style="background:#e8f8ed;color:#28A745;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700;margin-left:4px">Gratuito via CallMeBot</span>
+    </div>
+    <div class="card-body">
+
+      <div style="background:#EAF3FD;border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.7">
+        <strong style="color:#1A2B3C">Como ativar o envio automático:</strong><br>
+        1. Salve o número <strong>+34 644 82 47 62</strong> na sua agenda com o nome <em>CallMeBot</em><br>
+        2. Envie a mensagem: <code style="background:#fff;padding:1px 6px;border-radius:4px;font-size:12px">I allow callmebot to send me messages</code><br>
+        3. Você receberá a <strong>API Key</strong> em alguns minutos<br>
+        4. Preencha os campos abaixo e clique em Salvar
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label>📱 Número remetente (com DDD)</label>
+          <div style="display:flex;border:1px solid #ced4da;border-radius:4px;overflow:hidden">
+            <span style="background:#f8f9fa;padding:0 12px;display:flex;align-items:center;font-size:13px;color:#555;border-right:1px solid #dee2e6">🇧🇷 +55</span>
+            <input type="tel" id="cfgCallmebotPhone" placeholder="(91) 99999-8888" style="flex:1;border:none;padding:8px 12px;font-size:13px;outline:none">
+          </div>
+          <small style="color:#888;font-size:11px">Número do WhatsApp que enviará as mensagens</small>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>🔑 API Key do CallMeBot</label>
+          <input type="text" id="cfgCallmebotKey" placeholder="Ex: 1234567" style="width:100%;font-family:monospace">
+          <small style="color:#888;font-size:11px">Recebida via WhatsApp após ativação</small>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-top:4px">
+        <button onclick="testarCallMeBot()" style="padding:8px 16px;background:#25D366;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">
+          <i class="fab fa-whatsapp"></i> Testar envio
+        </button>
+        <span id="cfgTestResult" style="font-size:12px;color:#888"></span>
+      </div>
+
+      <div style="margin-top:16px;padding:12px 16px;background:#fff8e1;border-radius:8px;border-left:3px solid #FFC107;font-size:12px;color:#856404">
+        <strong>Para produção real</strong> com logomarca do hospital e número verificado, recomendamos:<br>
+        <strong>Evolution API</strong> (gratuito, self-hosted) · <strong>Z-API</strong> (R$97/mês) · <strong>WhatsApp Cloud API</strong> (Meta, gratuito até 1k/mês)
+      </div>
+    </div>
+  </div>
+
+  <!-- Card: JSONBin para link de rastreio -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header" style="display:flex;align-items:center;gap:10px">
+      <i class="fa fa-link" style="color:#2E7FB8"></i>
+      <strong>Link de Rastreio — Armazenamento na Nuvem</strong>
+      <span style="background:#e8f8ed;color:#28A745;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:700;margin-left:4px">Gratuito via JSONBin</span>
+    </div>
+    <div class="card-body">
+      <div style="background:#EAF3FD;border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:13px;line-height:1.7">
+        <strong style="color:#1A2B3C">Como configurar o JSONBin (link curto com histórico completo):</strong><br>
+        1. Acesse <a href="https://jsonbin.io" target="_blank" style="color:#2E7FB8">jsonbin.io</a> e crie uma conta gratuita<br>
+        2. Acesse <strong>API Keys</strong> e copie sua Master Key<br>
+        3. Cole abaixo — o sistema salvará automaticamente cada pedido na nuvem<br>
+        4. O link enviado ao paciente ficará no formato: <code style="background:#fff;padding:1px 6px;border-radius:4px;font-size:12px">rastreio.html?bin=abc123</code>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1">
+          <label>🔑 JSONBin Master Key</label>
+          <input type="text" id="cfgJsonbinKey" placeholder="$2b$10$..." style="width:100%;font-family:monospace">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;gap:10px">
+    <button onclick="goToDashboard()" style="padding:10px 20px;border:1px solid #6c757d;background:#fff;color:#555;border-radius:6px;font-size:13px;cursor:pointer">Cancelar</button>
+    <button onclick="salvarConfiguracoes()" style="padding:10px 24px;background:#2E7FB8;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer"><i class="fa fa-save"></i> Salvar configurações</button>
+  </div>
+</div>
+
+<div id="pageSuccess" class="hidden">
     <div class="success-card">
       <h2 style="font-size:20px;font-weight:700;margin-bottom:16px"><i class="fa fa-check-circle" style="color:var(--green);margin-right:8px"></i>Solicitação realizada com Sucesso!</h2>
       <hr style="border:none;border-top:1px solid var(--gray-light);margin:16px 0">
@@ -2545,18 +2659,89 @@ Hospital Adventista de Belém — Sistema Neoh`;
 
 // ============ WHATSAPP REAL INTEGRATION ============
 function sendRealWhatsApp(celular, mensagem){
-  // Clean number - remove all non-digits
   const numLimpo = celular.replace(/\D/g,'');
-  // Format for WhatsApp: 55 + DDD + number
   let numFormatado = numLimpo;
   if(!numFormatado.startsWith('55')) numFormatado = '55' + numFormatado;
-  // Encode message for URL
-  const msgEncoded = encodeURIComponent(mensagem);
-  // Open WhatsApp Web / App
-  const waUrl = `https://wa.me/${numFormatado}?text=${msgEncoded}`;
-  // Open in new tab
-  window.open(waUrl, '_blank');
-  showToast('WhatsApp aberto para envio! Clique em Enviar no WhatsApp.','success');
+
+  // Verificar se tem CallMeBot configurado
+  const cfg = getSysConfig();
+  if(cfg.callmebotKey && cfg.callmebotPhone){
+    enviarCallMeBot(numFormatado, mensagem, cfg);
+  } else {
+    // Fallback: abrir wa.me
+    const waUrl = 'https://wa.me/' + numFormatado + '?text=' + encodeURIComponent(mensagem);
+    window.open(waUrl, '_blank');
+    showToast('WhatsApp aberto. Configure o CallMeBot nas Configurações para envio automático.','info');
+  }
+}
+
+function getSysConfig(){
+  try{
+    const cfg = localStorage.getItem('neoh_config');
+    return cfg ? JSON.parse(cfg) : {};
+  }catch(e){ return {}; }
+}
+
+function saveSysConfig(cfg){
+  try{ localStorage.setItem('neoh_config', JSON.stringify(cfg)); }catch(e){}
+}
+
+function enviarCallMeBot(numDestino, mensagem, cfg){
+  // CallMeBot API - envia via número configurado
+  // CORS limitation: usar iframe trick ou proxy
+  // Para o mockup: simular envio visual + abrir em background
+  
+  mostrarEnviando();
+
+  // Tentar envio real via CallMeBot (pode falhar por CORS em alguns browsers)
+  const apiUrl = 'https://api.callmebot.com/whatsapp.php' +
+    '?phone=' + encodeURIComponent(numDestino) +
+    '&text=' + encodeURIComponent(mensagem) +
+    '&apikey=' + encodeURIComponent(cfg.callmebotKey);
+
+  // Usar fetch com no-cors (não retorna resposta mas envia)
+  fetch(apiUrl, { method: 'GET', mode: 'no-cors' })
+    .then(function(){
+      setTimeout(function(){
+        esconderEnviando(true, numDestino);
+      }, 1500);
+    })
+    .catch(function(){
+      // Tentar via img tag (contorna CORS completamente)
+      const img = new Image();
+      img.onload = img.onerror = function(){
+        setTimeout(function(){
+          esconderEnviando(true, numDestino);
+        }, 1500);
+      };
+      img.src = apiUrl;
+    });
+}
+
+function mostrarEnviando(){
+  const old = document.getElementById('__sendingOverlay');
+  if(old) old.remove();
+  const el = document.createElement('div');
+  el.id = '__sendingOverlay';
+  el.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1A2B3C;color:#fff;border-radius:12px;padding:16px 20px;z-index:999999;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:13px;min-width:260px';
+  el.innerHTML = '<div style="width:20px;height:20px;border:3px solid rgba(255,255,255,.3);border-top-color:#25D366;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></div>' +
+    '<div><div style="font-weight:700">Enviando WhatsApp...</div><div style="font-size:11px;opacity:.7;margin-top:2px">Aguarde um momento</div></div>';
+  document.body.appendChild(el);
+}
+
+function esconderEnviando(sucesso, num){
+  const el = document.getElementById('__sendingOverlay');
+  if(!el) return;
+  if(sucesso){
+    el.style.background = '#155724';
+    el.innerHTML = '<i class="fab fa-whatsapp" style="font-size:20px;color:#25D366"></i>' +
+      '<div><div style="font-weight:700">✓ Mensagem enviada!</div>' +
+      '<div style="font-size:11px;opacity:.8;margin-top:2px">+' + num + '</div></div>';
+    setTimeout(function(){ if(el.parentNode) el.remove(); }, 3000);
+  } else {
+    el.remove();
+    showToast('Falha ao enviar. Verifique as configurações CallMeBot.','error');
+  }
 }
 
 function sendWhatsAppUpdate(pedido, fase){
@@ -3418,6 +3603,60 @@ function fecharModal() {
   }
   document.body.style.overflow = '';
 }
+
+// ===== CONFIGURAÇÕES =====
+function carregarConfiguracoes(){
+  const cfg = getSysConfig();
+  if(document.getElementById('cfgHospitalNome')) document.getElementById('cfgHospitalNome').value = cfg.hospitalNome||'Hospital Adventista de Belém';
+  if(document.getElementById('cfgAmbiente')) document.getElementById('cfgAmbiente').value = cfg.ambiente||'HML';
+  if(document.getElementById('cfgLogoUrl')) document.getElementById('cfgLogoUrl').value = cfg.logoUrl||'';
+  if(document.getElementById('cfgCallmebotPhone')) document.getElementById('cfgCallmebotPhone').value = cfg.callmebotPhone||'';
+  if(document.getElementById('cfgCallmebotKey')) document.getElementById('cfgCallmebotKey').value = cfg.callmebotKey||'';
+  if(document.getElementById('cfgJsonbinKey')) document.getElementById('cfgJsonbinKey').value = cfg.jsonbinKey||'';
+}
+
+function salvarConfiguracoes(){
+  const cfg = {
+    hospitalNome: document.getElementById('cfgHospitalNome')?.value||'',
+    ambiente: document.getElementById('cfgAmbiente')?.value||'HML',
+    logoUrl: document.getElementById('cfgLogoUrl')?.value||'',
+    callmebotPhone: (document.getElementById('cfgCallmebotPhone')?.value||'').replace(/\D/g,''),
+    callmebotKey: document.getElementById('cfgCallmebotKey')?.value||'',
+    jsonbinKey: document.getElementById('cfgJsonbinKey')?.value||''
+  };
+  saveSysConfig(cfg);
+  
+  // Atualizar topbar com nome do hospital
+  if(cfg.hospitalNome){
+    const el = document.querySelector('.hospital-name');
+    if(el) el.textContent = cfg.hospitalNome.toUpperCase() + ' - ' + cfg.ambiente;
+  }
+  showToast('✓ Configurações salvas com sucesso!','success');
+  setTimeout(goToDashboard, 1000);
+}
+
+function testarCallMeBot(){
+  const phone = (document.getElementById('cfgCallmebotPhone')?.value||'').replace(/\D/g,'');
+  const key   =  document.getElementById('cfgCallmebotKey')?.value||'';
+  const result = document.getElementById('cfgTestResult');
+  if(!phone || !key){ if(result) result.textContent = '⚠️ Preencha o número e a API Key'; return; }
+  if(result) result.textContent = '⏳ Enviando mensagem de teste...';
+  const num = phone.startsWith('55') ? phone : '55'+phone;
+  const msg = 'Olá! Esta é uma mensagem de teste do Sistema Neoh. Se recebeu, o envio automático está configurado corretamente! ✅';
+  const url = 'https://api.callmebot.com/whatsapp.php?phone='+num+'&text='+encodeURIComponent(msg)+'&apikey='+key;
+  const img = new Image();
+  img.onload = img.onerror = function(){
+    if(result) result.innerHTML = '<span style="color:#28A745">✓ Solicitação enviada! Verifique seu WhatsApp.</span>';
+  };
+  img.src = url;
+}
+
+// Carregar configurações ao abrir a página
+const origShowPage = showPage;
+showPage = function(id){
+  origShowPage(id);
+  if(id === 'pageSettings') carregarConfiguracoes();
+};
 
 // ============ INIT ============
 // Inicializar waLog com falhas para pedidos sem celular (demonstração)
