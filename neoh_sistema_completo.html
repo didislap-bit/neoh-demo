@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Neoh — Status Report Executivo</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --blue: #1a3a6b; --orange: #e87722; --teal: #1a9e75;
+  --red: #e84040; --gray-bg: #f5f6f8; --border: #d4d8e0;
+  --text: #1e2535; --muted: #6b7280; --white: #ffffff;
+}
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; color: var(--text); min-height: 100vh; }
+
+/* ── LOGIN ── */
+#login-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, #1a3a6b 0%, #0f2347 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.login-box {
+  background: #fff; border-radius: 18px; padding: 44px 40px;
+  width: 100%; max-width: 400px; text-align: center;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+}
+.login-box img { height: 52px; object-fit: contain; margin-bottom: 6px; }
+.login-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 28px; }
+.login-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 20px; }
+.login-field { margin-bottom: 14px; text-align: left; }
+.login-field label { display: block; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+.login-field input { width: 100%; padding: 11px 14px; font-size: 14px; border: 1.5px solid var(--border); border-radius: 8px; font-family: inherit; color: var(--text); background: #fafbfc; transition: border-color .15s, box-shadow .15s; }
+.login-field input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,58,107,0.12); }
+.login-btn { width: 100%; padding: 12px; font-size: 14px; font-weight: 600; background: var(--orange); color: #fff; border: none; border-radius: 9px; cursor: pointer; margin-top: 6px; transition: opacity .15s; }
+.login-btn:hover { opacity: .88; }
+.login-btn:disabled { opacity: .6; cursor: wait; }
+.login-error { background: #fee2e2; border: 1px solid #fca5a5; border-radius: 7px; padding: 9px 12px; font-size: 12px; color: #991b1b; margin-top: 12px; display: none; }
+.login-error.show { display: block; }
+.login-footer { font-size: 10px; color: var(--muted); margin-top: 18px; border-top: 1px solid #f0f0f0; padding-top: 12px; }
+
+/* ── TOPNAV ── */
+.topnav { background: var(--blue); color: #fff; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 52px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
+.topnav-brand { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.topnav-brand img { height: 26px; object-fit: contain; filter: brightness(0) invert(1); }
+.topnav-brand span { color: rgba(255,255,255,0.7); font-weight: 400; }
+.topnav-tabs { display: flex; gap: 4px; }
+.nav-tab { padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; transition: all .15s; }
+.nav-tab:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.nav-tab.active { background: rgba(255,255,255,0.2); color: #fff; }
+.nav-tab.admin-tab { border: 1px solid rgba(232,119,34,0.6); color: var(--orange); }
+.nav-tab.admin-tab.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+.topnav-right { display: flex; align-items: center; gap: 8px; }
+.topnav-hospital { font-size: 12px; color: rgba(255,255,255,0.6); }
+.btn-nav { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); background: none; color: #fff; transition: all .15s; }
+.btn-nav:hover { background: rgba(255,255,255,0.15); }
+.btn-nav.primary { background: var(--orange); border-color: var(--orange); }
+.btn-nav.primary:hover { opacity: .88; }
+
+/* ── LAYOUT ── */
+.main-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── CARDS ── */
+.card { background: var(--white); border: 0.5px solid var(--border); border-radius: 12px; padding: 18px; }
+.card-title { font-size: 12px; font-weight: 600; color: var(--blue); text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+
+/* ── FORM ── */
+.form-grid { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+.form-sidebar, .form-main { display: flex; flex-direction: column; gap: 14px; }
+.field { margin-bottom: 10px; }
+.field:last-child { margin-bottom: 0; }
+.field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+.field input, .field select, .field textarea { width: 100%; padding: 8px 10px; font-size: 13px; border: 0.5px solid var(--border); border-radius: 7px; background: #fafbfc; color: var(--text); font-family: inherit; transition: border-color .15s, box-shadow .15s; }
+.field textarea { resize: vertical; min-height: 68px; line-height: 1.55; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,58,107,0.1); background: #fff; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+/* Logo upload */
+.logo-drop { border: 2px dashed var(--border); border-radius: 10px; min-height: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; position: relative; transition: border-color .15s; background: #fafbfc; text-align: center; padding: 10px; }
+.logo-drop:hover { border-color: var(--blue); }
+.logo-drop.has { border-style: solid; border-color: var(--teal); }
+.logo-drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.logo-drop img { max-height: 52px; max-width: 130px; object-fit: contain; display: none; }
+.logo-drop.has img { display: block; }
+.logo-drop-hint { font-size: 11px; color: var(--muted); line-height: 1.4; }
+.logo-drop-hint strong { display: block; font-size: 12px; color: var(--text); }
+.logo-drop.has .logo-drop-hint { display: none; }
+.logo-clear { position: absolute; top: 6px; right: 6px; background: #fee2e2; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 12px; color: var(--red); z-index: 2; }
+.logo-drop.has .logo-clear { display: flex; }
+.logo-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.logo-slot label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 5px; font-weight: 500; }
+
+/* Dynamic rows */
+.dyn-item { display: grid; grid-template-columns: 1fr 30px; gap: 6px; align-items: start; margin-bottom: 7px; }
+.dyn-item textarea, .dyn-item input { font-size: 12px; }
+.dyn-item textarea { min-height: 42px; }
+.btn-del { background: none; border: 0.5px solid var(--border); border-radius: 6px; color: var(--muted); cursor: pointer; height: 32px; display: flex; align-items: center; justify-content: center; margin-top: 1px; transition: all .12s; }
+.btn-del:hover { background: #fee2e2; border-color: var(--red); color: var(--red); }
+.btn-add { font-size: 12px; padding: 5px 12px; margin-top: 4px; border: 0.5px solid var(--blue); border-radius: 6px; background: none; color: var(--blue); cursor: pointer; font-weight: 500; transition: all .12s; }
+.btn-add:hover { background: var(--blue); color: #fff; }
+
+/* Action table */
+.tbl-wrap { overflow-x: auto; }
+.act-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.act-tbl th { background: var(--blue); color: #fff; padding: 7px 10px; text-align: left; font-weight: 500; font-size: 11px; }
+.act-tbl td { padding: 5px 6px; border-bottom: 0.5px solid var(--border); }
+.act-tbl tr:last-child td { border-bottom: none; }
+.act-tbl tr:hover td { background: var(--gray-bg); }
+.act-tbl input, .act-tbl select { width: 100%; border: none; background: transparent; font-size: 12px; color: var(--text); font-family: inherit; padding: 3px 4px; }
+.act-tbl input:focus, .act-tbl select:focus { outline: 1px solid var(--blue); border-radius: 3px; background: #fff; }
+
+.btn-generate { width: 100%; padding: 13px; font-size: 14px; font-weight: 600; background: var(--orange); color: #fff; border: none; border-radius: 9px; cursor: pointer; letter-spacing: .02em; transition: opacity .15s; margin-top: 4px; }
+.btn-generate:hover { opacity: .88; }
+.btn-generate:disabled { opacity: .6; cursor: wait; }
+
+/* ── REPORT ── */
+.report-toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.btn-tool { padding: 8px 18px; font-size: 13px; border: 0.5px solid var(--border); border-radius: 7px; background: var(--white); color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 500; transition: background .12s; }
+.btn-tool:hover { background: var(--gray-bg); }
+.btn-tool.accent { background: var(--blue); color: #fff; border-color: var(--blue); }
+.btn-tool.accent:hover { opacity: .88; }
+.btn-tool.green { background: var(--teal); color: #fff; border-color: var(--teal); }
+
+/* Report visual */
+.rpt { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.10); font-family: 'Segoe UI', system-ui, sans-serif; }
+.rpt-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 26px 14px; border-bottom: 3px solid var(--orange); }
+.rpt-header-left { display: flex; align-items: center; gap: 18px; }
+.rpt-logo-text { font-size: 30px; font-weight: 800; color: var(--blue); letter-spacing: -1px; line-height: 1; }
+.rpt-logo-text .o { color: var(--orange); }
+.rpt-logo-img-left { max-height: 46px; max-width: 120px; object-fit: contain; }
+.rpt-title h1 { font-size: 24px; font-weight: 700; color: var(--blue); line-height: 1.1; }
+.rpt-title p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.rpt-meta { display: flex; gap: 18px; font-size: 11px; color: var(--muted); margin-top: 6px; flex-wrap: wrap; }
+.rpt-right-logo { text-align: right; }
+.rpt-right-logo img { max-height: 50px; max-width: 130px; object-fit: contain; }
+.rpt-right-text { font-size: 14px; font-weight: 700; color: var(--blue); }
+.rpt-right-text small { display: block; font-size: 9px; color: var(--muted); letter-spacing: .1em; font-weight: 400; }
+.rpt-status { display: grid; grid-template-columns: repeat(4,1fr); border-bottom: 1px solid var(--border); }
+.rpt-sc { padding: 13px 16px; border-right: 1px solid var(--border); display: flex; gap: 10px; align-items: flex-start; }
+.rpt-sc:last-child { border-right: none; }
+.rpt-sc-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.rpt-sc-lbl { font-size: 9.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.rpt-sc-val { font-size: 13px; font-weight: 700; margin-top: 2px; line-height: 1.25; }
+.c-blue { color: var(--blue); } .c-orange { color: var(--orange); } .c-green { color: #16a34a; } .c-teal { color: var(--teal); }
+.rpt-body { display: grid; grid-template-columns: 1fr 1fr; }
+.rpt-col { padding: 16px 18px; }
+.rpt-col:first-child { border-right: 1px solid var(--border); }
+.rpt-stitle { font-size: 13px; font-weight: 700; color: var(--orange); display: flex; align-items: center; gap: 6px; margin-bottom: 9px; }
+.rpt-resumo { font-size: 11.5px; color: var(--text); line-height: 1.65; margin-bottom: 14px; }
+.rpt-advances ul { list-style: none; padding: 0; }
+.rpt-advances li { font-size: 11px; color: var(--text); line-height: 1.55; padding-left: 18px; position: relative; margin-bottom: 5px; }
+.rpt-advances li::before { content: '✓'; position: absolute; left: 0; color: var(--teal); font-weight: 700; }
+.rpt-tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
+.rpt-tbl th { background: var(--blue); color: #fff; padding: 6px 9px; text-align: left; font-weight: 500; font-size: 10.5px; }
+.rpt-tbl td { padding: 5px 9px; border-bottom: .5px solid var(--border); }
+.rpt-tbl tr:nth-child(even) td { background: var(--gray-bg); }
+.rpt-tbl tr:last-child td { border-bottom: none; }
+.badge { display: inline-block; padding: 2px 9px; border-radius: 4px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.b-pend { background: #f3f4f6; color: #6b7280; }
+.b-prog { background: var(--blue); color: #fff; }
+.b-done { background: #dcfce7; color: #15803d; }
+.rpt-attn { border-top: 1px solid var(--border); padding: 12px 18px; }
+.rpt-attn-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 9px; margin-top: 8px; }
+.rpt-attn-card { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 9px; font-size: 10px; color: #92400e; line-height: 1.45; }
+.rpt-attn-card .ic { font-size: 15px; margin-bottom: 5px; }
+.rpt-meeting { border-top: 1px solid var(--border); padding: 12px 18px 16px; }
+.rpt-meeting-grid { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 8px; }
+.rpt-meeting-item { background: #eff6ff; border-radius: 8px; padding: 8px 11px; display: flex; align-items: flex-start; gap: 7px; font-size: 10.5px; color: var(--blue); flex: 1; min-width: 90px; line-height: 1.4; }
+.rpt-meeting-chk { font-weight: 700; font-size: 14px; flex-shrink: 0; }
+.rpt-footer { background: var(--blue); color: #fff; display: grid; grid-template-columns: 1fr 2fr 1fr; padding: 9px 22px; font-size: 10px; align-items: center; }
+.rpt-footer span:nth-child(2) { text-align: center; color: rgba(255,255,255,.65); }
+.rpt-footer span:nth-child(3) { text-align: right; color: rgba(255,255,255,.65); }
+
+/* ── HISTÓRICO ── */
+.hist-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 40px 0; }
+.hist-list { display: flex; flex-direction: column; gap: 10px; }
+.hist-card { background: var(--white); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.hist-info { flex: 1; }
+.hist-info strong { font-size: 14px; display: block; }
+.hist-info span { font-size: 12px; color: var(--muted); }
+.hist-actions { display: flex; gap: 8px; }
+.btn-sm { padding: 5px 13px; font-size: 12px; border-radius: 6px; cursor: pointer; border: 0.5px solid var(--border); background: none; color: var(--text); font-weight: 500; transition: all .12s; }
+.btn-sm:hover { background: var(--gray-bg); }
+.btn-sm.danger { color: var(--red); border-color: #fca5a5; }
+.btn-sm.danger:hover { background: #fee2e2; }
+
+/* ── ADMIN PANEL ── */
+.admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.admin-header h2 { font-size: 20px; font-weight: 700; color: var(--blue); }
+.admin-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: var(--white); border: 0.5px solid var(--border); border-radius: 10px; padding: 16px; }
+.stat-card .stat-val { font-size: 28px; font-weight: 700; color: var(--blue); }
+.stat-card .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.stat-card.orange .stat-val { color: var(--orange); }
+.stat-card.green .stat-val { color: var(--teal); }
+.stat-card.red .stat-val { color: var(--red); }
+
+.hospital-grid { display: flex; flex-direction: column; gap: 10px; }
+.hospital-row { background: var(--white); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 18px; display: grid; grid-template-columns: 1fr auto auto auto auto; gap: 12px; align-items: center; }
+.hospital-row:hover { border-color: var(--blue); }
+.hosp-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.hosp-parceiro { font-size: 12px; color: var(--muted); }
+.hosp-reports { font-size: 12px; color: var(--blue); font-weight: 500; }
+.hosp-date { font-size: 11px; color: var(--muted); }
+.badge-ativo { background: #dcfce7; color: #15803d; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+.badge-inativo { background: #fee2e2; color: #991b1b; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; display: none; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 14px; padding: 28px; width: 100%; max-width: 460px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+.modal h3 { font-size: 16px; font-weight: 700; color: var(--blue); margin-bottom: 18px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.btn-cancel { padding: 9px 20px; border-radius: 7px; font-size: 13px; border: 0.5px solid var(--border); background: none; cursor: pointer; }
+.btn-confirm { padding: 9px 20px; border-radius: 7px; font-size: 13px; background: var(--orange); color: #fff; border: none; cursor: pointer; font-weight: 600; }
+.btn-confirm:hover { opacity: .88; }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; right: 24px; z-index: 9998; background: var(--blue); color: #fff; padding: 12px 20px; border-radius: 9px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); transform: translateY(80px); opacity: 0; transition: all .25s; }
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { background: var(--teal); }
+.toast.error { background: var(--red); }
+
+/* Loading */
+.loading { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+.spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin .7s linear infinite; margin-bottom: 10px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media print {
+  body { background: #fff; }
+  .topnav, .report-toolbar, #form-panel, #hist-panel, #admin-panel { display: none !important; }
+  #report-panel { display: block !important; }
+  .main-wrap { padding: 0; max-width: 100%; }
+  .rpt { box-shadow: none; border-radius: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <img src="https://intelectah.com.br/wp-content/themes/intelectah/images/logo-neoh.png" alt="Neoh" />
+    <div class="login-subtitle">Sistema de Status Report Executivo</div>
+    <div class="login-title">🔒 Área restrita</div>
+    <div class="login-field">
+      <label>Código do hospital</label>
+      <input type="text" id="login-codigo" placeholder="Ex: ORIZONTI" autocomplete="off" onkeydown="if(event.key==='Enter')document.getElementById('login-senha').focus()" />
+    </div>
+    <div class="login-field">
+      <label>Senha</label>
+      <input type="password" id="login-senha" placeholder="Digite a senha" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="login-error">Código ou senha incorretos.</div>
+    <div class="login-footer">Acesso autorizado apenas para membros do time Neoh.<br>Em caso de dúvidas, contate o administrador.</div>
+  </div>
+</div>
+
+<!-- TOPNAV -->
+<nav class="topnav" id="topnav" style="display:none">
+  <div class="topnav-brand">
+    <img src="https://intelectah.com.br/wp-content/themes/intelectah/images/logo-neoh.png" alt="Neoh" />
+    <span>Status Report Executivo</span>
+  </div>
+  <div class="topnav-tabs" id="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('form')">📝 Formulário</button>
+    <button class="nav-tab" onclick="switchTab('report')">📄 Relatório</button>
+    <button class="nav-tab" onclick="switchTab('hist')">🗂️ Histórico</button>
+    <button class="nav-tab admin-tab" id="admin-tab" style="display:none" onclick="switchTab('admin')">⚙️ Admin</button>
+  </div>
+  <div class="topnav-right">
+    <span class="topnav-hospital" id="topnav-hospital"></span>
+    <button class="btn-nav" onclick="exportHTML()">⬇ Exportar</button>
+    <button class="btn-nav primary" onclick="generateReport()">▶ Gerar</button>
+    <button class="btn-nav" onclick="doLogout()">🔓 Sair</button>
+  </div>
+</nav>
+
+<div class="main-wrap" id="main-wrap" style="display:none">
+
+  <!-- FORMULÁRIO -->
+  <div id="form-panel" class="panel active">
+    <div class="form-grid">
+      <div class="form-sidebar">
+
+        <!-- Logomarcas -->
+        <div class="card">
+          <div class="card-title">🖼 Logomarcas</div>
+          <div class="logo-row">
+            <div class="logo-slot">
+              <label>Empresa / Produto</label>
+              <div class="logo-drop" id="drop-left" onclick="document.getElementById('inp-left').click()">
+                <input type="file" id="inp-left" accept="image/*" onchange="handleLogo(event,'left')" />
+                <img id="img-left" alt="" />
+                <div class="logo-drop-hint"><strong>📁 Enviar logo</strong>PNG, JPG, SVG</div>
+                <button class="logo-clear" onclick="clearLogo(event,'left')">✕</button>
+              </div>
+            </div>
+            <div class="logo-slot">
+              <label>Hospital / Parceiro</label>
+              <div class="logo-drop" id="drop-right" onclick="document.getElementById('inp-right').click()">
+                <input type="file" id="inp-right" accept="image/*" onchange="handleLogo(event,'right')" />
+                <img id="img-right" alt="" />
+                <div class="logo-drop-hint"><strong>📁 Enviar logo</strong>PNG, JPG, SVG</div>
+                <button class="logo-clear" onclick="clearLogo(event,'right')">✕</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informações -->
+        <div class="card">
+          <div class="card-title">ℹ Informações gerais</div>
+          <div class="field"><label>Empresa / Produto</label><input id="f-empresa" value="neoh" /></div>
+          <div class="field"><label>Parceiro / Hospital</label><input id="f-parceiro" /></div>
+          <div class="field"><label>Nome do projeto</label><input id="f-projeto" /></div>
+          <div class="row2">
+            <div class="field"><label>Data</label><input id="f-data" type="date" /></div>
+            <div class="field"><label>Cadência</label>
+              <select id="f-cadencia"><option>semanal</option><option>quinzenal</option><option>mensal</option></select>
+            </div>
+          </div>
+          <div class="field"><label>Tipo de reunião</label><input id="f-reuniao" value="Reunião de acompanhamento técnico" /></div>
+          <div class="field"><label>Empresa autora</label><input id="f-autora" value="Intelectah | Nech" /></div>
+        </div>
+
+        <!-- Status -->
+        <div class="card">
+          <div class="card-title">📊 Painel de status</div>
+          <div class="field"><label>Status geral</label>
+            <select id="f-status"><option>Em andamento</option><option>Concluído</option><option>Em risco</option><option>Pausado</option></select>
+          </div>
+          <div class="field"><label>Fase atual</label><textarea id="f-fase"></textarea></div>
+          <div class="field"><label>Próximo marco</label><textarea id="f-marco"></textarea></div>
+          <div class="field"><label>Ambiente de homologação</label>
+            <select id="f-homolog"><option>Liberado</option><option>Pendente</option><option>Em configuração</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-main">
+        <div class="card">
+          <div class="card-title">📋 Resumo executivo</div>
+          <div class="field"><textarea id="f-resumo" style="min-height:100px"></textarea></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📈 Avanços da semana</div>
+          <div id="advances-list"></div>
+          <button class="btn-add" onclick="addDyn('advances-list','textarea','Descreva o avanço...')">+ Adicionar avanço</button>
+        </div>
+        <div class="card">
+          <div class="card-title">✅ Plano de ação acordado</div>
+          <div class="tbl-wrap">
+            <table class="act-tbl">
+              <thead><tr><th style="width:48%">Atividade</th><th style="width:26%">Responsável</th><th style="width:18%">Status</th><th style="width:8%"></th></tr></thead>
+              <tbody id="action-tbody"></tbody>
+            </table>
+          </div>
+          <button class="btn-add" onclick="addAction()" style="margin-top:8px">+ Adicionar atividade</button>
+        </div>
+        <div class="card">
+          <div class="card-title">⚠ Pontos de atenção</div>
+          <div id="attn-list"></div>
+          <button class="btn-add" onclick="addDyn('attn-list','textarea','Descreva o ponto...')">+ Adicionar ponto</button>
+        </div>
+        <div class="card">
+          <div class="card-title">📅 Próxima reunião — foco</div>
+          <div id="meeting-list"></div>
+          <button class="btn-add" onclick="addDyn('meeting-list','input','Item de pauta...')">+ Adicionar item</button>
+        </div>
+        <button class="btn-generate" onclick="generateReport()">▶ Gerar Relatório Executivo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RELATÓRIO -->
+  <div id="report-panel" class="panel">
+    <div class="report-toolbar">
+      <button class="btn-tool" onclick="switchTab('form')">✏️ Editar</button>
+      <button class="btn-tool green" onclick="saveToSupabase()">☁️ Salvar no banco</button>
+      <button class="btn-tool" onclick="exportHTML()">⬇ Exportar HTML</button>
+      <button class="btn-tool accent" onclick="window.print()">🖨️ Imprimir / PDF</button>
+    </div>
+    <div class="rpt" id="rpt-output"></div>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div id="hist-panel" class="panel">
+    <div class="card" style="margin-bottom:14px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:14px;font-weight:600">Histórico de relatórios</span>
+      <button class="btn-sm" onclick="loadHistory()">🔄 Atualizar</button>
+    </div>
+    <div id="hist-content"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="admin-panel" class="panel">
+    <div class="admin-header">
+      <h2>⚙️ Painel administrativo</h2>
+      <button class="btn-tool accent" onclick="openModalNovoHospital()">+ Novo hospital</button>
+    </div>
+    <div class="admin-stats" id="admin-stats">
+      <div class="stat-card"><div class="stat-val" id="stat-total">—</div><div class="stat-lbl">Total de hospitais</div></div>
+      <div class="stat-card green"><div class="stat-val" id="stat-ativos">—</div><div class="stat-lbl">Hospitais ativos</div></div>
+      <div class="stat-card orange"><div class="stat-val" id="stat-reports">—</div><div class="stat-lbl">Relatórios gerados</div></div>
+      <div class="stat-card red"><div class="stat-val" id="stat-inativos">—</div><div class="stat-lbl">Hospitais inativos</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏥 Hospitais cadastrados</div>
+      <div id="hospital-grid" class="hospital-grid"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL NOVO HOSPITAL -->
+<div class="modal-overlay" id="modal-hospital">
+  <div class="modal">
+    <h3>🏥 Cadastrar novo hospital</h3>
+    <div class="field"><label>Nome do hospital</label><input id="m-nome" placeholder="Ex: Santa Casa da Bahia" /></div>
+    <div class="field"><label>Código de acesso (login)</label><input id="m-codigo" placeholder="Ex: SANTACASA" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()" /></div>
+    <div class="field"><label>Senha de acesso</label><input id="m-senha" placeholder="Ex: SANTA2026" /></div>
+    <div class="field"><label>Parceiro / Sistema</label><input id="m-parceiro" placeholder="Ex: Tasy, MV, etc." /></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="salvarHospital()">Cadastrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════
+   CONFIGURAÇÃO SUPABASE
+   ══════════════════════════════════════ */
+const SUPABASE_URL = 'https://ozadutaunirqgzkuhlbf.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96YWR1dGF1bmlycWd6a3VobGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MzkzMzQsImV4cCI6MjA5ODMxNTMzNH0.oD9fZg-H4MtrtiepSl7y1Shr9NVfol-uJSQNN-LyhIs';
+
+/* Código admin — altere para uma senha segura */
+const ADMIN_CODE   = 'NEOH';
+const ADMIN_SENHA  = 'ADMIN@NEOH2026';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ══════════════════════════════════════
+   ESTADO DA SESSÃO
+   ══════════════════════════════════════ */
+let session = null; /* { hospitalId, nome, parceiro, isAdmin } */
+const logos = { left: null, right: null };
+let lastData = null;
+
+/* ══════════════════════════════════════
+   LOGIN
+   ══════════════════════════════════════ */
+async function doLogin() {
+  const codigo = document.getElementById('login-codigo').value.trim().toUpperCase();
+  const senha  = document.getElementById('login-senha').value.trim();
+  const btn    = document.getElementById('login-btn');
+  const err    = document.getElementById('login-error');
+
+  if (!codigo || !senha) { showLoginError('Preencha o código e a senha.'); return; }
+
+  btn.disabled = true; btn.textContent = 'Aguarde...';
+  err.classList.remove('show');
+
+  /* Verifica admin */
+  if (codigo === ADMIN_CODE && senha === ADMIN_SENHA) {
+    session = { hospitalId: null, nome: 'Neoh Admin', parceiro: '', isAdmin: true };
+    onLoginSuccess();
+    btn.disabled = false; btn.textContent = 'Entrar';
+    return;
+  }
+
+  /* Verifica hospital no banco */
+  try {
+    const { data, error } = await sb
+      .from('hospitais')
+      .select('*')
+      .eq('nome', codigo)
+      .eq('senha', senha)
+      .eq('ativo', true)
+      .single();
+
+    if (error || !data) {
+      showLoginError('Código ou senha incorretos.');
+    } else {
+      session = { hospitalId: data.id, nome: data.nome, parceiro: data.parceiro, isAdmin: false };
+      /* Pré-preencher parceiro */
+      document.getElementById('f-parceiro').value = data.parceiro || '';
+      onLoginSuccess();
+    }
+  } catch(e) {
+    showLoginError('Erro de conexão. Verifique sua internet.');
+  }
+
+  btn.disabled = false; btn.textContent = 'Entrar';
+}
+
+function showLoginError(msg) {
+  const err = document.getElementById('login-error');
+  err.textContent = msg;
+  err.classList.add('show');
+}
+
+function onLoginSuccess() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('topnav').style.display = 'flex';
+  document.getElementById('main-wrap').style.display = 'block';
+  document.getElementById('topnav-hospital').textContent = session.nome;
+  if (session.isAdmin) {
+    document.getElementById('admin-tab').style.display = 'inline-block';
+  }
+  initForm();
+  loadHistory();
+  if (session.isAdmin) loadAdminPanel();
+}
+
+function doLogout() {
+  session = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('topnav').style.display = 'none';
+  document.getElementById('main-wrap').style.display = 'none';
+  document.getElementById('login-codigo').value = '';
+  document.getElementById('login-senha').value = '';
+  document.getElementById('login-error').classList.remove('show');
+  switchTab('form');
+}
+
+/* ══════════════════════════════════════
+   TABS
+   ══════════════════════════════════════ */
+function switchTab(tab) {
+  ['form','report','hist','admin'].forEach(t => {
+    const p = document.getElementById(t+'-panel');
+    if (p) p.classList.toggle('active', t === tab);
+  });
+  document.querySelectorAll('.nav-tab').forEach(b => {
+    const map = { '📝 Formulário':'form','📄 Relatório':'report','🗂️ Histórico':'hist','⚙️ Admin':'admin' };
+    b.classList.toggle('active', map[b.textContent] === tab);
+  });
+  if (tab === 'hist') loadHistory();
+  if (tab === 'admin' && session?.isAdmin) loadAdminPanel();
+}
+
+/* ══════════════════════════════════════
+   FORMULÁRIO
+   ══════════════════════════════════════ */
+function initForm() {
+  const t = new Date();
+  document.getElementById('f-data').value = t.toISOString().split('T')[0];
+}
+
+function handleLogo(e, side) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    logos[side] = ev.target.result;
+    document.getElementById('img-'+side).src = ev.target.result;
+    document.getElementById('drop-'+side).classList.add('has');
+  };
+  reader.readAsDataURL(file);
+}
+function clearLogo(e, side) {
+  e.preventDefault(); e.stopPropagation();
+  logos[side] = null;
+  document.getElementById('img-'+side).src = '';
+  document.getElementById('drop-'+side).classList.remove('has');
+  document.getElementById('inp-'+side).value = '';
+}
+
+function addDyn(listId, tagName, placeholder, value='') {
+  const list = document.getElementById(listId);
+  const row = document.createElement('div'); row.className = 'dyn-item';
+  const el = document.createElement(tagName);
+  if (tagName === 'textarea') el.style.minHeight = '42px';
+  el.style.fontSize = '12px';
+  if (placeholder) el.placeholder = placeholder;
+  el.value = value;
+  const btn = document.createElement('button'); btn.className = 'btn-del'; btn.innerHTML = '✕';
+  btn.onclick = () => row.remove();
+  row.appendChild(el); row.appendChild(btn);
+  list.appendChild(row);
+}
+
+function addAction(vals=['','','Pendente']) {
+  const tbody = document.getElementById('action-tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input value="${esc(vals[0])}" placeholder="Descreva a atividade"/></td>
+    <td><input value="${esc(vals[1])}" placeholder="Nome"/></td>
+    <td><select>
+      <option ${vals[2]==='Pendente'?'selected':''}>Pendente</option>
+      <option ${vals[2]==='Em andamento'?'selected':''}>Em andamento</option>
+      <option ${vals[2]==='Concluído'?'selected':''}>Concluído</option>
+    </select></td>
+    <td style="text-align:center"><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function esc(s) { return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function getData() {
+  const advances = [...document.querySelectorAll('#advances-list textarea')].map(t=>t.value.trim()).filter(Boolean);
+  const actions  = [...document.querySelectorAll('#action-tbody tr')].map(tr => {
+    const i = tr.querySelectorAll('input,select');
+    return { atividade: i[0].value, responsavel: i[1].value, status: i[2].value };
+  });
+  const attn    = [...document.querySelectorAll('#attn-list textarea')].map(t=>t.value.trim()).filter(Boolean);
+  const meeting = [...document.querySelectorAll('#meeting-list input')].map(i=>i.value.trim()).filter(Boolean);
+  const dr = document.getElementById('f-data').value;
+  const dateFmt = dr ? new Date(dr+'T12:00:00').toLocaleDateString('pt-BR') : '—';
+  return {
+    empresa: document.getElementById('f-empresa').value,
+    parceiro: document.getElementById('f-parceiro').value,
+    projeto: document.getElementById('f-projeto').value,
+    data: dateFmt, cadencia: document.getElementById('f-cadencia').value,
+    reuniao: document.getElementById('f-reuniao').value,
+    autora: document.getElementById('f-autora').value,
+    status: document.getElementById('f-status').value,
+    fase: document.getElementById('f-fase').value,
+    marco: document.getElementById('f-marco').value,
+    homolog: document.getElementById('f-homolog').value,
+    resumo: document.getElementById('f-resumo').value,
+    advances, actions, attn, meeting
+  };
+}
+
+/* ══════════════════════════════════════
+   RELATÓRIO
+   ══════════════════════════════════════ */
+function bdg(s) {
+  if (s==='Em andamento') return `<span class="badge b-prog">Em andamento</span>`;
+  if (s==='Concluído') return `<span class="badge b-done">Concluído</span>`;
+  return `<span class="badge b-pend">Pendente</span>`;
+}
+function stColor(s) { return s==='Em andamento'?'c-blue':s==='Concluído'?'c-green':s==='Em risco'?'c-orange':'c-teal'; }
+function hmColor(h) { return h==='Liberado'?'c-green':h==='Pendente'?'c-orange':'c-blue'; }
+
+function buildLeftLogo(d) {
+  if (logos.left) return `<img src="${logos.left}" class="rpt-logo-img-left" alt="${d.empresa}" />`;
+  if (d.empresa.toLowerCase().trim()==='neoh') return `<img src="https://intelectah.com.br/wp-content/themes/intelectah/images/logo-neoh.png" class="rpt-logo-img-left" alt="Neoh" style="max-height:48px;max-width:140px;object-fit:contain"/>`;
+  return `<div class="rpt-logo-text">${d.empresa}</div>`;
+}
+function buildRightLogo(d) {
+  if (logos.right) return `<img src="${logos.right}" style="max-height:50px;max-width:130px;object-fit:contain" alt="${d.parceiro}" />`;
+  return `<div class="rpt-right-text">${d.parceiro.toUpperCase()}<small>HOSPITAL</small></div>`;
+}
+
+function buildReportHTML(d) {
+  const advH = d.advances.map(a=>`<li>${a}</li>`).join('');
+  const actH = d.actions.map(a=>`<tr><td>${a.atividade}</td><td>${a.responsavel}</td><td>${bdg(a.status)}</td></tr>`).join('');
+  const attnH = d.attn.map(a=>`<div class="rpt-attn-card"><div class="ic">⚠️</div>${a}</div>`).join('');
+  const meetH = d.meeting.map(m=>`<div class="rpt-meeting-item"><span class="rpt-meeting-chk">✓</span><span>${m}</span></div>`).join('');
+  return `
+  <div class="rpt-header">
+    <div class="rpt-header-left">${buildLeftLogo(d)}
+      <div class="rpt-title"><h1>Status Report Executivo</h1><p>Projeto ${d.projeto} | ${d.parceiro}</p>
+        <div class="rpt-meta"><span>📅 ${d.data}</span><span>🕐 Cadência: ${d.cadencia}</span><span>👥 ${d.reuniao}</span></div>
+      </div>
+    </div>
+    <div class="rpt-right-logo">${buildRightLogo(d)}</div>
+  </div>
+  <div class="rpt-status">
+    <div class="rpt-sc"><div class="rpt-sc-icon" style="background:#e8f0fb">📋</div><div><div class="rpt-sc-lbl">Status Geral</div><div class="rpt-sc-val ${stColor(d.status)}">${d.status}</div></div></div>
+    <div class="rpt-sc"><div class="rpt-sc-icon" style="background:#fff3e0">⚙️</div><div><div class="rpt-sc-lbl">Fase Atual</div><div class="rpt-sc-val c-orange" style="font-size:11.5px">${d.fase}</div></div></div>
+    <div class="rpt-sc"><div class="rpt-sc-icon" style="background:#fff3e0">🚩</div><div><div class="rpt-sc-lbl">Próximo Marco</div><div class="rpt-sc-val c-orange" style="font-size:11.5px">${d.marco}</div></div></div>
+    <div class="rpt-sc"><div class="rpt-sc-icon" style="background:#e8f5e9">🛡️</div><div><div class="rpt-sc-lbl">Homologação</div><div class="rpt-sc-val ${hmColor(d.homolog)}">${d.homolog}</div></div></div>
+  </div>
+  <div class="rpt-body">
+    <div class="rpt-col">
+      <div class="rpt-stitle">👤 Resumo Executivo</div>
+      <p class="rpt-resumo">${d.resumo}</p>
+      <div class="rpt-stitle" style="margin-top:12px">📈 Avanços da Semana</div>
+      <div class="rpt-advances"><ul>${advH}</ul></div>
+    </div>
+    <div class="rpt-col">
+      <div class="rpt-stitle">📋 Plano de Ação Acordado</div>
+      <table class="rpt-tbl"><thead><tr><th style="width:50%">Atividade</th><th style="width:28%">Responsável</th><th style="width:22%">Status</th></tr></thead><tbody>${actH}</tbody></table>
+    </div>
+  </div>
+  ${d.attn.length?`<div class="rpt-attn"><div class="rpt-stitle">⚠️ Pontos de Atenção</div><div class="rpt-attn-grid">${attnH}</div></div>`:''}
+  ${d.meeting.length?`<div class="rpt-meeting"><div class="rpt-stitle">📅 Próxima Reunião — Foco</div><div class="rpt-meeting-grid">${meetH}</div></div>`:''}
+  <div class="rpt-footer"><span>${d.autora}</span><span>Comunicação executiva para diretoria do ${d.parceiro}</span><span>Projeto ${d.projeto}</span></div>`;
+}
+
+function generateReport() {
+  const d = getData();
+  lastData = d;
+  document.getElementById('rpt-output').innerHTML = buildReportHTML(d);
+  switchTab('report');
+  showToast('Relatório gerado!', 'success');
+}
+
+/* ══════════════════════════════════════
+   SALVAR NO SUPABASE
+   ══════════════════════════════════════ */
+async function saveToSupabase() {
+  if (!lastData) { showToast('Gere um relatório primeiro.', 'error'); return; }
+  if (!session?.hospitalId && !session?.isAdmin) { showToast('Sessão inválida.', 'error'); return; }
+
+  /* Admin precisa escolher um hospital */
+  let hospitalId = session.hospitalId;
+  if (session.isAdmin && !hospitalId) {
+    showToast('Admin: selecione um hospital no painel para salvar.', 'error');
+    return;
+  }
+
+  try {
+    const { error } = await sb.from('relatorios').insert({
+      hospital_id: hospitalId,
+      dados: lastData,
+      criado_por: session.nome
+    });
+    if (error) throw error;
+    showToast('Relatório salvo no banco!', 'success');
+  } catch(e) {
+    showToast('Erro ao salvar: ' + e.message, 'error');
+  }
+}
+
+/* ══════════════════════════════════════
+   HISTÓRICO
+   ══════════════════════════════════════ */
+async function loadHistory() {
+  const cont = document.getElementById('hist-content');
+  cont.innerHTML = '<div class="loading"><div class="spinner"></div><br>Carregando...</div>';
+
+  try {
+    let query = sb.from('relatorios').select('*').order('criado_em', { ascending: false });
+    if (!session?.isAdmin && session?.hospitalId) {
+      query = query.eq('hospital_id', session.hospitalId);
+    }
+    const { data, error } = await query.limit(50);
+    if (error) throw error;
+
+    if (!data || !data.length) {
+      cont.innerHTML = '<p class="hist-empty">Nenhum relatório salvo ainda.<br>Gere um relatório e clique em "☁️ Salvar no banco".</p>';
+      return;
+    }
+
+    const list = document.createElement('div'); list.className = 'hist-list';
+    data.forEach(r => {
+      const d = r.dados;
+      const card = document.createElement('div'); card.className = 'hist-card';
+      const dt = new Date(r.criado_em).toLocaleString('pt-BR');
+      card.innerHTML = `
+        <div class="hist-info">
+          <strong>${d.projeto || '—'} — ${d.parceiro || '—'}</strong>
+          <span>Data: ${d.data} &nbsp;·&nbsp; Salvo em: ${dt} &nbsp;·&nbsp; Por: ${r.criado_por || '—'}</span>
+        </div>
+        <div class="hist-actions">
+          <button class="btn-sm" onclick="loadSnapshot('${r.id}')">👁 Visualizar</button>
+          <button class="btn-sm danger" onclick="deleteSnapshot('${r.id}')">🗑 Excluir</button>
+        </div>`;
+      list.appendChild(card);
+    });
+    cont.innerHTML = ''; cont.appendChild(list);
+  } catch(e) {
+    cont.innerHTML = `<p class="hist-empty">Erro ao carregar: ${e.message}</p>`;
+  }
+}
+
+async function loadSnapshot(id) {
+  try {
+    const { data, error } = await sb.from('relatorios').select('dados').eq('id', id).single();
+    if (error) throw error;
+    lastData = data.dados;
+    document.getElementById('rpt-output').innerHTML = buildReportHTML(data.dados);
+    switchTab('report');
+  } catch(e) {
+    showToast('Erro ao carregar: ' + e.message, 'error');
+  }
+}
+
+async function deleteSnapshot(id) {
+  if (!confirm('Excluir este relatório do banco?')) return;
+  try {
+    const { error } = await sb.from('relatorios').delete().eq('id', id);
+    if (error) throw error;
+    showToast('Relatório excluído.', 'success');
+    loadHistory();
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+/* ══════════════════════════════════════
+   PAINEL ADMIN
+   ══════════════════════════════════════ */
+async function loadAdminPanel() {
+  const grid = document.getElementById('hospital-grid');
+  grid.innerHTML = '<div class="loading"><div class="spinner"></div><br>Carregando...</div>';
+
+  try {
+    const { data: hospitais, error } = await sb.from('hospitais').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+
+    const { count: totalReports } = await sb.from('relatorios').select('*', { count: 'exact', head: true });
+
+    const ativos = hospitais.filter(h => h.ativo).length;
+    document.getElementById('stat-total').textContent = hospitais.length;
+    document.getElementById('stat-ativos').textContent = ativos;
+    document.getElementById('stat-inativos').textContent = hospitais.length - ativos;
+    document.getElementById('stat-reports').textContent = totalReports || 0;
+
+    if (!hospitais.length) {
+      grid.innerHTML = '<p class="hist-empty">Nenhum hospital cadastrado ainda.<br>Clique em "+ Novo hospital" para começar.</p>';
+      return;
+    }
+
+    grid.innerHTML = '';
+    hospitais.forEach(h => {
+      const row = document.createElement('div'); row.className = 'hospital-row';
+      row.innerHTML = `
+        <div>
+          <div class="hosp-name">${h.nome}</div>
+          <div class="hosp-parceiro">${h.parceiro || '—'}</div>
+        </div>
+        <span class="${h.ativo?'badge-ativo':'badge-inativo'}">${h.ativo?'Ativo':'Inativo'}</span>
+        <span class="hosp-date">Criado: ${new Date(h.created_at).toLocaleDateString('pt-BR')}</span>
+        <button class="btn-sm" onclick="toggleHospital('${h.id}',${h.ativo})">${h.ativo?'Desativar':'Ativar'}</button>
+        <button class="btn-sm danger" onclick="deleteHospital('${h.id}','${h.nome}')">🗑</button>`;
+      grid.appendChild(row);
+    });
+  } catch(e) {
+    grid.innerHTML = `<p class="hist-empty">Erro: ${e.message}</p>`;
+  }
+}
+
+function openModalNovoHospital() {
+  document.getElementById('modal-hospital').classList.add('open');
+  document.getElementById('m-nome').focus();
+}
+function closeModal() {
+  document.getElementById('modal-hospital').classList.remove('open');
+  ['m-nome','m-codigo','m-senha','m-parceiro'].forEach(id => document.getElementById(id).value = '');
+}
+
+async function salvarHospital() {
+  const nome     = document.getElementById('m-codigo').value.trim().toUpperCase();
+  const senha    = document.getElementById('m-senha').value.trim();
+  const parceiro = document.getElementById('m-parceiro').value.trim();
+  const nomeReal = document.getElementById('m-nome').value.trim();
+
+  if (!nome || !senha || !nomeReal) { showToast('Preencha todos os campos obrigatórios.', 'error'); return; }
+
+  try {
+    const { error } = await sb.from('hospitais').insert({ nome, senha, parceiro, ativo: true });
+    if (error) throw error;
+    showToast(`Hospital ${nomeReal} cadastrado!`, 'success');
+    closeModal();
+    loadAdminPanel();
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+async function toggleHospital(id, ativo) {
+  try {
+    const { error } = await sb.from('hospitais').update({ ativo: !ativo }).eq('id', id);
+    if (error) throw error;
+    showToast(ativo ? 'Hospital desativado.' : 'Hospital ativado!', 'success');
+    loadAdminPanel();
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+async function deleteHospital(id, nome) {
+  if (!confirm(`Excluir o hospital "${nome}" e todos os seus relatórios? Esta ação não pode ser desfeita.`)) return;
+  try {
+    await sb.from('relatorios').delete().eq('hospital_id', id);
+    const { error } = await sb.from('hospitais').delete().eq('id', id);
+    if (error) throw error;
+    showToast('Hospital excluído.', 'success');
+    loadAdminPanel();
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+/* ══════════════════════════════════════
+   EXPORT HTML
+   ══════════════════════════════════════ */
+function exportHTML() {
+  const d = getData();
+  const rptHTML = buildReportHTML(d);
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>Status Report — ${d.projeto}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',system-ui,sans-serif;background:#eef1f6;padding:32px 16px}
+:root{--blue:#1a3a6b;--orange:#e87722;--teal:#1a9e75;--gray-bg:#f5f6f8;--border:#d4d8e0;--text:#1e2535;--muted:#6b7280}
+.rpt{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.10);max-width:1000px;margin:0 auto}
+.rpt-header{display:flex;align-items:center;justify-content:space-between;padding:18px 26px 14px;border-bottom:3px solid var(--orange)}
+.rpt-header-left{display:flex;align-items:center;gap:18px}.rpt-logo-text{font-size:30px;font-weight:800;color:var(--blue);letter-spacing:-1px}
+.rpt-logo-img-left{max-height:46px;max-width:120px;object-fit:contain}.rpt-title h1{font-size:24px;font-weight:700;color:var(--blue)}
+.rpt-title p{font-size:12px;color:var(--muted);margin-top:3px}.rpt-meta{display:flex;gap:18px;font-size:11px;color:var(--muted);margin-top:6px;flex-wrap:wrap}
+.rpt-right-logo{text-align:right}.rpt-right-logo img{max-height:50px;max-width:130px;object-fit:contain}
+.rpt-right-text{font-size:14px;font-weight:700;color:var(--blue)}.rpt-right-text small{display:block;font-size:9px;color:var(--muted);letter-spacing:.1em;font-weight:400}
+.rpt-status{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--border)}
+.rpt-sc{padding:13px 16px;border-right:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}.rpt-sc:last-child{border-right:none}
+.rpt-sc-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.rpt-sc-lbl{font-size:9.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.rpt-sc-val{font-size:13px;font-weight:700;margin-top:2px;line-height:1.25}
+.c-blue{color:var(--blue)}.c-orange{color:var(--orange)}.c-green{color:#16a34a}.c-teal{color:var(--teal)}
+.rpt-body{display:grid;grid-template-columns:1fr 1fr}.rpt-col{padding:16px 18px}.rpt-col:first-child{border-right:1px solid var(--border)}
+.rpt-stitle{font-size:13px;font-weight:700;color:var(--orange);display:flex;align-items:center;gap:6px;margin-bottom:9px}
+.rpt-resumo{font-size:11.5px;color:var(--text);line-height:1.65;margin-bottom:14px}
+.rpt-advances ul{list-style:none;padding:0}.rpt-advances li{font-size:11px;color:var(--text);line-height:1.55;padding-left:18px;position:relative;margin-bottom:5px}
+.rpt-advances li::before{content:'✓';position:absolute;left:0;color:var(--teal);font-weight:700}
+.rpt-tbl{width:100%;border-collapse:collapse;font-size:11px}.rpt-tbl th{background:var(--blue);color:#fff;padding:6px 9px;text-align:left;font-weight:500;font-size:10.5px}
+.rpt-tbl td{padding:5px 9px;border-bottom:.5px solid var(--border)}.rpt-tbl tr:nth-child(even) td{background:var(--gray-bg)}.rpt-tbl tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:2px 9px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap}
+.b-pend{background:#f3f4f6;color:#6b7280}.b-prog{background:var(--blue);color:#fff}.b-done{background:#dcfce7;color:#15803d}
+.rpt-attn{border-top:1px solid var(--border);padding:12px 18px}.rpt-attn-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:8px}
+.rpt-attn-card{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:9px;font-size:10px;color:#92400e;line-height:1.45}
+.rpt-attn-card .ic{font-size:15px;margin-bottom:5px}.rpt-meeting{border-top:1px solid var(--border);padding:12px 18px 16px}
+.rpt-meeting-grid{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.rpt-meeting-item{background:#eff6ff;border-radius:8px;padding:8px 11px;display:flex;align-items:flex-start;gap:7px;font-size:10.5px;color:var(--blue);flex:1;min-width:90px;line-height:1.4}
+.rpt-meeting-chk{font-weight:700;font-size:14px;flex-shrink:0}
+.rpt-footer{background:var(--blue);color:#fff;display:grid;grid-template-columns:1fr 2fr 1fr;padding:9px 22px;font-size:10px;align-items:center}
+.rpt-footer span:nth-child(2){text-align:center;color:rgba(255,255,255,.65)}.rpt-footer span:nth-child(3){text-align:right;color:rgba(255,255,255,.65)}
+@media print{body{background:#fff;padding:0}.rpt{box-shadow:none;border-radius:0;max-width:100%}}</style>
+</head><body><div class="rpt">${rptHTML}</div></body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `status_report_${(d.parceiro||'neoh').replace(/\s+/g,'-').toLowerCase()}_${d.data.replace(/\//g,'-')}.html`;
+  a.click();
+  showToast('HTML exportado!', 'success');
+}
+
+/* ══════════════════════════════════════
+   TOAST
+   ══════════════════════════════════════ */
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' '+type : '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+/* Enter no modal */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>
