@@ -410,6 +410,39 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 .busca-notfound-card.orange { background:var(--orange);color:#fff; }
 .busca-notfound-card.orange:hover { opacity:.88;transform:translateY(-1px); }
 
+/* ── POPUP SALVAR (centro, não bloqueia) ── */
+.popup-salvar {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.85);
+  z-index: 8888;
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 32px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  border: 2px solid #e87722;
+  text-align: center;
+  max-width: 360px;
+  width: 90%;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
+}
+.popup-salvar.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+.popup-salvar .popup-icon { font-size: 40px; margin-bottom: 10px; }
+.popup-salvar h4 { font-size: 15px; font-weight: 700; color: #1e2535; margin-bottom: 6px; }
+.popup-salvar p { font-size: 12.5px; color: #6b7280; line-height: 1.55; margin-bottom: 18px; }
+.popup-salvar-actions { display: flex; gap: 10px; justify-content: center; }
+.popup-salvar-btn-primary { background: #e87722; color: #fff; border: none; padding: 10px 22px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+.popup-salvar-btn-primary:hover { opacity: .88; }
+.popup-salvar-btn-secondary { background: none; border: 1px solid #d4d8e0; color: #6b7280; padding: 10px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all .15s; }
+.popup-salvar-btn-secondary:hover { background: #f5f6f8; }
+
 /* Tip box no histórico */
 .hist-tip {
   background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;
@@ -624,7 +657,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
         Não esqueça de salvar para que fique registrado no histórico do hospital.
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="aviso-salvar-btn" onclick="saveToSupabase()">☁️ Salvar agora</button>
+        <button class="aviso-salvar-btn" onclick="saveToSupabase();this.textContent='Salvando...';this.disabled=true">☁️ Salvar agora</button>
         <button class="aviso-salvar-btn" style="background:#1a3a6b" onclick="voltarTelaInicial()">🏠 Tela inicial</button>
       </div>
     </div>
@@ -699,6 +732,17 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" onclick="salvarHospital()">Cadastrar</button>
     </div>
+  </div>
+</div>
+
+<!-- POPUP SALVAR -->
+<div class="popup-salvar" id="popup-salvar">
+  <div class="popup-icon">💾</div>
+  <h4>Relatório não salvo!</h4>
+  <p>Você gerou um relatório mas ainda não salvou. Deseja salvar antes de continuar?</p>
+  <div class="popup-salvar-actions">
+    <button class="popup-salvar-btn-primary" onclick="salvarEFechar()">☁️ Salvar agora</button>
+    <button class="popup-salvar-btn-secondary" onclick="fecharPopupSalvar()">Ignorar</button>
   </div>
 </div>
 
@@ -1007,42 +1051,9 @@ async function _doGenerate(nomeHosp) {
   setTimeout(() => {
     document.getElementById('rpt-output').innerHTML = buildReportHTML(d);
     document.getElementById('aviso-salvar').style.display = 'flex';
+    /* Inicia timer do popup (15s sem salvar = mostra aviso) */
+    iniciarTimerSalvar();
   }, 50);
-
-  /* Salva automaticamente se hospital vinculado */
-  if (session?.hospitalId) {
-    try {
-      const agora = new Date();
-      const dadosCompletos = {
-        ...d,
-        _meta: {
-          ano: agora.getFullYear(),
-          mes: agora.getMonth() + 1,
-          mesNome: agora.toLocaleString('pt-BR', { month: 'long' }),
-          salvoEm: agora.toISOString()
-        }
-      };
-      const { error } = await sb.from('relatorios').insert({
-        hospital_id: session.hospitalId,
-        dados: dadosCompletos,
-        criado_por: session.nome || 'sistema'
-      });
-      if (!error) {
-        const label = nomeHosp || session.parceiro || session.hospitalNome || '';
-        showToast('✅ Relatório salvo automaticamente' + (label ? ' para ' + label : '') + '!', 'success');
-        /* Esconde o aviso de salvar após salvar automaticamente */
-        setTimeout(() => {
-          document.getElementById('aviso-salvar').style.display = 'none';
-        }, 3000);
-      }
-    } catch(e) {
-      /* Falha silenciosa no auto-save — mantém aviso para salvar manualmente */
-    }
-  }
-
-  if (session?.isAdmin && !session?.hospitalId) {
-    session.hospitalId = null;
-  }
 }
 
 /* ══════════════════════════════════════
@@ -1085,7 +1096,8 @@ async function _doSaveToSupabase(hospitalId, nomeHospital) {
     /* Esconde aviso de salvar */
     document.getElementById('aviso-salvar').style.display = 'none';
     const label = nomeHospital ? ' para ' + nomeHospital : '';
-    showToast('Relatório salvo' + label + '!', 'success');
+    showToast('✅ Relatório salvo' + label + '!', 'success');
+    marcarSalvo();
     loadHistory();
   } catch(e) {
     showToast('Erro ao salvar: ' + e.message, 'error');
@@ -1490,7 +1502,7 @@ function onBuscaInput(value) {
   hint.style.color = '#1a3a6b';
 
   clearTimeout(_buscaTimer);
-  _buscaTimer = setTimeout(() => buscaHospital(), 400);
+  _buscaTimer = setTimeout(() => buscaHospital(), 200);
 }
 
 async function buscaHospital() {
@@ -1841,6 +1853,44 @@ function handleModalLogo(e) {
     e.target.value = '';
   };
   reader.readAsDataURL(file);
+}
+
+/* ══════════════════════════════════════
+   POPUP SALVAR
+   ══════════════════════════════════════ */
+let _popupTimer = null;
+let _relatorioSalvo = false;
+
+function iniciarTimerSalvar() {
+  _relatorioSalvo = false;
+  clearTimeout(_popupTimer);
+  /* Após 15 segundos sem salvar, mostra popup */
+  _popupTimer = setTimeout(() => {
+    if (!_relatorioSalvo) mostrarPopupSalvar();
+  }, 15000);
+}
+
+function mostrarPopupSalvar() {
+  if (_relatorioSalvo) return;
+  document.getElementById('popup-salvar').classList.add('show');
+}
+
+function fecharPopupSalvar() {
+  document.getElementById('popup-salvar').classList.remove('show');
+  clearTimeout(_popupTimer);
+}
+
+async function salvarEFechar() {
+  fecharPopupSalvar();
+  await saveToSupabase();
+}
+
+function marcarSalvo() {
+  _relatorioSalvo = true;
+  clearTimeout(_popupTimer);
+  fecharPopupSalvar();
+  /* Esconde tarja verde após salvar */
+  document.getElementById('aviso-salvar').style.display = 'none';
 }
 
 /* ══════════════════════════════════════
