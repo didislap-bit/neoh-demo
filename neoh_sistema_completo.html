@@ -1265,13 +1265,14 @@ async function buscaHospital() {
     if (error) throw error;
     const resultEl = document.getElementById('busca-result');
     resultEl.style.display = 'block';
+    window._buscaInput = input;
     if (!data || !data.length) {
       resultEl.innerHTML = `
         <div class="busca-notfound">
           <h4>🔍 Hospital não encontrado</h4>
           <p>Não encontramos "<strong>${input}</strong>" no sistema. Deseja cadastrá-lo?</p>
           <div style="display:flex;gap:8px">
-            <button class="btn-busca-action btn-busca-orange" onclick="abrirCadastroHospital('${input.replace(/'/g,\"\\'\"")}')">+ Cadastrar hospital</button>
+            <button class="btn-busca-action btn-busca-orange" onclick="abrirCadastroHospital(window._buscaInput)">+ Cadastrar hospital</button>
             <button class="btn-busca-action btn-busca-secondary" onclick="document.getElementById('busca-result').style.display='none'">Tentar novamente</button>
           </div>
         </div>`;
@@ -1397,6 +1398,7 @@ function handleModalLogo(e) {
 
 /* ══════════════════════════════════════
    TOAST
+   ══════════════════════════════════════ */
 function showToast(msg, type='') {
   const t = document.getElementById('toast');
   t.textContent = msg;
