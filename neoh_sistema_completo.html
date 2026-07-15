@@ -960,6 +960,8 @@ function doLogout() {
   session = null;
   hospitalBuscado = null;
   logos.right = null;
+  /* Limpa sessão do sessionStorage */
+  try { sessionStorage.removeItem('neoh_session'); sessionStorage.removeItem('neoh_tab'); } catch(e) {}
   /* Volta ao login e reseta o stepper */
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('busca-screen').classList.remove('open');
@@ -993,11 +995,13 @@ function switchTab(tab) {
     const p = document.getElementById(t+'-panel');
     if (p) p.classList.toggle('active', t === tab);
   });
-  /* Marcar aba ativa via onclick attribute — evita problema com emoji/textContent */
+  /* Marcar aba ativa via onclick attribute */
   document.querySelectorAll('.nav-tab').forEach(b => {
     const match = (b.getAttribute('onclick') || '').includes("'" + tab + "'");
     b.classList.toggle('active', match);
   });
+  /* Salva aba atual no sessionStorage */
+  try { sessionStorage.setItem('neoh_tab', tab); } catch(e) {}
   if (tab === 'hist') loadHistory();
   if (tab === 'admin' && session?.isAdmin) loadAdminPanel();
 }
@@ -1333,7 +1337,7 @@ async function loadHistory(hospitalIdOverride, hospitalNomeOverride) {
         card.className = 'hist-card' + (cancelado ? ' cancelado' : '');
         const dt = new Date(r.criado_em).toLocaleString('pt-BR');
         const titulo = `${d.projeto || '—'} — ${d.parceiro || '—'}`;
-        const seqBadge = `<span class="hist-seq ${cancelado?'cancelado-seq':''}">Seq. ${seq}</span>`;
+        const seqBadge = `<span class="hist-seq ${cancelado?'cancelado-seq':''}">Rel. ${seq}</span>`;
         const cancelBadge = cancelado ? `<span class="badge-cancelado">✗ Cancelado</span>` : '';
 
         card.innerHTML = `
@@ -1375,7 +1379,7 @@ async function visualizarSomenteLeitura(id) {
     const { data, error } = await sb.from('relatorios').select('*').eq('id', id).single();
     if (error) throw error;
     const d = data.dados;
-    const seq = data.seq_num ? 'Seq. ' + formatSeq(data.seq_num) + ' — ' : '';
+    const seq = data.seq_num ? 'Rel. ' + formatSeq(data.seq_num) + ' — ' : '';
     const cancelado = !!data.cancelado;
 
     /* Gera HTML do relatório */
@@ -1449,11 +1453,11 @@ function formatSeq(seqNum) {
 
 /* ── CANCELAR RELATÓRIO ── */
 async function cancelarRelatorio(id, seq) {
-  if (!confirm(`Cancelar o relatório Seq. ${seq}?\n\nEle ficará visível no histórico em vermelho e não poderá ser editado, mas poderá ser regerado.`)) return;
+  if (!confirm(`Cancelar o relatório Rel. ${seq}?\n\nEle ficará visível no histórico em vermelho e não poderá ser editado, mas poderá ser regerado.`)) return;
   try {
     const { error } = await sb.from('relatorios').update({ cancelado: true }).eq('id', id);
     if (error) throw error;
-    showToast(`Relatório Seq. ${seq} cancelado.`, 'success');
+    showToast(`Relatório Rel. ${seq} cancelado.`, 'success');
     loadHistory();
   } catch(e) {
     showToast('Erro: ' + e.message, 'error');
@@ -1930,6 +1934,12 @@ function _abrirSistema(h, tab) {
   document.getElementById('step-lbl-3').className = 'stepper-label active';
 
   initForm();
+  /* Salva sessão no sessionStorage para sobreviver a refresh */
+  try {
+    const sessionToSave = { ...session };
+    if (logos.right) sessionToSave.logo_url = logos.right;
+    sessionStorage.setItem('neoh_session', JSON.stringify(sessionToSave));
+  } catch(e) {}
   switchTab(tab);
   if (tab === 'hist') loadHistory();
 }
@@ -2260,10 +2270,46 @@ document.addEventListener('keydown', e => {
 });
 
 /* ══════════════════════════════════════
-   INICIALIZAÇÃO — mostra tela de login
+   INICIALIZAÇÃO — restaura sessão ou mostra login
    ══════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  /* 1. Login é sempre a primeira tela */
+document.addEventListener('DOMContentLoaded', async () => {
+  /* Tenta restaurar sessão do sessionStorage */
+  try {
+    const savedSession = sessionStorage.getItem('neoh_session');
+    const savedTab     = sessionStorage.getItem('neoh_tab') || 'hist';
+    if (savedSession) {
+      session = JSON.parse(savedSession);
+      /* Restaura logo do hospital se houver */
+      if (session.logo_url) {
+        logos.right = session.logo_url;
+        document.getElementById('img-right').src = session.logo_url;
+        document.getElementById('drop-right').classList.add('has');
+      }
+      /* Restaura UI */
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('busca-screen').classList.remove('open');
+      document.getElementById('topnav').style.display = 'flex';
+      document.getElementById('main-wrap').style.display = 'block';
+      /* Label topnav */
+      const nomeReal = session.nome_real || session.hospitalNome || session.nome || '';
+      const sistema  = session.parceiro || '';
+      let topnavLabel = 'Hosp. Escolhido: ' + nomeReal;
+      if (sistema) topnavLabel += '  |  Sistema Hospitalar: ' + sistema;
+      document.getElementById('topnav-hospital').textContent = topnavLabel;
+      /* Admin tab */
+      if (session.isAdmin) {
+        document.getElementById('admin-tab').style.display = 'inline-block';
+      }
+      initForm();
+      /* Vai para a aba que estava antes do refresh */
+      switchTab(savedTab);
+      if (savedTab === 'hist') loadHistory();
+      if (savedTab === 'admin' && session.isAdmin) loadAdminPanel();
+      return;
+    }
+  } catch(e) { /* sessão inválida, volta ao login */ }
+
+  /* Sem sessão: mostra login */
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('busca-screen').classList.remove('open');
   document.getElementById('topnav').style.display = 'none';
