@@ -602,6 +602,51 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
   margin-bottom: 3px;
 }
 
+/* ── RELATÓRIO VAZIO ── */
+.rpt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  background: #fff;
+  border-radius: 12px;
+  border: 0.5px solid var(--border);
+}
+.rpt-empty-icon { font-size: 56px; margin-bottom: 16px; opacity: .7; }
+.rpt-empty h3 { font-size: 18px; font-weight: 700; color: var(--blue); margin-bottom: 8px; }
+.rpt-empty p { font-size: 13px; color: var(--muted); line-height: 1.7; max-width: 420px; }
+.rpt-empty-steps {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.rpt-empty-step {
+  background: #f0f4ff;
+  border: 1px solid #c7d7f5;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 12px;
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.rpt-empty-step .step-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
 /* ── MODO LEITURA (visualizar) ── */
 .modo-leitura-banner {
   background: #1a3a6b;
@@ -870,7 +915,19 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
       <span class="ph-left" id="print-date"></span>
       <span class="ph-right">Neoh — Status Report Executivo</span>
     </div>
-    <div class="rpt" id="rpt-output"></div>
+    <!-- Tela vazia — exibida quando nenhum relatório foi gerado -->
+    <div id="rpt-empty" class="rpt-empty">
+      <div class="rpt-empty-icon">📄</div>
+      <h3>Nenhum relatório gerado ainda</h3>
+      <p>Esta tela exibe o relatório executivo assim que for gerado. Para criar um novo relatório, preencha o formulário com as informações do projeto e clique em <strong>"▶ Gerar Relatório Executivo"</strong>.</p>
+      <div class="rpt-empty-steps">
+        <div class="rpt-empty-step"><span class="step-num">1</span> Acesse a aba Formulário</div>
+        <div class="rpt-empty-step"><span class="step-num">2</span> Preencha os dados do projeto</div>
+        <div class="rpt-empty-step"><span class="step-num">3</span> Clique em "Gerar Relatório"</div>
+        <div class="rpt-empty-step"><span class="step-num">4</span> O resultado aparece aqui</div>
+      </div>
+    </div>
+    <div class="rpt" id="rpt-output" style="display:none"></div>
   </div>
 
   <!-- HISTÓRICO -->
@@ -1309,7 +1366,12 @@ async function _doGenerate(nomeHosp) {
   lastData = d;
   switchTab('report');
   setTimeout(() => {
-    document.getElementById('rpt-output').innerHTML = buildReportHTML(d);
+    /* Oculta tela vazia e mostra relatório */
+    const emptyEl = document.getElementById('rpt-empty');
+    const rptEl   = document.getElementById('rpt-output');
+    if (emptyEl) emptyEl.style.display = 'none';
+    if (rptEl)   rptEl.style.display   = 'block';
+    rptEl.innerHTML = buildReportHTML(d);
     document.getElementById('aviso-salvar').style.display = 'flex';
     /* Atualiza data no cabeçalho de impressão */
     const agora = new Date();
@@ -1507,7 +1569,11 @@ async function loadSnapshot(id) {
     const { data, error } = await sb.from('relatorios').select('dados').eq('id', id).single();
     if (error) throw error;
     lastData = data.dados;
-    document.getElementById('rpt-output').innerHTML = buildReportHTML(data.dados);
+    const emptyEl3 = document.getElementById('rpt-empty');
+    const rptEl3   = document.getElementById('rpt-output');
+    if (emptyEl3) emptyEl3.style.display = 'none';
+    if (rptEl3)   rptEl3.style.display   = 'block';
+    rptEl3.innerHTML = buildReportHTML(data.dados);
     switchTab('report');
   } catch(e) {
     showToast('Erro ao carregar: ' + e.message, 'error');
@@ -1524,7 +1590,11 @@ async function visualizarSomenteLeitura(id) {
     const cancelado = !!data.cancelado;
 
     /* Gera HTML do relatório */
-    document.getElementById('rpt-output').innerHTML = buildReportHTML(d);
+    const emptyEl2 = document.getElementById('rpt-empty');
+    const rptEl2   = document.getElementById('rpt-output');
+    if (emptyEl2) emptyEl2.style.display = 'none';
+    if (rptEl2)   rptEl2.style.display   = 'block';
+    rptEl2.innerHTML = buildReportHTML(d);
 
     /* Toolbar modo leitura: sem editar, sem salvar */
     const banner = document.createElement('div');
@@ -1569,6 +1639,13 @@ function sairModoLeitura() {
       <button class="btn-tool" onclick="sairDoRelatorio('hist')">🗂️ Histórico do hospital</button>
       <button class="btn-tool accent" onclick="window.print()">🖨️ Imprimir / PDF</button>`;
   }
+  /* Reseta relatório: mostra tela vazia */
+  const rptEl = document.getElementById('rpt-output');
+  const emptyEl = document.getElementById('rpt-empty');
+  if (rptEl)   { rptEl.innerHTML = ''; rptEl.style.display = 'none'; }
+  if (emptyEl) emptyEl.style.display = 'flex';
+  lastData = null;
+  _relatorioSalvo = true;
   switchTab('hist');
   loadHistory();
 }
