@@ -347,7 +347,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
     </div>
     <button class="busca-btn" id="busca-btn" onclick="buscaHospital()">🔍 Buscar hospital</button>
     <div id="busca-result" class="busca-result" style="display:none"></div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0">
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0;display:flex;justify-content:space-between">
+      <button onclick="doLogout()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline">← Sair do sistema</button>
       <button onclick="abrirLoginAdmin()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline">Acesso administrativo</button>
     </div>
   </div>
@@ -370,7 +371,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
     <button class="login-btn" id="login-btn" onclick="doLogin()">Entrar</button>
     <div class="login-error" id="login-error">Código ou senha incorretos.</div>
     <div style="margin-top:14px">
-      <button onclick="voltarBusca()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline">← Voltar à busca</button>
+      <button onclick="voltarBusca()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline">← Pesquisar hospital</button>
     </div>
   </div>
 </div>
@@ -640,21 +641,22 @@ function showLoginError(msg) {
 
 function onLoginSuccess() {
   document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('busca-screen').classList.remove('open');
-  document.getElementById('topnav').style.display = 'flex';
-  document.getElementById('main-wrap').style.display = 'block';
-  document.getElementById('topnav-hospital').textContent = session.nome;
+
   if (session.isAdmin) {
+    /* Admin vai direto para o sistema sem busca */
+    document.getElementById('busca-screen').classList.remove('open');
+    document.getElementById('topnav').style.display = 'flex';
+    document.getElementById('main-wrap').style.display = 'block';
+    document.getElementById('topnav-hospital').textContent = 'Neoh Admin';
     document.getElementById('admin-tab').style.display = 'inline-block';
-  }
-  initForm();
-  /* Admin vai direto para admin panel; hospital vai para histórico */
-  if (session.isAdmin) {
+    initForm();
     loadAdminPanel();
     switchTab('admin');
   } else {
-    switchTab('hist');
-    loadHistory();
+    /* Hospital logado → vai para busca de hospital */
+    document.getElementById('busca-screen').classList.add('open');
+    document.getElementById('topnav').style.display = 'none';
+    document.getElementById('main-wrap').style.display = 'none';
   }
 }
 
@@ -662,8 +664,8 @@ function doLogout() {
   session = null;
   hospitalBuscado = null;
   logos.right = null;
-  document.getElementById('busca-screen').classList.add('open');
-  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('busca-screen').classList.remove('open');
   document.getElementById('topnav').style.display = 'none';
   document.getElementById('main-wrap').style.display = 'none';
   document.getElementById('busca-input').value = '';
@@ -1299,9 +1301,19 @@ async function buscaHospital() {
 function entrarComoHospital() {
   if (!hospitalBuscado) return;
   const h = hospitalBuscado;
-  session = { hospitalId: h.id, nome: h.nome, parceiro: h.parceiro || '', isAdmin: false };
+  /* Preserva a sessão do usuário logado, só vincula o hospital */
+  session.hospitalId = h.id;
+  session.hospitalNome = h.nome;
+  session.parceiro = h.parceiro || '';
   document.getElementById('f-parceiro').value = h.parceiro || '';
-  onLoginSuccess();
+  /* Abre o sistema principal */
+  document.getElementById('busca-screen').classList.remove('open');
+  document.getElementById('topnav').style.display = 'flex';
+  document.getElementById('main-wrap').style.display = 'block';
+  document.getElementById('topnav-hospital').textContent = h.nome + (h.parceiro ? ' — ' + h.parceiro : '');
+  initForm();
+  switchTab('hist');
+  loadHistory();
 }
 
 function abrirLoginAdmin() {
@@ -1412,11 +1424,12 @@ document.addEventListener('keydown', e => {
 });
 
 /* ══════════════════════════════════════
-   INICIALIZAÇÃO — mostra tela de busca
+   INICIALIZAÇÃO — mostra tela de login
    ══════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('busca-screen').classList.add('open');
-  document.getElementById('login-screen').style.display = 'none';
+  /* 1. Login é sempre a primeira tela */
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('busca-screen').classList.remove('open');
   document.getElementById('topnav').style.display = 'none';
   document.getElementById('main-wrap').style.display = 'none';
   initForm();
