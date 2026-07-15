@@ -222,6 +222,63 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 .btn-sm.danger { color: var(--red); border-color: #fca5a5; }
 .btn-sm.danger:hover { background: #fee2e2; }
 
+/* ── MULTISELECT CUSTOMIZADO ── */
+.ms-wrapper { position: relative; user-select: none; }
+.ms-control {
+  min-height: 38px; padding: 4px 8px;
+  border: 0.5px solid var(--border); border-radius: 7px;
+  background: #fff; cursor: pointer;
+  display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+  transition: border-color .15s, box-shadow .15s;
+}
+.ms-control:hover { border-color: var(--blue); }
+.ms-control.open { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,58,107,.1); }
+.ms-tag {
+  background: #e0eaff; color: var(--blue); border-radius: 4px;
+  padding: 2px 6px; font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; gap: 4px;
+  max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ms-tag-x {
+  cursor: pointer; font-size: 12px; color: #6b7280; flex-shrink: 0;
+  border: none; background: none; padding: 0; line-height: 1;
+}
+.ms-tag-x:hover { color: var(--red); }
+.ms-placeholder { font-size: 13px; color: var(--muted); padding: 2px 4px; }
+.ms-arrow {
+  margin-left: auto; flex-shrink: 0; color: var(--muted);
+  font-size: 10px; transition: transform .2s;
+}
+.ms-control.open .ms-arrow { transform: rotate(180deg); }
+.ms-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: #fff; border: 0.5px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12); z-index: 200;
+  display: none; overflow: hidden;
+}
+.ms-dropdown.open { display: block; }
+.ms-search {
+  padding: 8px 10px; border-bottom: 0.5px solid var(--border);
+}
+.ms-search input {
+  width: 100%; border: 0.5px solid var(--border); border-radius: 5px;
+  padding: 5px 9px; font-size: 12px; font-family: inherit;
+  outline: none;
+}
+.ms-search input:focus { border-color: var(--blue); }
+.ms-list { max-height: 180px; overflow-y: auto; }
+.ms-option {
+  padding: 8px 12px; font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: background .1s;
+}
+.ms-option:hover { background: var(--gray-bg); }
+.ms-option.selected { background: #f0f4ff; }
+.ms-option input[type=checkbox] { accent-color: var(--blue); width: 14px; height: 14px; flex-shrink: 0; cursor: pointer; }
+.ms-option-all { border-bottom: 0.5px solid var(--border); font-weight: 600; color: var(--blue); background: #f8fafc; }
+.ms-option-all:hover { background: #eff6ff; }
+.ms-empty { padding: 12px; text-align: center; font-size: 12px; color: var(--muted); }
+
 /* ── RELATÓRIO GERENCIAL ── */
 .gerencial-filters {
   background:#fff;border:.5px solid var(--border);border-radius:12px;
@@ -974,10 +1031,20 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
           <div class="filter-field"><label>Data fim</label><input type="date" id="ger-dt-fim" /></div>
           <div class="filter-field">
             <label>Hospitais</label>
-            <select id="ger-hosp-select" multiple style="height:90px;font-size:12px;padding:4px;width:100%;border:.5px solid var(--border);border-radius:7px;background:#fff">
-              <option value="todos" selected>Todos os hospitais</option>
-            </select>
-            <div style="font-size:10px;color:var(--muted);margin-top:3px">Segure Ctrl para selecionar múltiplos</div>
+            <div class="ms-wrapper" id="ms-hosp-wrapper">
+              <div class="ms-control" id="ms-hosp-control" onclick="msToggle('hosp')">
+                <span class="ms-placeholder" id="ms-hosp-placeholder">Todos os hospitais</span>
+                <span class="ms-arrow">▼</span>
+              </div>
+              <div class="ms-dropdown" id="ms-hosp-dropdown">
+                <div class="ms-search"><input type="text" placeholder="Buscar hospital..." oninput="msFilter('hosp', this.value)" id="ms-hosp-search" /></div>
+                <div class="ms-list" id="ms-hosp-list">
+                  <div class="ms-option ms-option-all" onclick="msToggleAll('hosp')">
+                    <input type="checkbox" id="ms-todos-cb" checked /> Marcar/Desmarcar todos
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="filter-field"><label>&nbsp;</label><button class="btn-gerar-gerencial" onclick="gerarGerencial()">▶ Gerar</button></div>
         </div>
@@ -2499,6 +2566,7 @@ async function saveToSuabase_tarja() {
    ADMIN: TOGGLE VIEW
    ══════════════════════════════════════ */
 let _gerencialData = [];
+let _msData = { hosp: [] }; /* { id, label, selected } */
 
 function toggleAdminView(view) {
   const hospPanel = document.getElementById('hospital-grid')?.closest('.card');
@@ -2533,18 +2601,15 @@ async function initGerencialFilters() {
   document.getElementById('ger-dt-fim').value   = hoje.toISOString().split('T')[0];
   document.getElementById('ger-dt-inicio').value = tresM.toISOString().split('T')[0];
 
-  /* Load hospitals for combobox */
+  /* Load hospitals for multiselect */
   try {
     const { data } = await sb.from('hospitais').select('id,nome,nome_real,parceiro').eq('ativo',true).order('nome');
-    const sel = document.getElementById('ger-hosp-select');
-    sel.innerHTML = '<option value="todos" selected>Todos os hospitais</option>';
-    (data||[]).forEach(h => {
-      const opt = document.createElement('option');
-      opt.value = h.id;
-      opt.textContent = (h.nome_real||h.nome) + (h.parceiro ? ' ('+h.parceiro+')' : '');
-      opt.selected = true;
-      sel.appendChild(opt);
-    });
+    _msData.hosp = (data||[]).map(h => ({
+      id: h.id,
+      label: (h.nome_real||h.nome) + (h.parceiro ? ' ('+h.parceiro+')' : ''),
+      selected: true
+    }));
+    msRender('hosp');
   } catch(e) {}
 }
 
@@ -2625,11 +2690,114 @@ async function drillDown(type) {
 }
 
 function getSelectedHospitals() {
-  const sel = document.getElementById('ger-hosp-select');
-  const selected = [...sel.options].filter(o => o.selected).map(o => o.value);
-  if (selected.includes('todos') || selected.length === 0) return 'todos';
+  const items = _msData.hosp || [];
+  const selected = items.filter(i => i.selected).map(i => i.id);
+  if (selected.length === 0 || selected.length === items.length) return 'todos';
   return selected;
 }
+
+/* ── MULTISELECT ENGINE ── */
+function msToggle(key) {
+  const dd = document.getElementById(`ms-${key}-dropdown`);
+  const ctrl = document.getElementById(`ms-${key}-control`);
+  const isOpen = dd.classList.contains('open');
+  /* Close all first */
+  document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.ms-control.open').forEach(c => c.classList.remove('open'));
+  if (!isOpen) {
+    dd.classList.add('open');
+    ctrl.classList.add('open');
+    const search = document.getElementById(`ms-${key}-search`);
+    if (search) { search.value = ''; msFilter(key, ''); setTimeout(()=>search.focus(), 50); }
+  }
+}
+
+function msFilter(key, query) {
+  const q = query.toLowerCase().trim();
+  const list = document.getElementById(`ms-${key}-list`);
+  const items = list.querySelectorAll('.ms-item');
+  let visible = 0;
+  items.forEach(item => {
+    const match = !q || item.dataset.label.toLowerCase().includes(q);
+    item.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  let emptyEl = list.querySelector('.ms-empty');
+  if (visible === 0 && !emptyEl) {
+    emptyEl = document.createElement('div'); emptyEl.className = 'ms-empty';
+    emptyEl.textContent = 'Nenhum hospital encontrado'; list.appendChild(emptyEl);
+  } else if (visible > 0 && emptyEl) {
+    emptyEl.remove();
+  }
+}
+
+function msToggleAll(key) {
+  const allCb = document.getElementById(`ms-todos-cb`);
+  const newVal = allCb ? allCb.checked : true;
+  _msData[key].forEach(i => i.selected = newVal);
+  msRender(key);
+}
+
+function msToggleItem(key, id) {
+  const item = _msData[key].find(i => i.id === id);
+  if (item) item.selected = !item.selected;
+  msRender(key);
+}
+
+function msRender(key) {
+  const list   = document.getElementById(`ms-${key}-list`);
+  const ctrl   = document.getElementById(`ms-${key}-control`);
+  const ph     = document.getElementById(`ms-${key}-placeholder`);
+  const allCb  = document.getElementById('ms-todos-cb');
+  const items  = _msData[key] || [];
+  const selected = items.filter(i => i.selected);
+
+  /* Render list items (keep "Todos" row) */
+  const allRow = list.querySelector('.ms-option-all');
+  list.innerHTML = '';
+  if (allRow) list.appendChild(allRow);
+
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'ms-option' + (item.selected ? ' selected' : '');
+    div.dataset.label = item.label;
+    div.innerHTML = `<input type="checkbox" ${item.selected?'checked':''} onclick="event.stopPropagation();msToggleItem('${key}','${item.id}')" /> ${item.label}`;
+    div.onclick = () => msToggleItem(key, item.id);
+    list.appendChild(div);
+  });
+
+  /* Update "Todos" checkbox */
+  if (allCb) allCb.checked = selected.length === items.length;
+
+  /* Update control tags */
+  ctrl.innerHTML = '';
+  if (selected.length === 0 || selected.length === items.length) {
+    ctrl.innerHTML = '<span class="ms-placeholder">Todos os hospitais</span><span class="ms-arrow">▼</span>';
+  } else {
+    selected.slice(0, 3).forEach(item => {
+      const tag = document.createElement('span'); tag.className = 'ms-tag';
+      const shortLabel = item.label.split(' (')[0];
+      tag.innerHTML = `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px" title="${item.label}">${shortLabel}</span><button class="ms-tag-x" onclick="event.stopPropagation();msToggleItem('${key}','${item.id}')">✕</button>`;
+      ctrl.appendChild(tag);
+    });
+    if (selected.length > 3) {
+      const more = document.createElement('span'); more.className = 'ms-tag';
+      more.style.background = '#e5e7eb'; more.style.color = '#374151';
+      more.textContent = `+${selected.length - 3}`;
+      ctrl.appendChild(more);
+    }
+    ctrl.innerHTML += '<span class="ms-arrow" style="margin-left:auto">▼</span>';
+  }
+  if (ctrl.classList.contains('open')) ctrl.classList.add('open');
+}
+
+/* Close multiselect when clicking outside */
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ms-wrapper')) {
+    document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.ms-control.open').forEach(c => c.classList.remove('open'));
+  }
+});
 
 async function gerarGerencial() {
   const dtInicio = document.getElementById('ger-dt-inicio').value;
