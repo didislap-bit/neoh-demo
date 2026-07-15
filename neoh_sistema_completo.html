@@ -2592,9 +2592,7 @@ function exportarExcel() {
       .map(v => `"${String(v).replace(/"/g,'""')}"`)
       .join(sep)
   );
-  const csv = BOM + header + '
-' + rows.join('
-');
+  const csv = BOM + header + '\n' + rows.join('\n');
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
