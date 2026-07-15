@@ -545,13 +545,15 @@ function doLogout() {
    TABS
    ══════════════════════════════════════ */
 function switchTab(tab) {
+  /* Mostrar/ocultar painéis */
   ['form','report','hist','admin'].forEach(t => {
     const p = document.getElementById(t+'-panel');
     if (p) p.classList.toggle('active', t === tab);
   });
+  /* Marcar aba ativa via onclick attribute — evita problema com emoji/textContent */
   document.querySelectorAll('.nav-tab').forEach(b => {
-    const map = { '📝 Formulário':'form','📄 Relatório':'report','🗂️ Histórico':'hist','⚙️ Admin':'admin' };
-    b.classList.toggle('active', map[b.textContent] === tab);
+    const match = (b.getAttribute('onclick') || '').includes("'" + tab + "'");
+    b.classList.toggle('active', match);
   });
   if (tab === 'hist') loadHistory();
   if (tab === 'admin' && session?.isAdmin) loadAdminPanel();
@@ -704,20 +706,24 @@ function buildReportHTML(d) {
 async function generateReport() {
   if (session?.isAdmin && !session.hospitalId) {
     /* Admin sem hospital vinculado: abre modal de seleção */
-    await openModalVincular('gerar');
+    openModalVincular('gerar');
     return;
   }
+  /* Hospital logado ou admin já vinculado: gera direto */
   _doGenerate();
 }
 
 function _doGenerate(nomeHosp) {
   const d = getData();
   lastData = d;
-  document.getElementById('rpt-output').innerHTML = buildReportHTML(d);
-  /* Navega para relatório ANTES de resetar sessão */
+  /* Navega PRIMEIRO, depois insere HTML no painel já visível */
   switchTab('report');
-  const msg = nomeHosp ? 'Relatório gerado para ' + nomeHosp + '!' : 'Relatório gerado!';
-  showToast(msg, 'success');
+  /* Pequeno delay para garantir que o painel está no DOM antes de renderizar */
+  setTimeout(() => {
+    document.getElementById('rpt-output').innerHTML = buildReportHTML(d);
+    const msg = nomeHosp ? 'Relatório gerado para ' + nomeHosp + '!' : 'Relatório gerado!';
+    showToast(msg, 'success');
+  }, 50);
   /* Reseta hospital do admin após navegar */
   if (session?.isAdmin) {
     session.hospitalId = null;
@@ -733,7 +739,7 @@ async function saveToSupabase() {
 
   /* Admin sem hospital vinculado: abre modal para selecionar */
   if (session.isAdmin && !session.hospitalId) {
-    await openModalVincular('salvar');
+    openModalVincular('salvar');
     return;
   }
 
