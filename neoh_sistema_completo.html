@@ -265,12 +265,41 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media print {
-  body { background: #fff; }
-  .topnav, .report-toolbar, #form-panel, #hist-panel, #admin-panel { display: none !important; }
+  /* Remove cabeçalho e rodapé padrão do navegador */
+  @page {
+    margin: 10mm 12mm 10mm 12mm;
+  }
+
+  body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .topnav, .report-toolbar, #form-panel, #hist-panel, #admin-panel,
+  #aviso-salvar, #aviso-auto-fill, .popup-salvar, .toast { display: none !important; }
   #report-panel { display: block !important; }
   .main-wrap { padding: 0; max-width: 100%; }
   .rpt { box-shadow: none; border-radius: 0; }
+
+  /* Cabeçalho customizado de impressão */
+  .print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0 8px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #e5e7eb;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 10px;
+    color: #6b7280;
+  }
+  .print-header .ph-left { font-size: 10px; color: #9ca3af; }
+  .print-header .ph-right {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a3a6b;
+    letter-spacing: 0.03em;
+  }
 }
+
+/* Cabeçalho de impressão — oculto na tela, visível só ao imprimir */
+.print-header { display: none; }
 
 /* ── BUSCA HOSPITAL ── */
 #busca-screen {
@@ -667,6 +696,10 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
       <button class="btn-tool" onclick="sairDoRelatorio('hist')">🗂️ Histórico do hospital</button>
       <button class="btn-tool accent" onclick="window.print()">🖨️ Imprimir / PDF</button>
     </div>
+    <div class="print-header" id="print-header">
+      <span class="ph-left" id="print-date"></span>
+      <span class="ph-right">Neoh — Status Report Executivo</span>
+    </div>
     <div class="rpt" id="rpt-output"></div>
   </div>
 
@@ -1051,6 +1084,10 @@ async function _doGenerate(nomeHosp) {
   setTimeout(() => {
     document.getElementById('rpt-output').innerHTML = buildReportHTML(d);
     document.getElementById('aviso-salvar').style.display = 'flex';
+    /* Atualiza data no cabeçalho de impressão */
+    const agora = new Date();
+    document.getElementById('print-date').textContent =
+      agora.toLocaleDateString('pt-BR') + ', ' + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
     /* Marca que há um relatório não salvo */
     _relatorioSalvo = false;
   }, 50);
