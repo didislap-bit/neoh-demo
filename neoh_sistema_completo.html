@@ -1411,6 +1411,17 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
 });
 
+/* ══════════════════════════════════════
+   INICIALIZAÇÃO — mostra tela de busca
+   ══════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('busca-screen').classList.add('open');
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('topnav').style.display = 'none';
+  document.getElementById('main-wrap').style.display = 'none';
+  initForm();
+});
+
 </script>
 </body>
 </html>
