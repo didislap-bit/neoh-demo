@@ -288,12 +288,37 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .admin-header h2 { font-size: 20px; font-weight: 700; color: var(--blue); }
 .admin-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
-.stat-card { background: var(--white); border: 0.5px solid var(--border); border-radius: 10px; padding: 16px; }
+.stat-card { background: var(--white); border: 0.5px solid var(--border); border-radius: 10px; padding: 16px; cursor:pointer; transition:all .15s; }
+.stat-card:hover { border-color:var(--blue); box-shadow:0 4px 12px rgba(26,58,107,.1); transform:translateY(-1px); }
+.stat-card.active-filter { border-color:var(--blue); box-shadow:0 0 0 2px rgba(26,58,107,.15); }
 .stat-card .stat-val { font-size: 28px; font-weight: 700; color: var(--blue); }
 .stat-card .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
 .stat-card.orange .stat-val { color: var(--orange); }
 .stat-card.green .stat-val { color: var(--teal); }
 .stat-card.red .stat-val { color: var(--red); }
+
+/* ── STAT DRILL-DOWN ── */
+.stat-drilldown {
+  display:none;
+  margin-top:14px;
+  background:#fff;
+  border:.5px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+  animation:fadeIn .2s ease;
+}
+.stat-drilldown.open { display:block; }
+.stat-drilldown-header {
+  background:var(--blue);color:#fff;
+  padding:10px 16px;font-size:13px;font-weight:600;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.stat-drilldown-body { padding:12px 16px;font-size:13px;color:var(--text); }
+.stat-drilldown-row {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 0;border-bottom:.5px solid var(--border);
+}
+.stat-drilldown-row:last-child { border-bottom:none; }
 
 .hospital-grid { display: flex; flex-direction: column; gap: 10px; }
 .hospital-row { background: var(--white); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 18px; display: grid; grid-template-columns: 1fr auto auto auto auto auto; gap: 10px; align-items: center; }
@@ -863,11 +888,19 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
         <button class="btn-tool accent" onclick="openModalNovoHospital()">+ Novo hospital</button>
       </div>
     </div>
-    <div class="admin-stats">
-      <div class="stat-card"><div class="stat-val" id="stat-total">—</div><div class="stat-lbl">Total de hospitais</div></div>
-      <div class="stat-card green"><div class="stat-val" id="stat-ativos">—</div><div class="stat-lbl">Hospitais ativos</div></div>
-      <div class="stat-card orange"><div class="stat-val" id="stat-reports">—</div><div class="stat-lbl">Relatórios gerados</div></div>
-      <div class="stat-card red"><div class="stat-val" id="stat-inativos">—</div><div class="stat-lbl">Hospitais inativos</div></div>
+    <div class="admin-stats" id="admin-stats-grid">
+      <div class="stat-card" onclick="drillDown('total')"><div class="stat-val" id="stat-total">—</div><div class="stat-lbl">Total de hospitais</div></div>
+      <div class="stat-card green" onclick="drillDown('ativos')"><div class="stat-val" id="stat-ativos">—</div><div class="stat-lbl">Hospitais ativos</div></div>
+      <div class="stat-card orange" onclick="drillDown('reports')"><div class="stat-val" id="stat-reports">—</div><div class="stat-lbl">Total relatórios gerados</div></div>
+      <div class="stat-card red" onclick="drillDown('inativos')"><div class="stat-val" id="stat-inativos">—</div><div class="stat-lbl">Hospitais inativos</div></div>
+    </div>
+    <!-- Drill-down panel -->
+    <div class="stat-drilldown" id="stat-drilldown">
+      <div class="stat-drilldown-header">
+        <span id="drilldown-title">Detalhes</span>
+        <button onclick="closeDrillDown()" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer">✕</button>
+      </div>
+      <div class="stat-drilldown-body" id="drilldown-body"></div>
     </div>
     <div class="card">
       <div class="card-title">🏥 Hospitais cadastrados</div>
@@ -884,12 +917,10 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
           <div class="filter-field"><label>Data fim</label><input type="date" id="ger-dt-fim" /></div>
           <div class="filter-field">
             <label>Hospitais</label>
-            <div class="hospital-checkboxes" id="ger-hospitais-list">
-              <div class="hospital-checkbox-item">
-                <input type="checkbox" id="ger-todos" checked onchange="toggleTodosHospitais(this)" />
-                <label for="ger-todos" style="cursor:pointer;font-weight:600">Todos os hospitais</label>
-              </div>
-            </div>
+            <select id="ger-hosp-select" multiple style="height:90px;font-size:12px;padding:4px;width:100%;border:.5px solid var(--border);border-radius:7px;background:#fff">
+              <option value="todos" selected>Todos os hospitais</option>
+            </select>
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">Segure Ctrl para selecionar múltiplos</div>
           </div>
           <div class="filter-field"><label>&nbsp;</label><button class="btn-gerar-gerencial" onclick="gerarGerencial()">▶ Gerar</button></div>
         </div>
@@ -1631,7 +1662,7 @@ async function loadAdminPanel() {
     const { data: hospitais, error } = await sb.from('hospitais').select('*').order('created_at', { ascending: false });
     if (error) throw error;
 
-    const { count: totalReports } = await sb.from('relatorios').select('*', { count: 'exact', head: true });
+    const { count: totalReports } = await sb.from('relatorios').select('*', { count: 'exact', head: true }).eq('cancelado', false);
 
     const ativos = hospitais.filter(h => h.ativo).length;
     document.getElementById('stat-total').textContent = hospitais.length;
@@ -2398,18 +2429,23 @@ function toggleAdminView(view) {
   const btnHosp   = document.getElementById('btn-view-hosp');
   const btnGer    = document.getElementById('btn-view-ger');
 
+  const statsGrid = document.getElementById('admin-stats-grid');
+  const drillDown_ = document.getElementById('stat-drilldown');
+
   if (view === 'gerencial') {
     if (hospPanel) hospPanel.style.display = 'none';
+    if (statsGrid) statsGrid.style.display = 'none';
+    if (drillDown_) drillDown_.style.display = 'none';
     gerPanel.style.display = 'block';
-    btnHosp.style.background = 'none'; btnHosp.style.color = 'var(--text)'; btnHosp.style.borderColor = 'var(--border)';
-    btnGer.style.background  = 'var(--blue)'; btnGer.style.color = '#fff'; btnGer.style.borderColor = 'var(--blue)';
-    /* Init filters */
+    btnHosp.style.cssText = 'background:none;color:var(--text);border-color:var(--border)';
+    btnGer.style.cssText  = 'background:var(--blue);color:#fff;border-color:var(--blue)';
     initGerencialFilters();
   } else {
     if (hospPanel) hospPanel.style.display = '';
+    if (statsGrid) statsGrid.style.display = '';
     gerPanel.style.display = 'none';
-    btnHosp.style.background = 'var(--blue)'; btnHosp.style.color = '#fff'; btnHosp.style.borderColor = 'var(--blue)';
-    btnGer.style.background  = 'none'; btnGer.style.color = 'var(--text)'; btnGer.style.borderColor = 'var(--border)';
+    btnHosp.style.cssText = 'background:var(--blue);color:#fff;border-color:var(--blue)';
+    btnGer.style.cssText  = 'background:none;color:var(--text);border-color:var(--border)';
   }
 }
 
@@ -2420,35 +2456,102 @@ async function initGerencialFilters() {
   document.getElementById('ger-dt-fim').value   = hoje.toISOString().split('T')[0];
   document.getElementById('ger-dt-inicio').value = tresM.toISOString().split('T')[0];
 
-  /* Load hospitals for checkboxes */
+  /* Load hospitals for combobox */
   try {
     const { data } = await sb.from('hospitais').select('id,nome,nome_real,parceiro').eq('ativo',true).order('nome');
-    const list = document.getElementById('ger-hospitais-list');
-    /* Keep "Todos" checkbox */
-    const todosItem = list.querySelector('.hospital-checkbox-item');
-    list.innerHTML = '';
-    list.appendChild(todosItem);
+    const sel = document.getElementById('ger-hosp-select');
+    sel.innerHTML = '<option value="todos" selected>Todos os hospitais</option>';
     (data||[]).forEach(h => {
-      const div = document.createElement('div'); div.className = 'hospital-checkbox-item';
-      div.innerHTML = `<input type="checkbox" id="hck-${h.id}" value="${h.id}" checked class="hosp-ck" onchange="onHospCheckChange()" /><label for="hck-${h.id}" style="cursor:pointer">${h.nome_real||h.nome}${h.parceiro?' ('+h.parceiro+')':''}</label>`;
-      list.appendChild(div);
+      const opt = document.createElement('option');
+      opt.value = h.id;
+      opt.textContent = (h.nome_real||h.nome) + (h.parceiro ? ' ('+h.parceiro+')' : '');
+      opt.selected = true;
+      sel.appendChild(opt);
     });
   } catch(e) {}
 }
 
-function toggleTodosHospitais(cb) {
-  document.querySelectorAll('.hosp-ck').forEach(c => c.checked = cb.checked);
+function closeDrillDown() {
+  document.getElementById('stat-drilldown').classList.remove('open');
+  document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
 }
 
-function onHospCheckChange() {
-  const all = document.querySelectorAll('.hosp-ck');
-  const checked = document.querySelectorAll('.hosp-ck:checked');
-  document.getElementById('ger-todos').checked = all.length === checked.length;
+async function drillDown(type) {
+  /* Toggle: se já está aberto com mesmo tipo, fecha */
+  const panel = document.getElementById('stat-drilldown');
+  const title = document.getElementById('drilldown-title');
+  const body  = document.getElementById('drilldown-body');
+
+  document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-filter'));
+  event.currentTarget?.classList.add('active-filter');
+
+  panel.classList.add('open');
+  body.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  try {
+    const { data: hosps } = await sb.from('hospitais').select('*').order('nome');
+    const { data: rels  } = await sb.from('relatorios').select('hospital_id,cancelado,dados').eq('cancelado',false);
+
+    if (type === 'total') {
+      title.textContent = '🏥 Total de hospitais cadastrados';
+      body.innerHTML = (hosps||[]).map(h => `
+        <div class="stat-drilldown-row">
+          <div>
+            <div style="font-weight:600">${h.nome_real||h.nome}</div>
+            <div style="font-size:11px;color:var(--muted)">${h.parceiro||'—'}</div>
+          </div>
+          <span class="${h.ativo?'badge-ativo':'badge-inativo'}">${h.ativo?'Ativo':'Inativo'}</span>
+        </div>`).join('');
+    } else if (type === 'ativos') {
+      title.textContent = '✅ Hospitais ativos';
+      body.innerHTML = (hosps||[]).filter(h=>h.ativo).map(h => `
+        <div class="stat-drilldown-row">
+          <div>
+            <div style="font-weight:600">${h.nome_real||h.nome}</div>
+            <div style="font-size:11px;color:var(--muted)">${h.parceiro||'—'} · Criado: ${new Date(h.created_at).toLocaleDateString('pt-BR')}</div>
+          </div>
+          <span class="badge-ativo">Ativo</span>
+        </div>`).join('');
+    } else if (type === 'inativos') {
+      title.textContent = '⛔ Hospitais inativos';
+      const inativos = (hosps||[]).filter(h=>!h.ativo);
+      body.innerHTML = inativos.length ? inativos.map(h => `
+        <div class="stat-drilldown-row">
+          <div>
+            <div style="font-weight:600">${h.nome_real||h.nome}</div>
+            <div style="font-size:11px;color:var(--muted)">${h.parceiro||'—'}</div>
+          </div>
+          <span class="badge-inativo">Inativo</span>
+        </div>`).join('') : '<p style="color:var(--muted);text-align:center;padding:16px">Nenhum hospital inativo.</p>';
+    } else if (type === 'reports') {
+      title.textContent = '📋 Total de relatórios gerados por hospital';
+      /* Count per hospital */
+      const cnt = {};
+      (rels||[]).forEach(r => { cnt[r.hospital_id] = (cnt[r.hospital_id]||0)+1; });
+      const hospMap = {};
+      (hosps||[]).forEach(h => { hospMap[h.id] = h; });
+      const sorted = Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
+      body.innerHTML = sorted.length ? sorted.map(([id,n]) => {
+        const h = hospMap[id]||{};
+        return `<div class="stat-drilldown-row">
+          <div>
+            <div style="font-weight:600">${h.nome_real||h.nome||id}</div>
+            <div style="font-size:11px;color:var(--muted)">${h.parceiro||'—'}</div>
+          </div>
+          <span style="font-size:18px;font-weight:700;color:var(--blue)">${n}</span>
+        </div>`;
+      }).join('') : '<p style="color:var(--muted);text-align:center;padding:16px">Nenhum relatório encontrado.</p>';
+    }
+  } catch(e) {
+    body.innerHTML = `<p style="color:var(--red)">Erro: ${e.message}</p>`;
+  }
 }
 
 function getSelectedHospitals() {
-  const checked = document.querySelectorAll('.hosp-ck:checked');
-  return [...checked].map(c => c.value);
+  const sel = document.getElementById('ger-hosp-select');
+  const selected = [...sel.options].filter(o => o.selected).map(o => o.value);
+  if (selected.includes('todos') || selected.length === 0) return 'todos';
+  return selected;
 }
 
 async function gerarGerencial() {
@@ -2462,7 +2565,6 @@ async function gerarGerencial() {
   if (diff < 0)   { showToast('Data fim anterior à data início.','error'); return; }
 
   const hospIds = getSelectedHospitals();
-  if (!hospIds.length) { showToast('Selecione ao menos um hospital.','error'); return; }
 
   showToast('Gerando relatório...','');
 
@@ -2479,7 +2581,7 @@ async function gerarGerencial() {
       .eq('cancelado', false)
       .order('criado_em', { ascending: true });
 
-    if (!document.getElementById('ger-todos').checked) {
+    if (hospIds !== 'todos') {
       q = q.in('hospital_id', hospIds);
     }
 
