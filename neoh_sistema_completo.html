@@ -234,7 +234,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 .stat-card.red .stat-val { color: var(--red); }
 
 .hospital-grid { display: flex; flex-direction: column; gap: 10px; }
-.hospital-row { background: var(--white); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 18px; display: grid; grid-template-columns: 1fr auto auto auto auto; gap: 12px; align-items: center; }
+.hospital-row { background: var(--white); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 18px; display: grid; grid-template-columns: 1fr auto auto auto auto auto; gap: 10px; align-items: center; }
 .hospital-row:hover { border-color: var(--blue); }
 .hosp-name { font-size: 14px; font-weight: 600; color: var(--text); }
 .hosp-parceiro { font-size: 12px; color: var(--muted); }
@@ -471,6 +471,88 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 .popup-salvar-btn-primary:hover { opacity: .88; }
 .popup-salvar-btn-secondary { background: none; border: 1px solid #d4d8e0; color: #6b7280; padding: 10px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all .15s; }
 .popup-salvar-btn-secondary:hover { background: #f5f6f8; }
+
+/* ── HISTÓRICO: SEQUENCIAL E STATUS ── */
+.hist-card.cancelado {
+  border-color: #fca5a5;
+  background: #fff5f5;
+  opacity: .9;
+}
+.hist-card.cancelado .hist-info strong {
+  color: #991b1b;
+  text-decoration: line-through;
+}
+.hist-seq {
+  display: inline-block;
+  background: #1a3a6b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-right: 6px;
+  letter-spacing: .04em;
+  flex-shrink: 0;
+}
+.hist-seq.cancelado-seq {
+  background: #991b1b;
+}
+.badge-cancelado {
+  display: inline-block;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 20px;
+  margin-left: 8px;
+}
+.hist-card-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+
+/* ── MODO LEITURA (visualizar) ── */
+.modo-leitura-banner {
+  background: #1a3a6b;
+  color: #fff;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ── ADMIN: histórico do hospital ── */
+.admin-hist-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--blue);
+}
+.admin-hist-header h3 { font-size: 16px; font-weight: 700; color: var(--blue); }
+.btn-back-admin {
+  background: none;
+  border: 0.5px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-back-admin:hover { background: var(--gray-bg); }
 
 /* Tip box no histórico */
 .hist-tip {
@@ -1113,20 +1195,23 @@ async function saveToSupabase() {
 
 async function _doSaveToSupabase(hospitalId, nomeHospital) {
   try {
-    /* Captura o mês/ano atual para organizar no histórico */
     const agora = new Date();
+    const nextSeq = await getNextSeq(hospitalId);
     const dadosCompletos = {
       ...lastData,
       _meta: {
         ano: agora.getFullYear(),
         mes: agora.getMonth() + 1,
         mesNome: agora.toLocaleString('pt-BR', { month: 'long' }),
-        salvoEm: agora.toISOString()
+        salvoEm: agora.toISOString(),
+        seq: nextSeq
       }
     };
     const { error } = await sb.from('relatorios').insert({
       hospital_id: hospitalId,
       dados: dadosCompletos,
+      seq_num: nextSeq,
+      cancelado: false,
       criado_por: session.nome
     });
     if (error) throw error;
@@ -1144,32 +1229,49 @@ async function _doSaveToSupabase(hospitalId, nomeHospital) {
 /* ══════════════════════════════════════
    HISTÓRICO
    ══════════════════════════════════════ */
-async function loadHistory() {
+async function loadHistory(hospitalIdOverride, hospitalNomeOverride) {
   const cont = document.getElementById('hist-content');
+  const hospId   = hospitalIdOverride   || session?.hospitalId;
+  const hospNome = hospitalNomeOverride || session?.nome || '';
   cont.innerHTML = '<div class="loading"><div class="spinner"></div><br>Carregando...</div>';
 
   try {
-    let query = sb.from('relatorios').select('*').order('criado_em', { ascending: false });
-    if (!session?.isAdmin && session?.hospitalId) {
-      query = query.eq('hospital_id', session.hospitalId);
-    }
-    const { data, error } = await query.limit(100);
+    let query = sb.from('relatorios').select('*').order('seq_num', { ascending: true });
+    if (hospId) query = query.eq('hospital_id', hospId);
+    const { data, error } = await query.limit(200);
     if (error) throw error;
 
     cont.innerHTML = '';
 
-    /* Header com info do hospital e botão Novo Relatório */
-    if (!session?.isAdmin && session) {
+    /* Header */
+    const isAdminView = !!hospitalIdOverride; /* admin vendo hospital específico */
+    if (isAdminView) {
+      const hdr = document.createElement('div');
+      hdr.className = 'admin-hist-header';
+      hdr.innerHTML = `
+        <button class="btn-back-admin" onclick="voltarAdminPanel()">← Voltar</button>
+        <h3>📋 Relatórios — ${hospNome}</h3>`;
+      cont.appendChild(hdr);
+    } else if (session && !session.isAdmin) {
       const header = document.createElement('div');
       header.className = 'hist-hospital-header';
       header.innerHTML = `
         <img src="${LOGO}" alt="Neoh" />
         <div>
-          <h3>${session.nome}</h3>
+          <h3>${session.nome_real || session.nome}</h3>
           <p>${session.parceiro || 'Hospital parceiro'}</p>
         </div>
         <button class="btn-novo" onclick="novoRelatorio()">+ Novo relatório</button>`;
       cont.appendChild(header);
+    } else if (session?.isAdmin && !isAdminView) {
+      /* Admin no histórico geral — mostra botão novo */
+      const hdr = document.createElement('div');
+      hdr.className = 'hist-hospital-header';
+      hdr.innerHTML = `
+        <img src="${LOGO}" alt="Neoh" />
+        <div><h3>${hospNome}</h3><p>${session.parceiro || ''}</p></div>
+        <button class="btn-novo" onclick="novoRelatorio()">+ Novo relatório</button>`;
+      cont.appendChild(hdr);
     }
 
     if (!data || !data.length) {
@@ -1177,15 +1279,12 @@ async function loadHistory() {
       empty.innerHTML = `
         <div class="hist-tip">
           <span class="hist-tip-icon">💡</span>
-          <div>
-            <strong>Nenhum relatório encontrado ainda.</strong><br>
-            Este é o primeiro acesso deste hospital. Clique em <strong>"+ Novo relatório"</strong> para preencher o formulário e gerar o primeiro status report executivo.
-          </div>
+          <div><strong>Nenhum relatório encontrado ainda.</strong><br>
+          Clique em <strong>"+ Novo relatório"</strong> para criar o primeiro status report.</div>
         </div>
         <div class="card" style="text-align:center;padding:40px">
           <div style="font-size:48px;margin-bottom:12px">📋</div>
           <p style="font-size:15px;font-weight:600;color:#1a3a6b;margin-bottom:8px">Sem relatórios ainda</p>
-          <p style="font-size:12px;color:#6b7280;margin-bottom:20px">Comece criando o primeiro status report para este hospital.</p>
           <button onclick="novoRelatorio()" style="background:var(--orange);color:#fff;border:none;padding:12px 28px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer">
             📝 Criar primeiro relatório
           </button>
@@ -1193,47 +1292,57 @@ async function loadHistory() {
       cont.appendChild(empty);
       return;
     }
-    /* Dica para usuários com histórico */
+
+    /* Dica */
     const tip = document.createElement('div');
     tip.className = 'hist-tip';
-    tip.innerHTML = `<span class="hist-tip-icon">💡</span><div>Clique em <strong>"+ Novo relatório"</strong> para criar um novo, ou em <strong>"📋 Usar como base"</strong> para aproveitar os dados do último relatório.</div>`;
+    tip.innerHTML = `<span class="hist-tip-icon">💡</span><div>Clique em <strong>"👁 Visualizar"</strong> para ver o relatório em modo leitura, ou em <strong>"📋 Usar como base"</strong> para criar um novo aproveitando os dados.</div>`;
     cont.appendChild(tip);
 
     /* Agrupar por Ano → Mês */
     const grupos = {};
     data.forEach(r => {
       const dt = new Date(r.criado_em);
-      const ano = r.dados?._meta?.ano || dt.getFullYear();
-      const mes = r.dados?._meta?.mes || (dt.getMonth() + 1);
-      const mesNome = r.dados?._meta?.mesNome || dt.toLocaleString('pt-BR', { month: 'long' });
-      const key = `${ano}-${String(mes).padStart(2,'0')}`;
-      const label = `${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)} ${ano}`;
-      if (!grupos[key]) grupos[key] = { label, items: [] };
+      const ano  = r.dados?._meta?.ano  || dt.getFullYear();
+      const mes  = r.dados?._meta?.mes  || (dt.getMonth() + 1);
+      const mesN = r.dados?._meta?.mesNome || dt.toLocaleString('pt-BR', { month: 'long' });
+      const key  = `${ano}-${String(mes).padStart(2,'0')}`;
+      const lbl  = `${mesN.charAt(0).toUpperCase() + mesN.slice(1)} ${ano}`;
+      if (!grupos[key]) grupos[key] = { label: lbl, items: [] };
       grupos[key].items.push(r);
     });
 
-    /* Renderizar grupos em ordem decrescente */
     Object.keys(grupos).sort().reverse().forEach(key => {
       const g = grupos[key];
-      const group = document.createElement('div');
-      group.className = 'hist-group';
-      group.innerHTML = `<div class="hist-group-title">📅 <span class="hist-group-month">${g.label}</span> <span style="font-size:11px;color:#9ca3af;font-weight:400">${g.items.length} relatório(s)</span></div>`;
+      const group = document.createElement('div'); group.className = 'hist-group';
+      const ativos = g.items.filter(r => !r.cancelado).length;
+      const cancelados = g.items.filter(r => r.cancelado).length;
+      let resumo = `${ativos} ativo(s)`;
+      if (cancelados) resumo += ` · ${cancelados} cancelado(s)`;
+      group.innerHTML = `<div class="hist-group-title">📅 <span class="hist-group-month">${g.label}</span> <span style="font-size:11px;color:#9ca3af;font-weight:400">${resumo}</span></div>`;
 
-      const list = document.createElement('div');
-      list.className = 'hist-list';
-      g.items.forEach(r => {
-        const d = r.dados;
-        const card = document.createElement('div'); card.className = 'hist-card';
+      const list = document.createElement('div'); list.className = 'hist-list';
+      /* Mostrar em ordem decrescente de seq dentro do mês */
+      [...g.items].sort((a,b) => (b.seq_num||0)-(a.seq_num||0)).forEach(r => {
+        const d = r.dados || {};
+        const cancelado = !!r.cancelado;
+        const seq = r.seq_num ? String(r.seq_num).padStart(3,'0') : '???';
+        const card = document.createElement('div');
+        card.className = 'hist-card' + (cancelado ? ' cancelado' : '');
         const dt = new Date(r.criado_em).toLocaleString('pt-BR');
+        const titulo = `${d.projeto || '—'} — ${d.parceiro || '—'}`;
+        const seqBadge = `<span class="hist-seq ${cancelado?'cancelado-seq':''}">[${seq}]</span>`;
+        const cancelBadge = cancelado ? `<span class="badge-cancelado">✗ Cancelado</span>` : '';
+
         card.innerHTML = `
           <div class="hist-info">
-            <strong>${d.projeto || '—'} — ${d.parceiro || '—'}</strong>
-            <span>Data do relatório: ${d.data || '—'} &nbsp;·&nbsp; Salvo em: ${dt}</span>
+            <div class="hist-card-title">${seqBadge}<strong>${titulo}</strong>${cancelBadge}</div>
+            <span>Data: ${d.data || '—'} &nbsp;·&nbsp; Salvo em: ${dt} &nbsp;·&nbsp; Por: ${r.criado_por || '—'}</span>
           </div>
           <div class="hist-actions">
-            <button class="btn-sm" onclick="loadSnapshot('${r.id}')">👁 Visualizar</button>
-            <button class="btn-sm" onclick="usarComoBase('${r.id}')">📋 Usar como base</button>
-            <button class="btn-sm danger" onclick="deleteSnapshot('${r.id}')">🗑</button>
+            <button class="btn-sm" onclick="visualizarSomenteLeitura('${r.id}')">👁 Visualizar</button>
+            <button class="btn-sm" onclick="usarComoBase('${r.id}','${seq}')">📋 Usar como base</button>
+            ${!cancelado ? `<button class="btn-sm danger" onclick="cancelarRelatorio('${r.id}','${seq}')">✗ Cancelar</button>` : `<button class="btn-sm" onclick="regerarRelatorio('${r.id}','${seq}')" title="Criar novo com base neste">♻️ Regerar</button>`}
           </div>`;
         list.appendChild(card);
       });
@@ -1242,7 +1351,7 @@ async function loadHistory() {
     });
 
   } catch(e) {
-    cont.innerHTML = `<p class="hist-empty">Erro ao carregar: ${e.message}</p>`;
+    cont.innerHTML = `<p class="hist-empty">Erro: ${e.message}</p>`;
   }
 }
 
@@ -1256,6 +1365,111 @@ async function loadSnapshot(id) {
   } catch(e) {
     showToast('Erro ao carregar: ' + e.message, 'error');
   }
+}
+
+/* ── VISUALIZAR SOMENTE LEITURA ── */
+async function visualizarSomenteLeitura(id) {
+  try {
+    const { data, error } = await sb.from('relatorios').select('*').eq('id', id).single();
+    if (error) throw error;
+    const d = data.dados;
+    const seq = data.seq_num ? '[' + String(data.seq_num).padStart(3,'0') + '] ' : '';
+    const cancelado = !!data.cancelado;
+
+    /* Gera HTML do relatório */
+    document.getElementById('rpt-output').innerHTML = buildReportHTML(d);
+
+    /* Toolbar modo leitura: sem editar, sem salvar */
+    const banner = document.createElement('div');
+    banner.className = 'modo-leitura-banner';
+    banner.id = 'modo-leitura-banner';
+    banner.innerHTML = `🔒 Modo leitura — ${seq}${d.projeto||''} ${cancelado ? '<span style="color:#fca5a5;margin-left:8px">✗ CANCELADO</span>' : ''}`;
+
+    const toolbar = document.querySelector('.report-toolbar');
+    if (toolbar) {
+      toolbar.innerHTML = `
+        <button class="btn-tool" onclick="sairModoLeitura()">← Voltar ao histórico</button>
+        <button class="btn-tool" onclick="voltarTelaInicial()">🏠 Tela inicial</button>
+        <button class="btn-tool accent" onclick="window.print()">🖨️ Imprimir / PDF</button>`;
+    }
+
+    /* Insere banner acima do relatório */
+    const rptOutput = document.getElementById('rpt-output');
+    rptOutput.insertAdjacentElement('beforebegin', banner);
+
+    /* Esconde aviso salvar no modo leitura */
+    document.getElementById('aviso-salvar').style.display = 'none';
+    _relatorioSalvo = true; /* não mostrar popup ao sair */
+
+    switchTab('report');
+    window._modoLeitura = true;
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+function sairModoLeitura() {
+  window._modoLeitura = false;
+  /* Remove banner */
+  const banner = document.getElementById('modo-leitura-banner');
+  if (banner) banner.remove();
+  /* Restaura toolbar normal */
+  const toolbar = document.querySelector('.report-toolbar');
+  if (toolbar) {
+    toolbar.innerHTML = `
+      <button class="btn-tool" onclick="sairDoRelatorio('form')">✏️ Editar formulário</button>
+      <button class="btn-tool" onclick="sairDoRelatorio('inicio')">🏠 Tela inicial</button>
+      <button class="btn-tool" onclick="sairDoRelatorio('hist')">🗂️ Histórico do hospital</button>
+      <button class="btn-tool accent" onclick="window.print()">🖨️ Imprimir / PDF</button>`;
+  }
+  switchTab('hist');
+  loadHistory();
+}
+
+/* ── SEQUENCIAL: próximo número para hospital ── */
+async function getNextSeq(hospitalId) {
+  try {
+    const { data, error } = await sb
+      .from('relatorios')
+      .select('seq_num')
+      .eq('hospital_id', hospitalId)
+      .order('seq_num', { ascending: false })
+      .limit(1);
+    if (error || !data || !data.length) return 1;
+    return (data[0].seq_num || 0) + 1;
+  } catch { return 1; }
+}
+
+/* ── CANCELAR RELATÓRIO ── */
+async function cancelarRelatorio(id, seq) {
+  if (!confirm(`Cancelar o relatório [${seq}]?\n\nEle ficará visível no histórico em vermelho e não poderá ser editado, mas poderá ser regerado.`)) return;
+  try {
+    const { error } = await sb.from('relatorios').update({ cancelado: true }).eq('id', id);
+    if (error) throw error;
+    showToast(`Relatório [${seq}] cancelado.`, 'success');
+    loadHistory();
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+/* ── REGERAR RELATÓRIO (baseado em cancelado) ── */
+async function regerarRelatorio(id, seq) {
+  await usarComoBase(id, seq, true);
+}
+
+/* ── ADMIN: ver histórico de hospital específico ── */
+async function verHistorialAdmin(hospitalId, hospitalNome) {
+  /* Salva contexto admin */
+  window._adminHistCtx = { id: hospitalId, nome: hospitalNome };
+  switchTab('hist');
+  await loadHistory(hospitalId, hospitalNome);
+}
+
+function voltarAdminPanel() {
+  window._adminHistCtx = null;
+  switchTab('admin');
+  loadAdminPanel();
 }
 
 async function deleteSnapshot(id) {
@@ -1297,13 +1511,15 @@ async function loadAdminPanel() {
     grid.innerHTML = '';
     hospitais.forEach(h => {
       const row = document.createElement('div'); row.className = 'hospital-row';
+      /* Contar relatórios deste hospital */
       row.innerHTML = `
         <div>
-          <div class="hosp-name">${h.nome}</div>
+          <div class="hosp-name">${h.nome_real || h.nome}</div>
           <div class="hosp-parceiro">${h.parceiro || '—'}</div>
         </div>
         <span class="${h.ativo?'badge-ativo':'badge-inativo'}">${h.ativo?'Ativo':'Inativo'}</span>
         <span class="hosp-date">Criado: ${new Date(h.created_at).toLocaleDateString('pt-BR')}</span>
+        <button class="btn-sm" onclick="verHistorialAdmin('${h.id}','${(h.nome_real||h.nome).replace(/'/g,"\'")}')" style="color:var(--blue);border-color:var(--blue)">📋 Relatórios</button>
         <button class="btn-sm" onclick="toggleHospital('${h.id}',${h.ativo})">${h.ativo?'Desativar':'Ativar'}</button>
         <button class="btn-sm danger" onclick="deleteHospital('${h.id}','${h.nome}')">🗑</button>`;
       grid.appendChild(row);
@@ -1331,7 +1547,7 @@ async function salvarHospital() {
   if (!nome || !senha || !nomeReal) { showToast('Preencha todos os campos obrigatórios.', 'error'); return; }
 
   try {
-    const insertData = { nome, senha, parceiro, ativo: true };
+    const insertData = { nome, senha, parceiro, nome_real: nomeReal, ativo: true };
     /* Salva logo como base64 no campo logo_url se fornecida */
     if (modalLogoData) insertData.logo_url = modalLogoData;
 
@@ -1688,8 +1904,11 @@ function _abrirSistema(h, tab) {
   document.getElementById('main-wrap').style.display = 'block';
 
   /* Label do hospital na topnav */
-  const label = h.parceiro ? h.parceiro : h.nome;
-  document.getElementById('topnav-hospital').textContent = label ? 'Sistema Hospitalar: ' + label : '';
+  const nomeReal = h.nome_real || h.nome || '';
+  const sistema  = h.parceiro || '';
+  let topnavLabel = 'Hosp. Escolhido: ' + nomeReal;
+  if (sistema) topnavLabel += '  |  Sistema Hospitalar: ' + sistema;
+  document.getElementById('topnav-hospital').textContent = topnavLabel;
 
   /* Admin: mostra aba Admin mas NÃO vai para o painel admin — vai para o hospital */
   if (session.isAdmin) {
@@ -1825,14 +2044,28 @@ function voltarTelaInicial() {
   setTimeout(() => document.getElementById('busca-input').focus(), 100);
 }
 
-async function usarComoBase(id) {
+async function usarComoBase(id, seqOrigem, isRegerar) {
   try {
     const { data, error } = await sb.from('relatorios').select('dados').eq('id', id).single();
     if (error) throw error;
-    preencherFormulario(data.dados, new Date().toISOString().split('T')[0]);
+
+    /* Calcula próximo sequencial */
+    const nextSeq = await getNextSeq(session.hospitalId);
+    const nextSeqStr = String(nextSeq).padStart(3,'0');
+    const seqOrigemStr = seqOrigem || '???';
+
+    /* Aviso informativo */
+    const avisoMsg = isRegerar
+      ? `♻️ Regerando relatório [${seqOrigemStr}]. O novo relatório será registrado como [${nextSeqStr}].`
+      : `📋 Usando como base o relatório [${seqOrigemStr}]. O novo relatório será registrado como [${nextSeqStr}].`;
+
+    document.getElementById('aviso-auto-fill').innerHTML =
+      `<span class="aviso-icon">⚠️</span><span>${avisoMsg} Revise os dados antes de gerar.</span>`;
     document.getElementById('aviso-auto-fill').style.display = 'flex';
+
+    preencherFormulario(data.dados, new Date().toISOString().split('T')[0]);
     switchTab('form');
-    showToast('Formulário preenchido com relatório anterior. Revise antes de gerar!', 'success');
+    showToast(isRegerar ? `Regerando [${seqOrigemStr}] como [${nextSeqStr}]` : `Usando [${seqOrigemStr}] como base para [${nextSeqStr}]`, 'success');
   } catch(e) {
     showToast('Erro ao carregar base: ' + e.message, 'error');
   }
