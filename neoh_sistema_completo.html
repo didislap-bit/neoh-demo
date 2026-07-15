@@ -658,13 +658,13 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="aviso-salvar-btn" onclick="saveToSupabase();this.textContent='Salvando...';this.disabled=true">☁️ Salvar agora</button>
-        <button class="aviso-salvar-btn" style="background:#1a3a6b" onclick="voltarTelaInicial()">🏠 Tela inicial</button>
+        <button class="aviso-salvar-btn" style="background:#1a3a6b" onclick="sairDoRelatorio('inicio')">🏠 Tela inicial</button>
       </div>
     </div>
     <div class="report-toolbar">
-      <button class="btn-tool" onclick="switchTab('form')">✏️ Editar formulário</button>
-      <button class="btn-tool" onclick="voltarTelaInicial()">🏠 Tela inicial</button>
-      <button class="btn-tool" onclick="switchTab('hist')">🗂️ Histórico do hospital</button>
+      <button class="btn-tool" onclick="sairDoRelatorio('form')">✏️ Editar formulário</button>
+      <button class="btn-tool" onclick="sairDoRelatorio('inicio')">🏠 Tela inicial</button>
+      <button class="btn-tool" onclick="sairDoRelatorio('hist')">🗂️ Histórico do hospital</button>
       <button class="btn-tool accent" onclick="window.print()">🖨️ Imprimir / PDF</button>
     </div>
     <div class="rpt" id="rpt-output"></div>
@@ -739,10 +739,10 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 <div class="popup-salvar" id="popup-salvar">
   <div class="popup-icon">💾</div>
   <h4>Relatório não salvo!</h4>
-  <p>Você gerou um relatório mas ainda não salvou. Deseja salvar antes de continuar?</p>
+  <p>Você está saindo sem salvar o relatório. Deseja salvá-lo no histórico do hospital antes de continuar?</p>
   <div class="popup-salvar-actions">
-    <button class="popup-salvar-btn-primary" onclick="salvarEFechar()">☁️ Salvar agora</button>
-    <button class="popup-salvar-btn-secondary" onclick="fecharPopupSalvar()">Ignorar</button>
+    <button class="popup-salvar-btn-primary" onclick="salvarEFechar()">☁️ Salvar e continuar</button>
+    <button class="popup-salvar-btn-secondary" onclick="ignorarESair()">Sair sem salvar</button>
   </div>
 </div>
 
@@ -1051,8 +1051,8 @@ async function _doGenerate(nomeHosp) {
   setTimeout(() => {
     document.getElementById('rpt-output').innerHTML = buildReportHTML(d);
     document.getElementById('aviso-salvar').style.display = 'flex';
-    /* Inicia timer do popup (15s sem salvar = mostra aviso) */
-    iniciarTimerSalvar();
+    /* Marca que há um relatório não salvo */
+    _relatorioSalvo = false;
   }, 50);
 }
 
@@ -1652,7 +1652,7 @@ function _abrirSistema(h, tab) {
 
   /* Label do hospital na topnav */
   const label = h.parceiro ? h.parceiro : h.nome;
-  document.getElementById('topnav-hospital').textContent = label;
+  document.getElementById('topnav-hospital').textContent = label ? 'Sistema Hospitalar: ' + label : '';
 
   /* Admin: mostra aba Admin mas NÃO vai para o painel admin — vai para o hospital */
   if (session.isAdmin) {
@@ -1862,12 +1862,8 @@ let _popupTimer = null;
 let _relatorioSalvo = false;
 
 function iniciarTimerSalvar() {
+  /* Reservado para uso futuro */
   _relatorioSalvo = false;
-  clearTimeout(_popupTimer);
-  /* Após 15 segundos sem salvar, mostra popup */
-  _popupTimer = setTimeout(() => {
-    if (!_relatorioSalvo) mostrarPopupSalvar();
-  }, 15000);
 }
 
 function mostrarPopupSalvar() {
@@ -1875,14 +1871,42 @@ function mostrarPopupSalvar() {
   document.getElementById('popup-salvar').classList.add('show');
 }
 
+let _acaoPendente = null; /* ação a executar após decidir sobre o save */
+
+function sairDoRelatorio(destino) {
+  if (!_relatorioSalvo && lastData) {
+    /* Relatório gerado mas não salvo — mostra popup */
+    _acaoPendente = destino;
+    mostrarPopupSalvar();
+  } else {
+    /* Já salvo ou sem relatório — navega direto */
+    executarNavegacao(destino);
+  }
+}
+
+function executarNavegacao(destino) {
+  if (destino === 'form') switchTab('form');
+  else if (destino === 'hist') switchTab('hist');
+  else if (destino === 'inicio') voltarTelaInicial();
+}
+
 function fecharPopupSalvar() {
   document.getElementById('popup-salvar').classList.remove('show');
   clearTimeout(_popupTimer);
+  _acaoPendente = null;
 }
 
 async function salvarEFechar() {
+  const destino = _acaoPendente;
   fecharPopupSalvar();
   await saveToSupabase();
+  if (destino) executarNavegacao(destino);
+}
+
+function ignorarESair() {
+  const destino = _acaoPendente;
+  fecharPopupSalvar();
+  if (destino) executarNavegacao(destino);
 }
 
 function marcarSalvo() {
