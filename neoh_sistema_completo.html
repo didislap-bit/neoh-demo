@@ -682,11 +682,11 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
   <div id="report-panel" class="panel">
     <div id="aviso-salvar" class="aviso-salvar" style="display:none">
       <div>
-        <strong>💾 Salve este relatório!</strong>
-        Não esqueça de salvar para que fique registrado no histórico do hospital.
+        <strong id="aviso-salvar-titulo">💾 Salve este relatório!</strong>
+        <span id="aviso-salvar-desc">Não esqueça de salvar para que fique registrado no histórico do hospital.</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="aviso-salvar-btn" onclick="saveToSupabase();this.textContent='Salvando...';this.disabled=true">☁️ Salvar agora</button>
+        <button class="aviso-salvar-btn" id="aviso-btn-salvar" onclick="saveToSuabase_tarja()">☁️ Salvar agora</button>
         <button class="aviso-salvar-btn" style="background:#1a3a6b" onclick="sairDoRelatorio('inicio')">🏠 Tela inicial</button>
       </div>
     </div>
@@ -1910,15 +1910,55 @@ function mostrarPopupSalvar() {
 
 let _acaoPendente = null; /* ação a executar após decidir sobre o save */
 
-function sairDoRelatorio(destino) {
-  if (!_relatorioSalvo && lastData) {
-    /* Relatório gerado mas não salvo — mostra popup */
+async function sairDoRelatorio(destino) {
+  if (destino === 'form' && !_relatorioSalvo && lastData) {
+    /* Editar formulário: salva automaticamente antes de navegar */
+    await salvarESeguirParaForm();
+  } else if (!_relatorioSalvo && lastData && destino !== 'form') {
+    /* Outros destinos sem salvar — mostra popup */
     _acaoPendente = destino;
     mostrarPopupSalvar();
   } else {
     /* Já salvo ou sem relatório — navega direto */
     executarNavegacao(destino);
   }
+}
+
+async function salvarESeguirParaForm() {
+  /* Mostra "Salvando..." na tarja e desabilita o botão */
+  const avisoBtns = document.querySelectorAll('.aviso-salvar-btn');
+  avisoBtns.forEach(b => { b.disabled = true; b.style.opacity = '.6'; });
+
+  const avisoTitle = document.querySelector('#aviso-salvar strong');
+  const avisoDesc  = document.querySelector('#aviso-salvar p, #aviso-salvar div > :not(div)');
+  if (avisoTitle) avisoTitle.textContent = '💾 Salvando...';
+
+  try {
+    if (session?.hospitalId && lastData) {
+      const agora = new Date();
+      const dadosCompletos = {
+        ...lastData,
+        _meta: {
+          ano: agora.getFullYear(),
+          mes: agora.getMonth() + 1,
+          mesNome: agora.toLocaleString('pt-BR', { month: 'long' }),
+          salvoEm: agora.toISOString()
+        }
+      };
+      const { error } = await sb.from('relatorios').insert({
+        hospital_id: session.hospitalId,
+        dados: dadosCompletos,
+        criado_por: session.nome || 'sistema'
+      });
+      if (!error) {
+        marcarSalvo();
+        showToast('✅ Relatório salvo!', 'success');
+      }
+    }
+  } catch(e) { /* silencioso */ }
+
+  /* Navega para formulário */
+  switchTab('form');
 }
 
 function executarNavegacao(destino) {
@@ -1952,6 +1992,16 @@ function marcarSalvo() {
   fecharPopupSalvar();
   /* Esconde tarja verde após salvar */
   document.getElementById('aviso-salvar').style.display = 'none';
+}
+
+async function saveToSuabase_tarja() {
+  /* Botão salvar da tarja — mostra feedback visual */
+  const btn = document.getElementById('aviso-btn-salvar');
+  const titulo = document.getElementById('aviso-salvar-titulo');
+  if (btn) { btn.textContent = '⏳ Salvando...'; btn.disabled = true; }
+  if (titulo) titulo.textContent = '💾 Salvando...';
+  await saveToSupabase();
+  /* saveToSupabase chama marcarSalvo que esconde a tarja */
 }
 
 /* ══════════════════════════════════════
