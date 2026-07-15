@@ -222,6 +222,68 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 .btn-sm.danger { color: var(--red); border-color: #fca5a5; }
 .btn-sm.danger:hover { background: #fee2e2; }
 
+/* ── RELATÓRIO GERENCIAL ── */
+.gerencial-filters {
+  background:#fff;border:.5px solid var(--border);border-radius:12px;
+  padding:18px;margin-bottom:16px;
+}
+.gerencial-filters-grid {
+  display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;
+}
+.filter-field label { display:block;font-size:11px;color:var(--muted);font-weight:500;margin-bottom:5px; }
+.filter-field input, .filter-field select {
+  width:100%;padding:8px 10px;font-size:13px;border:.5px solid var(--border);
+  border-radius:7px;background:#fff;font-family:inherit;color:var(--text);
+}
+.hospital-checkboxes {
+  background:#f8fafc;border:.5px solid var(--border);border-radius:8px;
+  padding:10px;max-height:140px;overflow-y:auto;
+}
+.hospital-checkbox-item {
+  display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;color:var(--text);cursor:pointer;
+}
+.hospital-checkbox-item input[type=checkbox] { width:14px;height:14px;cursor:pointer;accent-color:var(--blue); }
+.gerencial-stats {
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;
+}
+.gerencial-charts {
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;
+}
+.chart-card {
+  background:#fff;border:.5px solid var(--border);border-radius:12px;padding:16px;
+}
+.chart-card h4 { font-size:13px;font-weight:600;color:var(--blue);margin-bottom:12px; }
+.chart-bar-row { display:flex;align-items:center;gap:8px;margin-bottom:8px; }
+.chart-bar-label { font-size:11px;color:var(--muted);width:120px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.chart-bar-track { flex:1;background:#f0f4ff;border-radius:4px;height:18px;overflow:hidden; }
+.chart-bar-fill { height:100%;border-radius:4px;background:var(--blue);transition:width .6s ease;display:flex;align-items:center;padding-left:6px; }
+.chart-bar-fill span { font-size:10px;color:#fff;font-weight:600; }
+.chart-line-svg { width:100%;height:120px; }
+.gerencial-table-wrap { background:#fff;border:.5px solid var(--border);border-radius:12px;overflow:hidden; }
+.gerencial-table { width:100%;border-collapse:collapse;font-size:12px; }
+.gerencial-table th { background:var(--blue);color:#fff;padding:8px 12px;text-align:left;font-weight:500;font-size:11px; }
+.gerencial-table td { padding:7px 12px;border-bottom:.5px solid var(--border); }
+.gerencial-table tr:nth-child(even) td { background:var(--gray-bg); }
+.gerencial-table tr:last-child td { border-bottom:none; }
+.btn-export-excel {
+  background:#1a9e75;color:#fff;border:none;padding:9px 18px;
+  border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;gap:6px;transition:opacity .15s;
+}
+.btn-export-excel:hover { opacity:.88; }
+.btn-gerar-gerencial {
+  background:var(--blue);color:#fff;border:none;padding:9px 18px;
+  border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;
+}
+.btn-gerar-gerencial:hover { opacity:.88; }
+.status-badge {
+  display:inline-block;padding:2px 9px;border-radius:4px;font-size:10px;font-weight:600;
+}
+.status-andamento { background:#dbeafe;color:#1e40af; }
+.status-concluido { background:#dcfce7;color:#15803d; }
+.status-risco { background:#fef9c3;color:#854d0e; }
+.status-pausado { background:#fee2e2;color:#991b1b; }
+
 /* ── ADMIN PANEL ── */
 .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .admin-header h2 { font-size: 20px; font-weight: 700; color: var(--blue); }
@@ -675,7 +737,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
   <div id="form-panel" class="panel active">
     <div id="aviso-auto-fill" class="aviso-auto" style="display:none">
       <span class="aviso-icon">⚠️</span>
-      <span>Formulário preenchido automaticamente com o <strong>último relatório salvo</strong> deste hospital. Revise e edite antes de gerar o novo relatório.</span>
+      <span id="aviso-auto-texto">Formulário preenchido automaticamente com o <strong>último relatório salvo</strong> deste hospital. Revise e edite antes de gerar o novo relatório.</span>
+      <button onclick="cancelarUsarComoBase()" style="margin-left:auto;flex-shrink:0;background:none;border:1px solid #92400e;color:#92400e;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;white-space:nowrap;transition:all .15s" onmouseover="this.style.background='#92400e';this.style.color='#fff'" onmouseout="this.style.background='none';this.style.color='#92400e'">← Voltar ao histórico</button>
     </div>
     <div class="form-grid">
       <div class="form-sidebar">
@@ -794,7 +857,11 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
   <div id="admin-panel" class="panel">
     <div class="admin-header">
       <h2>⚙️ Painel administrativo</h2>
-      <button class="btn-tool accent" onclick="openModalNovoHospital()">+ Novo hospital</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-tool" onclick="toggleAdminView('hospitais')" id="btn-view-hosp" style="background:var(--blue);color:#fff;border-color:var(--blue)">🏥 Hospitais</button>
+        <button class="btn-tool" onclick="toggleAdminView('gerencial')" id="btn-view-ger">📊 Relatório Gerencial</button>
+        <button class="btn-tool accent" onclick="openModalNovoHospital()">+ Novo hospital</button>
+      </div>
     </div>
     <div class="admin-stats">
       <div class="stat-card"><div class="stat-val" id="stat-total">—</div><div class="stat-lbl">Total de hospitais</div></div>
@@ -808,6 +875,49 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
     </div>
   </div>
 </div>
+    <!-- GERENCIAL PANEL -->
+    <div id="gerencial-panel" style="display:none">
+      <div class="gerencial-filters">
+        <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:12px">🔍 Filtros do relatório gerencial</div>
+        <div class="gerencial-filters-grid">
+          <div class="filter-field"><label>Data início</label><input type="date" id="ger-dt-inicio" /></div>
+          <div class="filter-field"><label>Data fim</label><input type="date" id="ger-dt-fim" /></div>
+          <div class="filter-field">
+            <label>Hospitais</label>
+            <div class="hospital-checkboxes" id="ger-hospitais-list">
+              <div class="hospital-checkbox-item">
+                <input type="checkbox" id="ger-todos" checked onchange="toggleTodosHospitais(this)" />
+                <label for="ger-todos" style="cursor:pointer;font-weight:600">Todos os hospitais</label>
+              </div>
+            </div>
+          </div>
+          <div class="filter-field"><label>&nbsp;</label><button class="btn-gerar-gerencial" onclick="gerarGerencial()">▶ Gerar</button></div>
+        </div>
+      </div>
+      <div class="gerencial-stats" id="ger-stats" style="display:none">
+        <div class="stat-card"><div class="stat-val" id="ger-total-rel" style="font-size:28px;font-weight:700;color:var(--blue)">—</div><div class="stat-lbl">Total de relatórios</div></div>
+        <div class="stat-card green"><div class="stat-val" id="ger-total-hosp" style="font-size:28px;font-weight:700;color:var(--teal)">—</div><div class="stat-lbl">Hospitais no período</div></div>
+        <div class="stat-card orange"><div class="stat-val" id="ger-media-mes" style="font-size:28px;font-weight:700;color:var(--orange)">—</div><div class="stat-lbl">Média por mês</div></div>
+        <div class="stat-card"><div class="stat-val" id="ger-ultimo-status" style="font-size:13px;font-weight:700;color:var(--blue)">—</div><div class="stat-lbl">Status mais frequente</div></div>
+      </div>
+      <div class="gerencial-charts" id="ger-charts" style="display:none">
+        <div class="chart-card"><h4>📊 Relatórios por hospital</h4><div id="chart-por-hospital"></div></div>
+        <div class="chart-card"><h4>📈 Relatórios por mês</h4><svg class="chart-line-svg" id="chart-por-mes"></svg></div>
+      </div>
+      <div id="ger-table-section" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-size:13px;font-weight:600;color:var(--blue)" id="ger-table-title">Resultados</span>
+          <button class="btn-export-excel" onclick="exportarExcel()">⬇ Exportar Excel</button>
+        </div>
+        <div class="gerencial-table-wrap">
+          <table class="gerencial-table">
+            <thead><tr><th>HOSPITAL</th><th>CD_RELATORIO</th><th>DT_RELATORIO</th><th>DS_RELATORIO</th><th>STATUS_PROJETO</th></tr></thead>
+            <tbody id="ger-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
 <!-- MODAL VINCULAR HOSPITAL (admin) -->
 <div class="modal-overlay" id="modal-vincular">
@@ -1471,14 +1581,29 @@ async function regerarRelatorio(id, seq) {
 
 /* ── ADMIN: ver histórico de hospital específico ── */
 async function verHistorialAdmin(hospitalId, hospitalNome) {
-  /* Salva contexto admin */
+  /* Salva contexto admin e víncula hospital à sessão temporariamente */
   window._adminHistCtx = { id: hospitalId, nome: hospitalNome };
+  session.hospitalId = hospitalId;
+  session.hospitalNome = hospitalNome;
+  /* Busca dados completos do hospital para preencher parceiro */
+  try {
+    const { data } = await sb.from('hospitais').select('parceiro,nome_real').eq('id', hospitalId).single();
+    if (data) {
+      session.parceiro = data.parceiro || '';
+      session.nome_real = data.nome_real || hospitalNome;
+    }
+  } catch(e) {}
   switchTab('hist');
   await loadHistory(hospitalId, hospitalNome);
 }
 
 function voltarAdminPanel() {
   window._adminHistCtx = null;
+  /* Admin volta sem hospital vinculado */
+  session.hospitalId = null;
+  session.hospitalNome = null;
+  session.parceiro = null;
+  session.nome_real = null;
   switchTab('admin');
   loadAdminPanel();
 }
@@ -2088,6 +2213,14 @@ async function usarComoBase(id, seqOrigem, isRegerar) {
   }
 }
 
+function cancelarUsarComoBase() {
+  /* Limpa formulário e volta ao histórico */
+  limparFormulario();
+  document.getElementById('aviso-auto-fill').style.display = 'none';
+  switchTab('hist');
+  loadHistory();
+}
+
 function limparFormulario() {
   document.getElementById('f-empresa').value = 'neoh';
   document.getElementById('f-parceiro').value = session?.parceiro || '';
@@ -2252,6 +2385,225 @@ async function saveToSuabase_tarja() {
   if (titulo) titulo.textContent = '💾 Salvando...';
   await saveToSupabase();
   /* saveToSupabase chama marcarSalvo que esconde a tarja */
+}
+
+/* ══════════════════════════════════════
+   ADMIN: TOGGLE VIEW
+   ══════════════════════════════════════ */
+let _gerencialData = [];
+
+function toggleAdminView(view) {
+  const hospPanel = document.querySelector('.card:has(#hospital-grid)') ||
+                    document.getElementById('hospital-grid')?.closest('.card');
+  const gerPanel  = document.getElementById('gerencial-panel');
+  const btnHosp   = document.getElementById('btn-view-hosp');
+  const btnGer    = document.getElementById('btn-view-ger');
+
+  if (view === 'gerencial') {
+    if (hospPanel) hospPanel.style.display = 'none';
+    gerPanel.style.display = 'block';
+    btnHosp.style.background = 'none'; btnHosp.style.color = 'var(--text)'; btnHosp.style.borderColor = 'var(--border)';
+    btnGer.style.background  = 'var(--blue)'; btnGer.style.color = '#fff'; btnGer.style.borderColor = 'var(--blue)';
+    /* Init filters */
+    initGerencialFilters();
+  } else {
+    if (hospPanel) hospPanel.style.display = '';
+    gerPanel.style.display = 'none';
+    btnHosp.style.background = 'var(--blue)'; btnHosp.style.color = '#fff'; btnHosp.style.borderColor = 'var(--blue)';
+    btnGer.style.background  = 'none'; btnGer.style.color = 'var(--text)'; btnGer.style.borderColor = 'var(--border)';
+  }
+}
+
+async function initGerencialFilters() {
+  /* Set default dates: last 3 months */
+  const hoje = new Date();
+  const tresM = new Date(); tresM.setMonth(hoje.getMonth() - 3);
+  document.getElementById('ger-dt-fim').value   = hoje.toISOString().split('T')[0];
+  document.getElementById('ger-dt-inicio').value = tresM.toISOString().split('T')[0];
+
+  /* Load hospitals for checkboxes */
+  try {
+    const { data } = await sb.from('hospitais').select('id,nome,nome_real,parceiro').eq('ativo',true).order('nome');
+    const list = document.getElementById('ger-hospitais-list');
+    /* Keep "Todos" checkbox */
+    const todosItem = list.querySelector('.hospital-checkbox-item');
+    list.innerHTML = '';
+    list.appendChild(todosItem);
+    (data||[]).forEach(h => {
+      const div = document.createElement('div'); div.className = 'hospital-checkbox-item';
+      div.innerHTML = `<input type="checkbox" id="hck-${h.id}" value="${h.id}" checked class="hosp-ck" onchange="onHospCheckChange()" /><label for="hck-${h.id}" style="cursor:pointer">${h.nome_real||h.nome}${h.parceiro?' ('+h.parceiro+')':''}</label>`;
+      list.appendChild(div);
+    });
+  } catch(e) {}
+}
+
+function toggleTodosHospitais(cb) {
+  document.querySelectorAll('.hosp-ck').forEach(c => c.checked = cb.checked);
+}
+
+function onHospCheckChange() {
+  const all = document.querySelectorAll('.hosp-ck');
+  const checked = document.querySelectorAll('.hosp-ck:checked');
+  document.getElementById('ger-todos').checked = all.length === checked.length;
+}
+
+function getSelectedHospitals() {
+  const checked = document.querySelectorAll('.hosp-ck:checked');
+  return [...checked].map(c => c.value);
+}
+
+async function gerarGerencial() {
+  const dtInicio = document.getElementById('ger-dt-inicio').value;
+  const dtFim    = document.getElementById('ger-dt-fim').value;
+  if (!dtInicio || !dtFim) { showToast('Preencha as datas.','error'); return; }
+
+  /* Validate max 1 year */
+  const diff = (new Date(dtFim) - new Date(dtInicio)) / (1000*60*60*24);
+  if (diff > 366) { showToast('Período máximo de 1 ano.','error'); return; }
+  if (diff < 0)   { showToast('Data fim anterior à data início.','error'); return; }
+
+  const hospIds = getSelectedHospitals();
+  if (!hospIds.length) { showToast('Selecione ao menos um hospital.','error'); return; }
+
+  showToast('Gerando relatório...','');
+
+  try {
+    /* Fetch hospitals map */
+    const { data: hosps } = await sb.from('hospitais').select('id,nome,nome_real,parceiro');
+    const hospMap = {};
+    (hosps||[]).forEach(h => { hospMap[h.id] = h; });
+
+    /* Fetch relatorios */
+    let q = sb.from('relatorios').select('*')
+      .gte('criado_em', dtInicio + 'T00:00:00')
+      .lte('criado_em', dtFim + 'T23:59:59')
+      .eq('cancelado', false)
+      .order('criado_em', { ascending: true });
+
+    if (!document.getElementById('ger-todos').checked) {
+      q = q.in('hospital_id', hospIds);
+    }
+
+    const { data, error } = await q.limit(1000);
+    if (error) throw error;
+
+    _gerencialData = (data||[]).map(r => {
+      const h = hospMap[r.hospital_id] || {};
+      return {
+        hospital: h.nome_real || h.nome || '—',
+        sistema: h.parceiro || '—',
+        cd_relatorio: r.seq_num ? formatSeq(r.seq_num) : '—',
+        dt_relatorio: new Date(r.criado_em).toLocaleString('pt-BR'),
+        ds_relatorio: r.dados?.projeto || '—',
+        status_projeto: r.dados?.status || '—',
+        hospital_id: r.hospital_id
+      };
+    });
+
+    renderGerencial(_gerencialData, hospMap, dtInicio, dtFim);
+    showToast(`✅ ${_gerencialData.length} relatório(s) encontrado(s).`, 'success');
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+function renderGerencial(data, hospMap, dtInicio, dtFim) {
+  /* Stats */
+  const hospSet = new Set(data.map(r => r.hospital_id));
+  const meses = new Set(data.map(r => r.dt_relatorio.substring(3,10)));
+  const statusCount = {};
+  data.forEach(r => { statusCount[r.status_projeto] = (statusCount[r.status_projeto]||0)+1; });
+  const topStatus = Object.entries(statusCount).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+  const media = meses.size > 0 ? (data.length / meses.size).toFixed(1) : data.length;
+
+  document.getElementById('ger-total-rel').textContent  = data.length;
+  document.getElementById('ger-total-hosp').textContent = hospSet.size;
+  document.getElementById('ger-media-mes').textContent  = media;
+  document.getElementById('ger-ultimo-status').textContent = topStatus;
+  document.getElementById('ger-stats').style.display = 'grid';
+
+  /* Chart: por hospital */
+  const porHosp = {};
+  data.forEach(r => { porHosp[r.hospital] = (porHosp[r.hospital]||0)+1; });
+  const maxH = Math.max(...Object.values(porHosp), 1);
+  const COLORS = ['#1a3a6b','#e87722','#1a9e75','#7c3aed','#0891b2','#dc2626'];
+  document.getElementById('chart-por-hospital').innerHTML = Object.entries(porHosp)
+    .sort((a,b)=>b[1]-a[1]).slice(0,8)
+    .map(([h,n],i) => `
+      <div class="chart-bar-row">
+        <div class="chart-bar-label" title="${h}">${h}</div>
+        <div class="chart-bar-track">
+          <div class="chart-bar-fill" style="width:${Math.round(n/maxH*100)}%;background:${COLORS[i%COLORS.length]}">
+            <span>${n}</span>
+          </div>
+        </div>
+      </div>`).join('');
+
+  /* Chart: por mês (SVG line) */
+  const porMes = {};
+  data.forEach(r => {
+    const key = r.dt_relatorio.substring(3,10);
+    porMes[key] = (porMes[key]||0)+1;
+  });
+  const mesKeys = Object.keys(porMes).sort();
+  const mesVals = mesKeys.map(k => porMes[k]);
+  const maxM = Math.max(...mesVals, 1);
+  const W=560, H=100, PAD=30;
+  const pts = mesVals.map((v,i) => {
+    const x = PAD + (i/(Math.max(mesVals.length-1,1))) * (W-PAD*2);
+    const y = H - PAD - (v/maxM)*(H-PAD*2);
+    return {x,y,v,k:mesKeys[i]};
+  });
+  const pathD = pts.map((p,i)=>(i===0?`M${p.x},${p.y}`:`L${p.x},${p.y}`)).join(' ');
+  const svg = document.getElementById('chart-por-mes');
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.innerHTML = `
+    <polyline points="${pts.map(p=>`${p.x},${p.y}`).join(' ')}" fill="none" stroke="#1a3a6b" stroke-width="2.5" stroke-linejoin="round"/>
+    ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="4" fill="#e87722"/>
+      <text x="${p.x}" y="${p.y-8}" text-anchor="middle" font-size="10" fill="#374151">${p.v}</text>
+      <text x="${p.x}" y="${H-8}" text-anchor="middle" font-size="9" fill="#9ca3af">${p.k}</text>`).join('')}`;
+  document.getElementById('ger-charts').style.display = 'grid';
+
+  /* Table */
+  const tbody = document.getElementById('ger-table-body');
+  tbody.innerHTML = data.map(r => {
+    const statusClass = r.status_projeto==='Em andamento'?'status-andamento':r.status_projeto==='Concluído'?'status-concluido':r.status_projeto==='Em risco'?'status-risco':'status-pausado';
+    return `<tr>
+      <td>${r.hospital}</td>
+      <td style="font-weight:600;color:var(--blue)">${r.cd_relatorio}</td>
+      <td>${r.dt_relatorio}</td>
+      <td>${r.ds_relatorio}</td>
+      <td><span class="status-badge ${statusClass}">${r.status_projeto}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('ger-table-title').textContent = `${data.length} relatório(s) — ${dtInicio} a ${dtFim}`;
+  document.getElementById('ger-table-section').style.display = 'block';
+}
+
+/* ── EXPORTAR EXCEL ── */
+function exportarExcel() {
+  if (!_gerencialData.length) { showToast('Gere o relatório primeiro.','error'); return; }
+
+  /* Build CSV that Excel opens correctly */
+  const BOM = '﻿';
+  const sep = ';';
+  const header = ['HOSPITAL','CD_RELATORIO','DT_RELATORIO','DS_RELATORIO','STATUS_PROJETO'].join(sep);
+  const rows = _gerencialData.map(r =>
+    [r.hospital, r.cd_relatorio, r.dt_relatorio, r.ds_relatorio, r.status_projeto]
+      .map(v => `"${String(v).replace(/"/g,'""')}"`)
+      .join(sep)
+  );
+  const csv = BOM + header + '
+' + rows.join('
+');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const hoje = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+  a.download = `relatorio_gerencial_neoh_${hoje}.csv`;
+  a.click();
+  showToast('✅ Arquivo exportado!','success');
 }
 
 /* ══════════════════════════════════════
