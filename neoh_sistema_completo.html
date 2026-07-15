@@ -96,8 +96,24 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 
 /* Dynamic rows */
 .dyn-item { display: grid; grid-template-columns: 1fr 30px; gap: 6px; align-items: start; margin-bottom: 7px; }
-.dyn-item textarea, .dyn-item input { font-size: 12px; }
-.dyn-item textarea { min-height: 42px; }
+.dyn-item textarea, .dyn-item input {
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  padding: 8px 10px;
+  border: 0.5px solid var(--border);
+  border-radius: 7px;
+  background: #fafbfc;
+  width: 100%;
+  transition: border-color .15s, box-shadow .15s;
+}
+.dyn-item textarea:focus, .dyn-item input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26,58,107,0.1);
+  background: #fff;
+}
+.dyn-item textarea { min-height: 52px; resize: vertical; line-height: 1.55; }
 .btn-del { background: none; border: 0.5px solid var(--border); border-radius: 6px; color: var(--muted); cursor: pointer; height: 32px; display: flex; align-items: center; justify-content: center; margin-top: 1px; transition: all .12s; }
 .btn-del:hover { background: #fee2e2; border-color: var(--red); color: var(--red); }
 .btn-add { font-size: 12px; padding: 5px 12px; margin-top: 4px; border: 0.5px solid var(--blue); border-radius: 6px; background: none; color: var(--blue); cursor: pointer; font-weight: 500; transition: all .12s; }
@@ -105,13 +121,30 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 
 /* Action table */
 .tbl-wrap { overflow-x: auto; }
-.act-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
-.act-tbl th { background: var(--blue); color: #fff; padding: 7px 10px; text-align: left; font-weight: 500; font-size: 11px; }
-.act-tbl td { padding: 5px 6px; border-bottom: 0.5px solid var(--border); }
+.act-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.act-tbl th { background: var(--blue); color: #fff; padding: 10px 12px; text-align: left; font-weight: 500; font-size: 12px; }
+.act-tbl td { padding: 6px 8px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
 .act-tbl tr:last-child td { border-bottom: none; }
-.act-tbl tr:hover td { background: var(--gray-bg); }
-.act-tbl input, .act-tbl select { width: 100%; border: none; background: transparent; font-size: 12px; color: var(--text); font-family: inherit; padding: 3px 4px; }
-.act-tbl input:focus, .act-tbl select:focus { outline: 1px solid var(--blue); border-radius: 3px; background: #fff; }
+.act-tbl tr:hover td { background: #f8faff; }
+.act-tbl input, .act-tbl select {
+  width: 100%;
+  border: 0.5px solid transparent;
+  background: #fafbfc;
+  font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+  padding: 7px 9px;
+  border-radius: 6px;
+  transition: all .15s;
+}
+.act-tbl input:hover, .act-tbl select:hover { border-color: var(--border); background: #fff; }
+.act-tbl input:focus, .act-tbl select:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(26,58,107,0.1);
+  background: #fff;
+}
+.act-tbl select { cursor: pointer; }
 
 .btn-generate { width: 100%; padding: 13px; font-size: 14px; font-weight: 600; background: var(--orange); color: #fff; border: none; border-radius: 9px; cursor: pointer; letter-spacing: .02em; transition: opacity .15s; margin-top: 4px; }
 .btn-generate:hover { opacity: .88; }
@@ -554,13 +587,20 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
         </div>
         <div class="card">
           <div class="card-title">✅ Plano de ação acordado</div>
-          <div class="tbl-wrap">
+          <div class="tbl-wrap" style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden">
             <table class="act-tbl">
-              <thead><tr><th style="width:48%">Atividade</th><th style="width:26%">Responsável</th><th style="width:18%">Status</th><th style="width:8%"></th></tr></thead>
+              <thead>
+                <tr>
+                  <th style="width:46%">Atividade</th>
+                  <th style="width:26%">Responsável</th>
+                  <th style="width:20%">Status</th>
+                  <th style="width:8%"></th>
+                </tr>
+              </thead>
               <tbody id="action-tbody"></tbody>
             </table>
           </div>
-          <button class="btn-add" onclick="addAction()" style="margin-top:8px">+ Adicionar atividade</button>
+          <button class="btn-add" onclick="addAction()" style="margin-top:10px">+ Adicionar atividade</button>
         </div>
         <div class="card">
           <div class="card-title">⚠ Pontos de atenção</div>
@@ -570,7 +610,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
         <div class="card">
           <div class="card-title">📅 Próxima reunião — foco</div>
           <div id="meeting-list"></div>
-          <button class="btn-add" onclick="addDyn('meeting-list','input','Item de pauta...')">+ Adicionar item</button>
+          <button class="btn-add" onclick="addDyn('meeting-list','textarea','Item de pauta...')">+ Adicionar item</button>
         </div>
         <button class="btn-generate" onclick="generateReport()">▶ Gerar Relatório Executivo</button>
       </div>
@@ -835,8 +875,7 @@ function addDyn(listId, tagName, placeholder, value='') {
   const list = document.getElementById(listId);
   const row = document.createElement('div'); row.className = 'dyn-item';
   const el = document.createElement(tagName);
-  if (tagName === 'textarea') el.style.minHeight = '42px';
-  el.style.fontSize = '12px';
+  /* Estilos padronizados via CSS — não inline */
   if (placeholder) el.placeholder = placeholder;
   el.value = value;
   const btn = document.createElement('button'); btn.className = 'btn-del'; btn.innerHTML = '✕';
@@ -849,14 +888,18 @@ function addAction(vals=['','','Pendente']) {
   const tbody = document.getElementById('action-tbody');
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td><input value="${esc(vals[0])}" placeholder="Descreva a atividade"/></td>
-    <td><input value="${esc(vals[1])}" placeholder="Nome"/></td>
-    <td><select>
-      <option ${vals[2]==='Pendente'?'selected':''}>Pendente</option>
-      <option ${vals[2]==='Em andamento'?'selected':''}>Em andamento</option>
-      <option ${vals[2]==='Concluído'?'selected':''}>Concluído</option>
-    </select></td>
-    <td style="text-align:center"><button class="btn-del" onclick="this.closest('tr').remove()">✕</button></td>`;
+    <td><input value="${esc(vals[0])}" placeholder="Descreva a atividade..." style="width:100%" /></td>
+    <td><input value="${esc(vals[1])}" placeholder="Nome do responsável..." style="width:100%" /></td>
+    <td>
+      <select style="width:100%">
+        <option ${vals[2]==='Pendente'?'selected':''}>Pendente</option>
+        <option ${vals[2]==='Em andamento'?'selected':''}>Em andamento</option>
+        <option ${vals[2]==='Concluído'?'selected':''}>Concluído</option>
+      </select>
+    </td>
+    <td style="text-align:center;width:36px">
+      <button class="btn-del" onclick="this.closest('tr').remove()" title="Remover">✕</button>
+    </td>`;
   tbody.appendChild(tr);
 }
 
