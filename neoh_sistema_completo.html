@@ -431,17 +431,16 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
       </div>
     </div>
     <div class="busca-subtitle">Sistema de Status Report Executivo</div>
-    <div class="busca-title">Bem-vindo!</div>
-    <div class="busca-desc">Digite o nome do hospital para acessar os relatórios ou iniciar um novo projeto.</div>
+    <div class="busca-title">Selecione o hospital</div>
+    <div class="busca-desc">Pesquise o hospital para acessar o histórico de relatórios ou criar um novo status report.</div>
     <div class="busca-field">
       <label>Nome do hospital</label>
       <input type="text" id="busca-input" placeholder="Ex: Hospital Orizonti" onkeydown="if(event.key==='Enter')buscaHospital()" autocomplete="off" />
     </div>
     <button class="busca-btn" id="busca-btn" onclick="buscaHospital()">🔍 Buscar hospital</button>
     <div id="busca-result" class="busca-result" style="display:none"></div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0;display:flex;justify-content:space-between">
-      <button onclick="doLogout()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline">← Sair do sistema</button>
-      <button onclick="abrirLoginAdmin()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline">Acesso administrativo</button>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #f0f0f0;text-align:center">
+      <button onclick="doLogout()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline">← Sair e voltar ao login</button>
     </div>
   </div>
 </div>
@@ -734,37 +733,37 @@ function showLoginError(msg) {
 function onLoginSuccess() {
   document.getElementById('login-screen').style.display = 'none';
 
-  if (session.isAdmin) {
-    /* Admin vai direto para o sistema sem busca */
-    document.getElementById('busca-screen').classList.remove('open');
-    document.getElementById('topnav').style.display = 'flex';
-    document.getElementById('main-wrap').style.display = 'block';
-    document.getElementById('topnav-hospital').textContent = 'Neoh Admin';
-    document.getElementById('admin-tab').style.display = 'inline-block';
-    initForm();
-    loadAdminPanel();
-    switchTab('admin');
-  } else {
-    /* Hospital logado → vai para busca de hospital */
-    document.getElementById('busca-screen').classList.add('open');
-    document.getElementById('topnav').style.display = 'none';
-    document.getElementById('main-wrap').style.display = 'none';
-    /* Stepper: passo 1 concluído, passo 2 ativo */
-    document.getElementById('step-num-1').className = 'stepper-num done';
-    document.getElementById('step-lbl-1').className = 'stepper-label done';
-    document.getElementById('step-line-1').className = 'stepper-line done';
-    document.getElementById('step-num-2').className = 'stepper-num active';
-    document.getElementById('step-lbl-2').className = 'stepper-label active';
-    document.getElementById('busca-input').focus();
-  }
+  /* TODOS vão para busca de hospital — admin e usuário comum */
+  document.getElementById('busca-screen').classList.add('open');
+  document.getElementById('topnav').style.display = 'none';
+  document.getElementById('main-wrap').style.display = 'none';
+
+  /* Stepper: passo 1 concluído, passo 2 ativo */
+  document.getElementById('step-num-1').className = 'stepper-num done';
+  document.getElementById('step-lbl-1').className = 'stepper-label done';
+  document.getElementById('step-line-1').className = 'stepper-line done';
+  document.getElementById('step-num-2').className = 'stepper-num active';
+  document.getElementById('step-lbl-2').className = 'stepper-label active';
+
+  /* Foca no campo de busca */
+  setTimeout(() => document.getElementById('busca-input').focus(), 100);
 }
 
 function doLogout() {
   session = null;
   hospitalBuscado = null;
   logos.right = null;
+  /* Volta ao login e reseta o stepper */
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('busca-screen').classList.remove('open');
+  /* Reset stepper */
+  ['1','2','3'].forEach(n => {
+    document.getElementById('step-num-'+n).className = 'stepper-num' + (n==='1' ? ' active' : '');
+    document.getElementById('step-lbl-'+n).className = 'stepper-label' + (n==='1' ? ' active' : '');
+  });
+  ['1','2'].forEach(n => {
+    document.getElementById('step-line-'+n).className = 'stepper-line';
+  });
   document.getElementById('topnav').style.display = 'none';
   document.getElementById('main-wrap').style.display = 'none';
   document.getElementById('busca-input').value = '';
@@ -1410,6 +1409,11 @@ async function buscaHospital() {
       const logoHtml = h.logo_url
         ? `<img src="${h.logo_url}" class="busca-found-logo" alt="${h.nome}" />`
         : `<div class="busca-found-logo-placeholder">🏥</div>`;
+      const adminTip = session?.isAdmin
+        ? `<p style="font-size:11px;color:#6b7280;margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb">
+            💡 Como administrador, você também pode acessar o <strong>Painel Admin</strong> pelo menu após selecionar o hospital.
+           </p>`
+        : '';
       resultEl.innerHTML = `
         <div class="busca-found">
           <div class="busca-found-header">
@@ -1431,12 +1435,13 @@ async function buscaHospital() {
             <button class="busca-action-card" onclick="entrarComoHospital()">
               <span class="busca-action-icon">📋</span>
               <div class="busca-action-text">
-                <h5>Ver histórico</h5>
-                <p>Consultar relatórios anteriores e usar como base</p>
+                <h5>Ver histórico de relatórios</h5>
+                <p>Consultar relatórios anteriores e usar como base para o novo</p>
               </div>
               <span class="busca-action-arrow">→</span>
             </button>
           </div>
+          ${adminTip}
         </div>`;
     }
   } catch(e) {
@@ -1448,20 +1453,40 @@ async function buscaHospital() {
 }
 
 function _abrirSistema(h, tab) {
+  /* Vincula hospital à sessão */
   session.hospitalId = h.id;
   session.hospitalNome = h.nome;
   session.parceiro = h.parceiro || '';
   if (h.logo_url) logos.right = h.logo_url;
+
+  /* Preenche dados do hospital no formulário */
   document.getElementById('f-parceiro').value = h.parceiro || '';
-  document.getElementById('busca-screen').classList.remove('open');
-  document.getElementById('topnav').style.display = 'flex';
-  document.getElementById('main-wrap').style.display = 'block';
-  document.getElementById('topnav-hospital').textContent = h.nome + (h.parceiro ? ' — ' + h.parceiro : '');
-  /* Atualiza logo do hospital no formulário */
   if (h.logo_url) {
     document.getElementById('img-right').src = h.logo_url;
     document.getElementById('drop-right').classList.add('has');
   }
+
+  /* Abre o sistema */
+  document.getElementById('busca-screen').classList.remove('open');
+  document.getElementById('topnav').style.display = 'flex';
+  document.getElementById('main-wrap').style.display = 'block';
+
+  /* Label do hospital na topnav */
+  const label = h.parceiro ? h.parceiro : h.nome;
+  document.getElementById('topnav-hospital').textContent = label;
+
+  /* Admin: mostra aba Admin mas NÃO vai para o painel admin — vai para o hospital */
+  if (session.isAdmin) {
+    document.getElementById('admin-tab').style.display = 'inline-block';
+  }
+
+  /* Stepper: passo 2 concluído, passo 3 ativo */
+  document.getElementById('step-num-2').className = 'stepper-num done';
+  document.getElementById('step-lbl-2').className = 'stepper-label done';
+  document.getElementById('step-line-2').className = 'stepper-line done';
+  document.getElementById('step-num-3').className = 'stepper-num active';
+  document.getElementById('step-lbl-3').className = 'stepper-label active';
+
   initForm();
   switchTab(tab);
   if (tab === 'hist') loadHistory();
