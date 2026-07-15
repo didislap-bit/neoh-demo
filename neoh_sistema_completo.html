@@ -2059,10 +2059,10 @@ function _abrirSistema(h, tab) {
   document.getElementById('step-lbl-3').className = 'stepper-label active';
 
   initForm();
-  /* Salva sessão no sessionStorage para sobreviver a refresh */
+  /* Salva sessão no sessionStorage (sem logo para evitar QuotaExceededError) */
   try {
     const sessionToSave = { ...session };
-    if (logos.right) sessionToSave.logo_url = logos.right;
+    delete sessionToSave.logo_url; /* logo fica em memória, não no storage */
     sessionStorage.setItem('neoh_session', JSON.stringify(sessionToSave));
   } catch(e) {}
   switchTab(tab);
@@ -2393,8 +2393,7 @@ async function saveToSuabase_tarja() {
 let _gerencialData = [];
 
 function toggleAdminView(view) {
-  const hospPanel = document.querySelector('.card:has(#hospital-grid)') ||
-                    document.getElementById('hospital-grid')?.closest('.card');
+  const hospPanel = document.getElementById('hospital-grid')?.closest('.card');
   const gerPanel  = document.getElementById('gerencial-panel');
   const btnHosp   = document.getElementById('btn-view-hosp');
   const btnGer    = document.getElementById('btn-view-ger');
@@ -2631,12 +2630,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const savedTab     = sessionStorage.getItem('neoh_tab') || 'hist';
     if (savedSession) {
       session = JSON.parse(savedSession);
-      /* Restaura logo do hospital se houver */
-      if (session.logo_url) {
-        logos.right = session.logo_url;
-        document.getElementById('img-right').src = session.logo_url;
-        document.getElementById('drop-right').classList.add('has');
-      }
+      /* Logo não é salva no sessionStorage — será recarregada ao buscar hospital */
       /* Restaura UI */
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('busca-screen').classList.remove('open');
