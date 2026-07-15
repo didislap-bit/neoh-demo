@@ -73,7 +73,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 .field { margin-bottom: 10px; }
 .field:last-child { margin-bottom: 0; }
 .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
-.field input, .field select, .field textarea { width: 100%; padding: 8px 10px; font-size: 13px; border: 0.5px solid var(--border); border-radius: 7px; background: #fafbfc; color: var(--text); font-family: inherit; transition: border-color .15s, box-shadow .15s; }
+.field input, .field select, .field textarea { width: 100%; padding: 8px 10px; font-size: 13px; border: 0.5px solid var(--border); border-radius: 7px; background: #ffffff; color: var(--text); font-family: inherit; transition: border-color .15s, box-shadow .15s; }
+.field input:disabled, .field select:disabled, .field textarea:disabled { background: #f5f6f8; color: var(--muted); cursor: not-allowed; }
 .field textarea { resize: vertical; min-height: 68px; line-height: 1.55; }
 .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,58,107,0.1); background: #fff; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -103,7 +104,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
   padding: 8px 10px;
   border: 0.5px solid var(--border);
   border-radius: 7px;
-  background: #fafbfc;
+  background: #ffffff;
   width: 100%;
   transition: border-color .15s, box-shadow .15s;
 }
@@ -129,7 +130,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 .act-tbl input, .act-tbl select {
   width: 100%;
   border: 0.5px solid transparent;
-  background: #fafbfc;
+  background: #ffffff;
   font-size: 13px;
   color: var(--text);
   font-family: inherit;
@@ -520,8 +521,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
   </div>
   <div class="topnav-right">
     <span class="topnav-hospital" id="topnav-hospital"></span>
-    <button class="btn-nav" onclick="exportHTML()">⬇ Exportar</button>
-    <button class="btn-nav primary" onclick="generateReport()">▶ Gerar</button>
     <button class="btn-nav" onclick="doLogout()">🔓 Sair</button>
   </div>
 </nav>
@@ -624,12 +623,15 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
         <strong>💾 Salve este relatório!</strong>
         Não esqueça de salvar para que fique registrado no histórico do hospital.
       </div>
-      <button class="aviso-salvar-btn" onclick="saveToSupabase()">☁️ Salvar agora</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="aviso-salvar-btn" onclick="saveToSupabase()">☁️ Salvar agora</button>
+        <button class="aviso-salvar-btn" style="background:#1a3a6b" onclick="voltarTelaInicial()">🏠 Tela inicial</button>
+      </div>
     </div>
     <div class="report-toolbar">
-      <button class="btn-tool" onclick="switchTab('form')">✏️ Editar</button>
-      <button class="btn-tool green" onclick="saveToSupabase()">☁️ Salvar no banco</button>
-      <button class="btn-tool" onclick="exportHTML()">⬇ Exportar HTML</button>
+      <button class="btn-tool" onclick="switchTab('form')">✏️ Editar formulário</button>
+      <button class="btn-tool" onclick="voltarTelaInicial()">🏠 Tela inicial</button>
+      <button class="btn-tool" onclick="switchTab('hist')">🗂️ Histórico do hospital</button>
       <button class="btn-tool accent" onclick="window.print()">🖨️ Imprimir / PDF</button>
     </div>
     <div class="rpt" id="rpt-output"></div>
@@ -989,25 +991,56 @@ function buildReportHTML(d) {
 }
 
 async function generateReport() {
-  if (session?.isAdmin && !session.hospitalId) {
-    openModalVincular('gerar');
+  /* Hospital sempre vinculado desde a busca — gera direto */
+  if (!session?.hospitalId) {
+    showToast('Selecione um hospital primeiro.', 'error');
+    voltarTelaInicial();
     return;
   }
-  _doGenerate();
+  _doGenerate(session.parceiro || session.hospitalNome);
 }
 
-function _doGenerate(nomeHosp) {
+async function _doGenerate(nomeHosp) {
   const d = getData();
   lastData = d;
   switchTab('report');
   setTimeout(() => {
     document.getElementById('rpt-output').innerHTML = buildReportHTML(d);
-    /* Mostra aviso para salvar */
     document.getElementById('aviso-salvar').style.display = 'flex';
-    const msg = nomeHosp ? 'Relatório gerado para ' + nomeHosp + '!' : 'Relatório gerado!';
-    showToast(msg, 'success');
   }, 50);
-  if (session?.isAdmin) {
+
+  /* Salva automaticamente se hospital vinculado */
+  if (session?.hospitalId) {
+    try {
+      const agora = new Date();
+      const dadosCompletos = {
+        ...d,
+        _meta: {
+          ano: agora.getFullYear(),
+          mes: agora.getMonth() + 1,
+          mesNome: agora.toLocaleString('pt-BR', { month: 'long' }),
+          salvoEm: agora.toISOString()
+        }
+      };
+      const { error } = await sb.from('relatorios').insert({
+        hospital_id: session.hospitalId,
+        dados: dadosCompletos,
+        criado_por: session.nome || 'sistema'
+      });
+      if (!error) {
+        const label = nomeHosp || session.parceiro || session.hospitalNome || '';
+        showToast('✅ Relatório salvo automaticamente' + (label ? ' para ' + label : '') + '!', 'success');
+        /* Esconde o aviso de salvar após salvar automaticamente */
+        setTimeout(() => {
+          document.getElementById('aviso-salvar').style.display = 'none';
+        }, 3000);
+      }
+    } catch(e) {
+      /* Falha silenciosa no auto-save — mantém aviso para salvar manualmente */
+    }
+  }
+
+  if (session?.isAdmin && !session?.hospitalId) {
     session.hospitalId = null;
   }
 }
@@ -1704,6 +1737,43 @@ function novoRelatorio() {
   limparFormulario();
   document.getElementById('aviso-auto-fill').style.display = 'none';
   switchTab('form');
+}
+
+function voltarTelaInicial() {
+  /* Volta para busca de hospital sem fazer logout */
+  hospitalBuscado = null;
+  session.hospitalId = null;
+  session.hospitalNome = null;
+  session.parceiro = null;
+  logos.right = null;
+
+  /* Limpa logo e formulário */
+  document.getElementById('img-right').src = '';
+  document.getElementById('drop-right').classList.remove('has');
+  document.getElementById('aviso-salvar').style.display = 'none';
+  document.getElementById('aviso-auto-fill').style.display = 'none';
+  document.getElementById('busca-input').value = '';
+  document.getElementById('busca-result').style.display = 'none';
+  document.getElementById('busca-hint').textContent = '💡 A busca inicia automaticamente após 3 caracteres';
+  document.getElementById('busca-hint').style.color = '#9ca3af';
+  limparFormulario();
+
+  /* Reseta stepper para passo 2 */
+  document.getElementById('step-num-1').className = 'stepper-num done';
+  document.getElementById('step-lbl-1').className = 'stepper-label done';
+  document.getElementById('step-line-1').className = 'stepper-line done';
+  document.getElementById('step-num-2').className = 'stepper-num active';
+  document.getElementById('step-lbl-2').className = 'stepper-label active';
+  document.getElementById('step-line-2').className = 'stepper-line';
+  document.getElementById('step-num-3').className = 'stepper-num';
+  document.getElementById('step-lbl-3').className = 'stepper-label';
+
+  /* Oculta sistema e mostra busca */
+  document.getElementById('topnav').style.display = 'none';
+  document.getElementById('main-wrap').style.display = 'none';
+  document.getElementById('busca-screen').classList.add('open');
+
+  setTimeout(() => document.getElementById('busca-input').focus(), 100);
 }
 
 async function usarComoBase(id) {
