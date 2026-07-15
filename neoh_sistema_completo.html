@@ -41,17 +41,17 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 .login-footer { font-size: 10px; color: var(--muted); margin-top: 18px; border-top: 1px solid #f0f0f0; padding-top: 12px; }
 
 /* ── TOPNAV ── */
-.topnav { background: var(--blue); color: #fff; padding: 0 20px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; height: 52px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.18); gap: 16px; }
+.topnav { background: var(--blue); color: #fff; padding: 0 20px; display: flex; align-items: center; height: 52px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
 .topnav-brand { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
 .topnav-brand img { height: 26px; object-fit: contain; filter: brightness(0) invert(1); }
 .topnav-brand span { color: rgba(255,255,255,0.7); font-weight: 400; }
-.topnav-tabs { display: flex; gap: 4px; justify-content: center; }
-.nav-tab { padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; transition: all .15s; white-space: nowrap; }
+.topnav-tabs { display: flex; gap: 4px; flex: 1; justify-content: center; padding: 0 12px; }
+.nav-tab { padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; transition: all .15s; white-space: nowrap; }
 .nav-tab:hover { background: rgba(255,255,255,0.12); color: #fff; }
 .nav-tab.active { background: rgba(255,255,255,0.2); color: #fff; }
 .nav-tab.admin-tab { border: 1px solid rgba(232,119,34,0.6); color: var(--orange); }
 .nav-tab.admin-tab.active { background: var(--orange); color: #fff; border-color: var(--orange); }
-.topnav-right { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.topnav-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .topnav-hospital { font-size: 12px; color: rgba(255,255,255,0.6); }
 .btn-nav { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid rgba(255,255,255,0.3); background: none; color: #fff; transition: all .15s; }
 .btn-nav:hover { background: rgba(255,255,255,0.15); }
