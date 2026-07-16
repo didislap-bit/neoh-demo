@@ -963,6 +963,95 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 .modal-logo-drop .drop-hint strong { display:block;font-size:12px;color:var(--text); }
 .modal-logo-drop.has .drop-hint { display:none; }
 
+
+/* ══════════════════════════════════════
+   RESPONSIVIDADE — todas as resoluções
+   ══════════════════════════════════════ */
+* { box-sizing: border-box; }
+html, body { width: 100%; overflow-x: hidden; }
+
+.main-wrap { width: 100%; max-width: 1400px; margin: 0 auto; padding: 20px 16px; }
+.topnav-hospital { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
+.form-grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; width: 100%; }
+.form-sidebar, .form-main { min-width: 0; }
+.admin-stats, .sc-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+.gerencial-filters-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; }
+.gerencial-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.home-modules { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+@media (max-width: 1024px) {
+  .topnav-hospital { max-width: 180px; }
+  .form-grid { grid-template-columns: 260px 1fr; }
+  .admin-stats, .sc-stats { grid-template-columns: repeat(2,1fr); }
+  .gerencial-filters-grid { grid-template-columns: 1fr 1fr; }
+  .gerencial-charts { grid-template-columns: 1fr; }
+  .modal { width: 95%; }
+  .modal-user-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .topnav { height: auto; min-height: 52px; padding: 6px 12px; flex-wrap: wrap; gap: 4px; }
+  .topnav-brand span { display: none; }
+  .topnav-tabs { gap: 2px; flex-wrap: wrap; padding: 2px 0; flex: none; width: 100%; justify-content: center; }
+  .nav-tab { padding: 5px 8px; font-size: 11px; }
+  .topnav-right { font-size: 11px; gap: 4px; }
+  .topnav-hospital { display: none; }
+  .btn-nav { padding: 5px 8px; font-size: 11px; }
+  .main-wrap { padding: 10px; }
+  .form-grid { grid-template-columns: 1fr; gap: 10px; }
+  .form-sidebar { order: 1; }
+  .form-main { order: 2; }
+  .admin-stats, .sc-stats { grid-template-columns: repeat(2,1fr); gap: 8px; }
+  .stat-card .stat-val { font-size: 22px !important; }
+  .gerencial-filters-grid { grid-template-columns: 1fr; }
+  .gerencial-charts { grid-template-columns: 1fr; }
+  .sc-table-wrap, .gerencial-table-wrap { overflow-x: auto; }
+  .sc-table { min-width: 860px; }
+  .gerencial-table { min-width: 700px; }
+  .users-table { min-width: 680px; }
+  .sc-toolbar { flex-wrap: wrap; gap: 6px; }
+  .sc-search-input { width: 100%; }
+  .home-modules { grid-template-columns: 1fr; gap: 10px; }
+  .home-box, .busca-box { padding: 28px 18px; margin: 0 10px; }
+  .modal { width: 96%; padding: 20px 16px; margin: 8px; max-height: 90vh; overflow-y: auto; }
+  .modal-user-grid { grid-template-columns: 1fr !important; }
+  .hist-card { flex-direction: column; gap: 8px; }
+  .hist-actions { flex-wrap: wrap; gap: 4px; }
+  .hist-hospital-header { flex-direction: column; text-align: center; gap: 8px; }
+  .btn-novo { margin-left: 0 !important; }
+  .sc-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .sc-header-btn { margin-top: 4px; }
+  .aviso-salvar { flex-direction: column; gap: 8px; }
+  #form-hosp-filter-bar { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; }
+  #form-hosp-select { width: 100% !important; }
+  .report-toolbar { flex-wrap: wrap; gap: 6px; }
+  .btn-tool { padding: 6px 10px; font-size: 11px; }
+  .gerencial-stats { grid-template-columns: repeat(2,1fr) !important; }
+}
+
+@media (max-width: 480px) {
+  .topnav { padding: 4px 8px; }
+  .nav-tab { padding: 4px 6px; font-size: 10px; }
+  .btn-nav { padding: 4px 5px; font-size: 10px; }
+  .main-wrap { padding: 6px; }
+  .admin-stats, .sc-stats { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .stat-card { padding: 10px 12px; }
+  .stat-card .stat-val { font-size: 20px !important; }
+  .home-box, .busca-box { padding: 20px 12px; margin: 0 4px; border-radius: 12px; }
+  .home-module { padding: 14px 10px; }
+  .home-module-icon { width: 44px; height: 44px; font-size: 20px; }
+  .stepper-label { font-size: 9px; }
+  .stepper-num { width: 24px; height: 24px; font-size: 10px; }
+  .stepper-line { width: 22px; }
+  .hist-card { padding: 10px; }
+  .btn-sm { padding: 4px 7px; font-size: 10px; }
+  .card { padding: 10px; }
+  .modal { padding: 14px 10px; }
+  .modal h3 { font-size: 14px; }
+  .prompt-area { min-height: 80px; font-size: 12px; }
+  .rpt { padding: 10px; }
+  .sc-stat .val { font-size: 22px; }
+}
 </style>
 </head>
 <body>
