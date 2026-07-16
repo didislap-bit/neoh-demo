@@ -988,7 +988,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
       </div>
     </div>
     <div class="home-footer">
-      <button onclick="voltarBuscaHome()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline">← Trocar hospital</button>
+      <button onclick="voltarBuscaHome()" style="background:none;border:none;font-size:11px;color:var(--muted);cursor:pointer;text-decoration:underline" id="home-footer-btn">← Sair</button>
     </div>
   </div>
 </div>
@@ -1082,6 +1082,13 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 
   <!-- FORMULÁRIO -->
   <div id="form-panel" class="panel active">
+    <!-- Filtro de hospital para admin -->
+    <div id="form-hosp-filter-bar" style="display:none;background:#f0f4ff;border:.5px solid #c7d7f5;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:10px">
+      <span style="font-size:12px;font-weight:600;color:var(--blue)">🏥 Hospital para o relatório:</span>
+      <select id="form-hosp-select" onchange="selecionarHospitalForm()" style="padding:7px 12px;border:.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;background:#fff;min-width:240px">
+        <option value="">Selecione o hospital...</option>
+      </select>
+    </div>
     <div id="aviso-auto-fill" class="aviso-auto" style="display:none">
       <span class="aviso-icon">⚠️</span>
       <span id="aviso-auto-texto">Formulário preenchido automaticamente com o <strong>último relatório salvo</strong> deste hospital. Revise e edite antes de gerar o novo relatório.</span>
@@ -3031,18 +3038,18 @@ async function doLoginUnificado() {
     document.getElementById('login-screen').style.display = 'none';
 
     if (session.isHospUser) {
-      /* Usuário do hospital → home direto, sem busca */
+      /* Usuário do hospital → home direto com hospital vinculado */
       hospitalBuscado = {
         id:       data.hospital_id,
         nome:     data.hospital_nome || '',
         parceiro: data.hospital_parceiro || '',
         nome_real: data.hospital_nome_real || data.hospital_nome || ''
       };
-      abrirHome();
+      abrirHomeAdmin();
     } else {
-      /* Admin → tela de busca de hospital */
-      document.getElementById('busca-screen').classList.add('open');
-      atualizarStepperBusca();
+      /* Admin → home direto SEM busca de hospital */
+      hospitalBuscado = null;
+      abrirHomeAdmin();
     }
 
   } catch(e) {
@@ -3066,6 +3073,34 @@ async function doLoginHospital() { doLoginUnificado(); }
 /* ══════════════════════════════════════
    TELA HOME — SELEÇÃO DE MÓDULO
    ══════════════════════════════════════ */
+
+function abrirHomeAdmin() {
+  /* Para admin: vai para home sem hospital selecionado */
+  if (session?.isAdmin) {
+    document.getElementById('home-hosp-label').textContent = session.isHospUser
+      ? ('🏥 ' + (hospitalBuscado?.nome_real || hospitalBuscado?.nome || ''))
+      : '⚙️ Administrador — selecione o hospital dentro de cada módulo';
+    document.getElementById('home-screen').classList.add('open');
+    document.getElementById('busca-screen').classList.remove('open');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('topnav').style.display = 'none';
+    document.getElementById('main-wrap').style.display = 'none';
+    /* Ajusta card do Status Report para admin */
+    const srCard = document.querySelector('.home-module.primary');
+    if (srCard) {
+      srCard.querySelector('h3').textContent = 'Status Report Executivo';
+      srCard.querySelector('p').textContent  = 'Geração e histórico de relatórios. Escolha o hospital dentro do módulo.';
+    }
+    const scCard = document.querySelector('.home-module.secondary');
+    if (scCard) {
+      scCard.querySelector('h3').textContent = 'Sucesso do Cliente';
+      scCard.querySelector('p').textContent  = 'Reuniões, saúde do projeto e apresentações. Filtre por hospital dentro do módulo.';
+    }
+    return;
+  }
+  /* Para usuário_hospital: usa abrirHome normal */
+  abrirHome();
+}
 
 function abrirHome() {
   const h = hospitalBuscado;
@@ -3096,23 +3131,46 @@ function abrirHome() {
 
 function abrirModulo(modulo) {
   document.getElementById('home-screen').classList.remove('open');
-  if (modulo === 'status-report') {
-    /* Usuário_hospital → só histórico; Admin → histórico completo */
-    const tab = session?.isHospUser ? 'hist' : 'hist';
-    _abrirSistema(hospitalBuscado, tab);
-  } else if (modulo === 'sucesso-cliente') {
-    _abrirSistema(hospitalBuscado, 'sc');
+
+  if (session?.isAdmin) {
+    /* Admin — abre sistema sem hospital fixo, com filtros internos */
+    document.getElementById('busca-screen').classList.remove('open');
+    document.getElementById('topnav').style.display = 'flex';
+    document.getElementById('main-wrap').style.display = 'block';
+    document.getElementById('topnav-hospital').textContent = 'Neoh Admin';
+    document.getElementById('admin-tab').style.display = 'inline-block';
+    /* Mostra aba SC */
+    const scTab = document.getElementById('sc-tab');
+    if (scTab) scTab.style.display = 'inline-block';
+    /* Salva sessão */
+    try { const s={...session}; delete s.logo_url; sessionStorage.setItem('neoh_session', JSON.stringify(s)); } catch(e) {}
+    initForm();
+    if (modulo === 'status-report') {
+      switchTab('form');
+      /* Carrega filtro de hospitais no formulário */
+      carregarFiltroHospForm();
+    } else {
+      switchTab('sc');
+      carregarHospitaisParaFiltros();
+    }
+  } else {
+    /* Usuário_hospital → histórico somente leitura */
+    if (modulo === 'status-report') {
+      _abrirSistema(hospitalBuscado, 'hist');
+    } else {
+      _abrirSistema(hospitalBuscado, 'sc');
+    }
   }
 }
 
 function voltarBuscaHome() {
-  /* Volta para busca mantendo sessão */
-  document.getElementById('home-screen').classList.remove('open');
-  document.getElementById('busca-screen').classList.add('open');
-  document.getElementById('busca-input').value = '';
-  document.getElementById('busca-result').style.display = 'none';
-  const hint = document.getElementById('busca-hint');
-  if (hint) { hint.style.display = 'block'; hint.textContent = '💡 A busca inicia automaticamente após 3 caracteres'; }
+  if (session?.isAdmin) {
+    /* Admin não tem busca — volta ao login */
+    doLogout();
+  } else {
+    /* Usuário_hospital — não tem busca também — volta ao login */
+    doLogout();
+  }
 }
 
 /* ══════════════════════════════════════
@@ -3303,6 +3361,67 @@ async function excluirUsuario(id, nome) {
 /* ══════════════════════════════════════
    SC FILTROS E APRESENTAÇÃO PPTX
    ══════════════════════════════════════ */
+async function carregarFiltroHospForm() {
+  /* Carrega hospitais no filtro do formulário (só para admin) */
+  if (!session?.isAdmin) return;
+  const bar = document.getElementById('form-hosp-filter-bar');
+  if (bar) bar.style.display = 'flex';
+  try {
+    const { data } = await sb.from('hospitais').select('id,nome,nome_real,parceiro,logo_url').eq('ativo',true).order('nome');
+    const sel = document.getElementById('form-hosp-select');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Selecione o hospital...</option>';
+    (data||[]).forEach(h => {
+      const opt = document.createElement('option');
+      opt.value = h.id;
+      opt.textContent = (h.nome_real||h.nome) + (h.parceiro ? ' ('+h.parceiro+')' : '');
+      opt.dataset.nome     = h.nome;
+      opt.dataset.nomeReal = h.nome_real || h.nome;
+      opt.dataset.parceiro = h.parceiro || '';
+      opt.dataset.logo     = h.logo_url || '';
+      sel.appendChild(opt);
+    });
+  } catch(e) {}
+}
+
+async function selecionarHospitalForm() {
+  const sel = document.getElementById('form-hosp-select');
+  const opt = sel?.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+
+  /* Vincula hospital à sessão temporariamente */
+  session.hospitalId   = opt.value;
+  session.hospitalNome = opt.dataset.nomeReal || opt.dataset.nome;
+  session.parceiro     = opt.dataset.parceiro || '';
+
+  /* Preenche campo Parceiro/Hospital no formulário */
+  const fParceiro = document.getElementById('f-parceiro');
+  if (fParceiro) fParceiro.value = opt.dataset.parceiro || opt.dataset.nomeReal || '';
+
+  /* Carrega logo do hospital */
+  if (opt.dataset.logo) {
+    logos.right = opt.dataset.logo;
+    const img = document.getElementById('img-right');
+    const drop = document.getElementById('drop-right');
+    if (img)  { img.src = opt.dataset.logo; }
+    if (drop) drop.classList.add('has');
+  } else {
+    logos.right = null;
+    const img  = document.getElementById('img-right');
+    const drop = document.getElementById('drop-right');
+    if (img)  img.src = '';
+    if (drop) drop.classList.remove('has');
+  }
+
+  /* Atualiza topnav */
+  const label = opt.dataset.nomeReal || opt.dataset.nome;
+  const sist  = opt.dataset.parceiro;
+  document.getElementById('topnav-hospital').textContent =
+    'Hosp. Escolhido: ' + label + (sist ? '  |  Sistema Hospitalar: ' + sist : '');
+
+  showToast('Hospital selecionado: ' + label, 'success');
+}
+
 async function carregarHospitaisParaFiltros() {
   try {
     const { data } = await sb.from('hospitais').select('id,nome,nome_real,parceiro').eq('ativo',true).order('nome');
@@ -4268,11 +4387,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (session.isAdmin) {
         document.getElementById('admin-tab').style.display = 'inline-block';
       }
+      const scTabEl = document.getElementById('sc-tab');
+      if (scTabEl) scTabEl.style.display = 'inline-block';
       initForm();
       /* Vai para a aba que estava antes do refresh */
       switchTab(savedTab);
       if (savedTab === 'hist') loadHistory();
       if (savedTab === 'admin' && session.isAdmin) loadAdminPanel();
+      if (savedTab === 'form' && session.isAdmin) carregarFiltroHospForm();
+      if (savedTab === 'sc') { if (session.isAdmin) carregarHospitaisParaFiltros(); else initSCPanel(); }
       return;
     }
   } catch(e) { /* sessão inválida, volta ao login */ }
