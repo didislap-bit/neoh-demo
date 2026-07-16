@@ -1111,7 +1111,9 @@ img, svg { max-width: 100%; height: auto; }
   .btn-nav { padding: 4px 8px; font-size: 11px; }
 
   /* Topnav tabs */
-  .nav-tab { padding: 4px 10px; font-size: 11px; }
+  .nav-tab { padding: 5px 10px; font-size: 11px; }
+  .tab-txt  { display: none; }
+  .tab-icon { font-size: 15px; }
 
   /* Main wrap */
   .main-wrap { padding: 10px 8px; }
@@ -1217,6 +1219,8 @@ img, svg { max-width: 100%; height: auto; }
   .topnav-hospital { display: none; }
   .btn-nav { padding: 3px 7px; font-size: 10px; }
   .nav-tab { padding: 4px 8px; font-size: 10px; }
+  .tab-txt  { display: none; }
+  .tab-icon { font-size: 16px; }
 
   /* Layout */
   .main-wrap { padding: 6px; }
@@ -1284,6 +1288,11 @@ img, svg { max-width: 100%; height: auto; }
   .stat-card .stat-val { font-size: 18px !important; }
 }
 
+/* Show tab text on wider screens */
+@media screen and (min-width: 769px) {
+  .tab-txt  { display: inline; }
+  .tab-icon { font-size: inherit; }
+}
 /* ══ IMPRESSÃO ══ */
 @media print {
   .topnav, .report-toolbar, #form-panel, #hist-panel,
@@ -1413,11 +1422,21 @@ img, svg { max-width: 100%; height: auto; }
   </div>
   <!-- Linha 2: abas (scroll horizontal em mobile) -->
   <div class="topnav-tabs" id="nav-tabs">
-    <button class="nav-tab active" onclick="switchTab('form')">📝 Formulário</button>
-    <button class="nav-tab" onclick="switchTab('report')">📄 Relatório</button>
-    <button class="nav-tab" onclick="switchTab('hist')">🗂️ Histórico</button>
-    <button class="nav-tab" id="sc-tab" style="display:none;border:1px solid rgba(26,158,117,.5);color:#1a9e75" onclick="switchTab('sc')">🤝 Sucesso do Cliente</button>
-    <button class="nav-tab admin-tab" id="admin-tab" style="display:none" onclick="switchTab('admin')">⚙️ Admin</button>
+    <button class="nav-tab active" onclick="switchTab('form')" id="tab-form">
+      <span class="tab-icon">📝</span><span class="tab-txt"> Formulário</span>
+    </button>
+    <button class="nav-tab" onclick="switchTab('report')" id="tab-report">
+      <span class="tab-icon">📄</span><span class="tab-txt"> Relatório</span>
+    </button>
+    <button class="nav-tab" onclick="switchTab('hist')" id="tab-hist">
+      <span class="tab-icon">🗂️</span><span class="tab-txt"> Histórico</span>
+    </button>
+    <button class="nav-tab" id="sc-tab" style="display:none;border:1px solid rgba(26,158,117,.5);color:#1a9e75" onclick="switchTab('sc')">
+      <span class="tab-icon">🤝</span><span class="tab-txt"> Sucesso do Cliente</span>
+    </button>
+    <button class="nav-tab admin-tab" id="admin-tab" style="display:none" onclick="switchTab('admin')">
+      <span class="tab-icon">⚙️</span><span class="tab-txt"> Admin</span>
+    </button>
   </div>
 </nav>
 
@@ -3474,35 +3493,59 @@ function abrirHome() {
 
 function abrirModulo(modulo) {
   document.getElementById('home-screen').classList.remove('open');
+  /* Salva o módulo ativo para controle de abas */
+  session._moduloAtivo = modulo;
 
   if (session?.isAdmin) {
-    /* Admin — abre sistema sem hospital fixo, com filtros internos */
     document.getElementById('busca-screen').classList.remove('open');
     document.getElementById('topnav').style.display = 'flex';
     document.getElementById('main-wrap').style.display = 'block';
     document.getElementById('topnav-hospital').textContent = 'Neoh Admin';
-    document.getElementById('admin-tab').style.display = 'inline-block';
-    /* Mostra aba SC */
-    const scTab = document.getElementById('sc-tab');
-    if (scTab) scTab.style.display = 'inline-block';
-    /* Salva sessão */
     try { const s={...session}; delete s.logo_url; sessionStorage.setItem('neoh_session', JSON.stringify(s)); } catch(e) {}
     initForm();
+    configurarTabsPorModulo(modulo);
     if (modulo === 'status-report') {
       switchTab('form');
-      /* Carrega filtro de hospitais no formulário */
       carregarFiltroHospForm();
     } else {
       switchTab('sc');
       carregarHospitaisParaFiltros();
     }
   } else {
-    /* Usuário_hospital → histórico somente leitura */
+    /* Usuário_hospital */
+    configurarTabsPorModulo(modulo);
     if (modulo === 'status-report') {
       _abrirSistema(hospitalBuscado, 'hist');
     } else {
       _abrirSistema(hospitalBuscado, 'sc');
     }
+  }
+}
+
+function configurarTabsPorModulo(modulo) {
+  /* Status Report: mostra Form, Relatório, Histórico, Admin — esconde SC */
+  /* Sucesso do Cliente: mostra SC, Admin — esconde Form, Relatório, Histórico */
+  const isSR = modulo === 'status-report';
+  const isSC = modulo === 'sucesso-cliente';
+
+  const tabForm   = document.getElementById('tab-form');
+  const tabReport = document.getElementById('tab-report');
+  const tabHist   = document.getElementById('tab-hist');
+  const tabSC     = document.getElementById('sc-tab');
+  const tabAdmin  = document.getElementById('admin-tab');
+
+  if (isSR) {
+    if (tabForm)   tabForm.style.display   = '';
+    if (tabReport) tabReport.style.display = '';
+    if (tabHist)   tabHist.style.display   = '';
+    if (tabSC)     tabSC.style.display     = 'none';
+    if (tabAdmin && session?.isAdmin) tabAdmin.style.display = 'inline-block';
+  } else if (isSC) {
+    if (tabForm)   tabForm.style.display   = 'none';
+    if (tabReport) tabReport.style.display = 'none';
+    if (tabHist)   tabHist.style.display   = 'none';
+    if (tabSC)     tabSC.style.display     = 'inline-block';
+    if (tabAdmin && session?.isAdmin) tabAdmin.style.display = 'inline-block';
   }
 }
 
