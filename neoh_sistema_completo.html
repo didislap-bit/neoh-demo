@@ -197,7 +197,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 
 /* Action table */
 .tbl-wrap { overflow-x: auto; }
-.act-tbl { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+.act-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .act-tbl th { background: var(--blue); color: #fff; padding: 10px 12px; text-align: left; font-weight: 500; font-size: 12px; }
 .act-tbl td { padding: 6px 8px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
 .act-tbl tr:last-child td { border-bottom: none; }
@@ -1510,14 +1510,14 @@ img, svg { max-width: 100%; height: auto; }
         </div>
         <div class="card">
           <div class="card-title">✅ Plano de ação acordado</div>
-          <div class="tbl-wrap" style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden;width:100%">
+          <div class="tbl-wrap" id="act-tbl-wrap" style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden;width:100%;display:none">
             <table class="act-tbl">
               <thead>
                 <tr>
-                  <th>Atividade</th>
-                  <th style="width:160px">Responsável</th>
-                  <th style="width:140px">Status</th>
-                  <th style="width:36px"></th>
+                  <th style="width:50%">Atividade</th>
+                  <th style="width:27%">Responsável</th>
+                  <th style="width:17%">Status</th>
+                  <th style="width:6%"></th>
                 </tr>
               </thead>
               <tbody id="action-tbody"></tbody>
@@ -2213,6 +2213,9 @@ function addDyn(listId, tagName, placeholder, value='') {
 
 function addAction(vals=['','','Pendente']) {
   const tbody = document.getElementById('action-tbody');
+  /* Show table wrapper on first row */
+  const wrap = document.getElementById('act-tbl-wrap');
+  if (wrap) wrap.style.display = '';
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td><input value="${esc(vals[0])}" placeholder="Descreva a atividade..." style="width:100%" /></td>
@@ -2225,7 +2228,7 @@ function addAction(vals=['','','Pendente']) {
       </select>
     </td>
     <td style="text-align:center;width:36px">
-      <button class="btn-del" onclick="this.closest('tr').remove()" title="Remover">✕</button>
+      <button class="btn-del" onclick="const r=this.closest('tr');r.remove();const t=document.getElementById('action-tbody');const w=document.getElementById('act-tbl-wrap');if(w&&!t.rows.length)w.style.display='none';" title="Remover">✕</button>
     </td>`;
   tbody.appendChild(tr);
 }
@@ -3349,6 +3352,8 @@ function preencherFormulario(d, dataOverride) {
   document.getElementById('attn-list').innerHTML = '';
   document.getElementById('meeting-list').innerHTML = '';
   (d.advances || []).forEach(v => addDyn('advances-list','textarea',null,v));
+  const actWrap = document.getElementById('act-tbl-wrap');
+  if (actWrap) actWrap.style.display = (d.actions && d.actions.length) ? '' : 'none';
   (d.actions || []).forEach(v => addAction([v.atividade||'', v.responsavel||'', v.status||'Pendente']));
   (d.attn || []).forEach(v => addDyn('attn-list','textarea',null,v));
   (d.meeting || []).forEach(v => addDyn('meeting-list','input',null,v));
