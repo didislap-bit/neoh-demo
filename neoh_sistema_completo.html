@@ -3513,6 +3513,7 @@ function abrirModulo(modulo) {
   document.getElementById('home-screen').classList.remove('open');
   /* Salva o módulo ativo para controle de abas */
   session._moduloAtivo = modulo;
+  try { sessionStorage.setItem('neoh_modulo', modulo); } catch(e) {}
 
   if (session?.isAdmin) {
     document.getElementById('busca-screen').classList.remove('open');
@@ -3768,7 +3769,7 @@ async function carregarFiltroHospForm() {
   /* Carrega hospitais no filtro do formulário (só para admin) */
   if (!session?.isAdmin) return;
   const bar = document.getElementById('form-hosp-filter-bar');
-  if (bar) { bar.style.display = 'flex'; bar.style.removeProperty('display'); bar.style.display = 'flex'; }
+  if (bar) bar.style.display = 'flex';
   try {
     const { data } = await sb.from('hospitais').select('id,nome,nome_real,parceiro,logo_url').eq('ativo',true).order('nome');
     const sel = document.getElementById('form-hosp-select');
@@ -4792,9 +4793,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (session.isAdmin) {
         document.getElementById('admin-tab').style.display = 'inline-block';
       }
-      const scTabEl = document.getElementById('sc-tab');
-      if (scTabEl) scTabEl.style.display = 'inline-block';
       initForm();
+      /* Configura abas pelo módulo salvo */
+      const savedModulo = sessionStorage.getItem('neoh_modulo') || 'status-report';
+      session._moduloAtivo = savedModulo;
+      configurarTabsPorModulo(savedModulo);
       /* Vai para a aba que estava antes do refresh */
       switchTab(savedTab);
       if (savedTab === 'hist') loadHistory();
