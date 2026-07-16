@@ -197,7 +197,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 
 /* Action table */
 .tbl-wrap { overflow-x: auto; }
-.act-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.act-tbl { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
 .act-tbl th { background: var(--blue); color: #fff; padding: 10px 12px; text-align: left; font-weight: 500; font-size: 12px; }
 .act-tbl td { padding: 6px 8px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
 .act-tbl tr:last-child td { border-bottom: none; }
@@ -1510,14 +1510,14 @@ img, svg { max-width: 100%; height: auto; }
         </div>
         <div class="card">
           <div class="card-title">✅ Plano de ação acordado</div>
-          <div class="tbl-wrap" style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden">
+          <div class="tbl-wrap" style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden;width:100%">
             <table class="act-tbl">
               <thead>
                 <tr>
-                  <th style="width:46%">Atividade</th>
-                  <th style="width:26%">Responsável</th>
-                  <th style="width:20%">Status</th>
-                  <th style="width:8%"></th>
+                  <th>Atividade</th>
+                  <th style="width:160px">Responsável</th>
+                  <th style="width:140px">Status</th>
+                  <th style="width:36px"></th>
                 </tr>
               </thead>
               <tbody id="action-tbody"></tbody>
