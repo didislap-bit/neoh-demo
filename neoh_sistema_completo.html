@@ -1446,9 +1446,9 @@ img, svg { max-width: 100%; height: auto; }
   <!-- FORMULÁRIO -->
   <div id="form-panel" class="panel active">
     <!-- Filtro de hospital para admin -->
-    <div id="form-hosp-filter-bar" style="display:none;background:#f0f4ff;border:.5px solid #c7d7f5;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:10px">
-      <span style="font-size:12px;font-weight:600;color:var(--blue)">🏥 Hospital para o relatório:</span>
-      <select id="form-hosp-select" onchange="selecionarHospitalForm()" style="padding:7px 12px;border:.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;background:#fff;min-width:240px">
+    <div id="form-hosp-filter-bar" style="display:none;background:#f0f4ff;border:.5px solid #c7d7f5;border-radius:10px;padding:12px 16px;margin-bottom:14px;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:600;color:var(--blue);white-space:nowrap">🏥 Hospital para o relatório:</span>
+      <select id="form-hosp-select" onchange="selecionarHospitalForm()" style="flex:1;min-width:220px;padding:7px 12px;border:.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;background:#fff">
         <option value="">Selecione o hospital...</option>
       </select>
     </div>
@@ -3518,7 +3518,7 @@ function abrirModulo(modulo) {
     document.getElementById('busca-screen').classList.remove('open');
     document.getElementById('topnav').style.display = 'flex';
     document.getElementById('main-wrap').style.display = 'block';
-    document.getElementById('topnav-hospital').textContent = 'Neoh Admin';
+    document.getElementById('topnav-hospital').textContent = 'Usuário: ' + (session?.nome || 'Admin');
     try { const s={...session}; delete s.logo_url; sessionStorage.setItem('neoh_session', JSON.stringify(s)); } catch(e) {}
     initForm();
     configurarTabsPorModulo(modulo);
@@ -3768,7 +3768,7 @@ async function carregarFiltroHospForm() {
   /* Carrega hospitais no filtro do formulário (só para admin) */
   if (!session?.isAdmin) return;
   const bar = document.getElementById('form-hosp-filter-bar');
-  if (bar) bar.style.display = 'flex';
+  if (bar) { bar.style.display = 'flex'; bar.style.removeProperty('display'); bar.style.display = 'flex'; }
   try {
     const { data } = await sb.from('hospitais').select('id,nome,nome_real,parceiro,logo_url').eq('ativo',true).order('nome');
     const sel = document.getElementById('form-hosp-select');
@@ -3816,11 +3816,10 @@ async function selecionarHospitalForm() {
     if (drop) drop.classList.remove('has');
   }
 
-  /* Atualiza topnav */
+  /* Atualiza topnav — admin: Hosp. Escolhido: X | Usuário: Nome */
   const label = opt.dataset.nomeReal || opt.dataset.nome;
-  const sist  = opt.dataset.parceiro;
   document.getElementById('topnav-hospital').textContent =
-    'Hosp. Escolhido: ' + label + (sist ? '  |  Sistema Hospitalar: ' + sist : '');
+    'Hosp. Escolhido: ' + label + '  |  Usuário: ' + (session?.nome || '');
 
   showToast('Hospital selecionado: ' + label, 'success');
 }
@@ -4781,10 +4780,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('topnav').style.display = 'flex';
       document.getElementById('main-wrap').style.display = 'block';
       /* Label topnav */
-      const nomeReal = session.nome_real || session.hospitalNome || session.nome || '';
-      const sistema  = session.parceiro || '';
-      let topnavLabel = 'Hosp. Escolhido: ' + nomeReal;
-      if (sistema) topnavLabel += '  |  Sistema Hospitalar: ' + sistema;
+      let topnavLabel = '';
+      if (session.isHospUser) {
+        const hospLabel = session.nome_real || session.hospitalNome || '';
+        topnavLabel = 'Hosp. Escolhido: ' + hospLabel + '  |  Usuário: ' + (session.nome || '');
+      } else {
+        topnavLabel = 'Usuário: ' + (session.nome || '');
+      }
       document.getElementById('topnav-hospital').textContent = topnavLabel;
       /* Admin tab */
       if (session.isAdmin) {
