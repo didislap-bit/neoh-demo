@@ -1510,14 +1510,14 @@ img, svg { max-width: 100%; height: auto; }
         </div>
         <div class="card">
           <div class="card-title">✅ Plano de ação acordado</div>
-          <div class="tbl-wrap" id="act-tbl-wrap" style="border:0.5px solid var(--border);border-radius:8px;overflow:hidden;width:100%;display:none">
-            <table class="act-tbl">
-              <thead>
+          <div id="act-tbl-wrap" style="display:none;border:.5px solid var(--border);border-radius:8px;overflow:hidden;width:100%">
+            <table class="act-tbl" style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead id="act-tbl-head" style="display:none">
                 <tr>
-                  <th style="width:50%">Atividade</th>
-                  <th style="width:27%">Responsável</th>
-                  <th style="width:17%">Status</th>
-                  <th style="width:6%"></th>
+                  <th style="background:var(--blue);color:#fff;padding:9px 12px;text-align:left;font-size:12px;font-weight:500;width:50%">Atividade</th>
+                  <th style="background:var(--blue);color:#fff;padding:9px 12px;text-align:left;font-size:12px;font-weight:500;width:25%">Responsável</th>
+                  <th style="background:var(--blue);color:#fff;padding:9px 12px;text-align:left;font-size:12px;font-weight:500;width:18%">Status</th>
+                  <th style="background:var(--blue);color:#fff;padding:9px 12px;width:7%"></th>
                 </tr>
               </thead>
               <tbody id="action-tbody"></tbody>
@@ -2213,9 +2213,10 @@ function addDyn(listId, tagName, placeholder, value='') {
 
 function addAction(vals=['','','Pendente']) {
   const tbody = document.getElementById('action-tbody');
-  /* Show table wrapper on first row */
-  const wrap = document.getElementById('act-tbl-wrap');
-  if (wrap) wrap.style.display = '';
+  const wrap  = document.getElementById('act-tbl-wrap');
+  const thead = document.getElementById('act-tbl-head');
+  if (wrap)  wrap.style.display  = '';
+  if (thead) thead.style.display = '';
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td><input value="${esc(vals[0])}" placeholder="Descreva a atividade..." style="width:100%" /></td>
@@ -2228,7 +2229,7 @@ function addAction(vals=['','','Pendente']) {
       </select>
     </td>
     <td style="text-align:center;width:36px">
-      <button class="btn-del" onclick="const r=this.closest('tr');r.remove();const t=document.getElementById('action-tbody');const w=document.getElementById('act-tbl-wrap');if(w&&!t.rows.length)w.style.display='none';" title="Remover">✕</button>
+      <button class="btn-del" onclick="const r=this.closest('tr');r.remove();const t=document.getElementById('action-tbody');const w=document.getElementById('act-tbl-wrap');const h=document.getElementById('act-tbl-head');if(!t.rows.length){if(w)w.style.display='none';if(h)h.style.display='none';}" title="Remover">✕</button>
     </td>`;
   tbody.appendChild(tr);
 }
