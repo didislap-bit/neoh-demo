@@ -1130,20 +1130,24 @@ html, body { width: 100%; overflow-x: hidden; }
     <div class="login-subtitle">Sistema de Status Report Executivo</div>
     <div class="login-title" style="margin-bottom:18px">Bem-vindo</div>
 
-    <div class="login-field">
-      <label>E-mail</label>
-      <input type="email" id="login-email" placeholder="seu@email.com"
-        autocomplete="email"
-        onkeydown="if(event.key==='Enter')document.getElementById('login-senha-unif').focus()" />
-    </div>
-    <div class="login-field">
-      <label>Senha</label>
-      <input type="password" id="login-senha-unif" placeholder="Digite a senha"
-        autocomplete="current-password"
-        onkeydown="if(event.key==='Enter')doLoginUnificado()" />
-    </div>
-
-    <button class="login-btn" id="login-btn-unif" onclick="doLoginUnificado()">Entrar</button>
+    <!-- form real para ativar autocomplete do navegador -->
+    <form id="login-form" autocomplete="on" onsubmit="event.preventDefault();doLoginUnificado()" style="width:100%">
+      <div class="login-field">
+        <label for="login-email">E-mail</label>
+        <input type="email" id="login-email" name="email"
+          placeholder="seu@email.com"
+          autocomplete="username email"
+          onkeydown="if(event.key==='Enter')document.getElementById('login-senha-unif').focus()" />
+      </div>
+      <div class="login-field">
+        <label for="login-senha-unif">Senha</label>
+        <input type="password" id="login-senha-unif" name="password"
+          placeholder="Digite a senha"
+          autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLoginUnificado()" />
+      </div>
+      <button type="submit" class="login-btn" id="login-btn-unif">Entrar</button>
+    </form>
     <div class="login-error" id="login-error"></div>
   </div>
 </div>
@@ -1841,8 +1845,8 @@ function doLogout() {
   try { sessionStorage.removeItem('neoh_session'); sessionStorage.removeItem('neoh_tab'); } catch(e) {}
   /* Limpa campos de login */
   try {
-    document.getElementById('login-email').value = '';
-    document.getElementById('login-senha-unif').value = '';
+    const form = document.getElementById('login-form');
+    if (form) form.reset();
     document.getElementById('login-error').classList.remove('show');
   } catch(e) {}
   setTimeout(() => { const el = document.getElementById('login-email'); if(el) el.focus(); }, 150);
