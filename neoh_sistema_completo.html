@@ -1417,7 +1417,8 @@ img, svg { max-width: 100%; height: auto; }
     </div>
     <div class="topnav-right">
       <span class="topnav-hospital" id="topnav-hospital"></span>
-      <button class="btn-nav" onclick="doLogout()">🔓 Sair</button>
+      <button class="btn-nav" onclick="voltarHome()" title="Tela inicial">🏠 <span class="tab-txt">Home</span></button>
+      <button class="btn-nav" onclick="doLogout()" title="Sair">🔓 <span class="tab-txt">Sair</span></button>
     </div>
   </div>
   <!-- Linha 2: abas (scroll horizontal em mobile) -->
@@ -3221,6 +3222,20 @@ function novoRelatorio() {
   switchTab('form');
 }
 
+function voltarHome() {
+  /* Volta para home de módulos sem fazer logout */
+  document.getElementById('topnav').style.display = 'none';
+  document.getElementById('main-wrap').style.display = 'none';
+  document.getElementById('busca-screen').classList.remove('open');
+  document.getElementById('home-screen').classList.add('open');
+  /* Reseta módulo ativo */
+  if (session) session._moduloAtivo = null;
+  /* Limpa relatório em aberto */
+  document.getElementById('aviso-salvar').style.display = 'none';
+  fecharPopupSalvar();
+  switchTab('form');
+}
+
 function voltarTelaInicial() {
   /* Volta para busca de hospital sem fazer logout */
   hospitalBuscado = null;
@@ -3523,9 +3538,7 @@ function abrirModulo(modulo) {
 }
 
 function configurarTabsPorModulo(modulo) {
-  /* Status Report: mostra Form, Relatório, Histórico, Admin — esconde SC */
-  /* Sucesso do Cliente: mostra SC, Admin — esconde Form, Relatório, Histórico */
-  const isSR = modulo === 'status-report';
+  const isSR = modulo === 'status-report' || !modulo;
   const isSC = modulo === 'sucesso-cliente';
 
   const tabForm   = document.getElementById('tab-form');
@@ -3534,19 +3547,20 @@ function configurarTabsPorModulo(modulo) {
   const tabSC     = document.getElementById('sc-tab');
   const tabAdmin  = document.getElementById('admin-tab');
 
+  /* Status Report: Form + Relatório + Histórico visíveis; SC oculto */
+  const showSR = d => { if(d) d.style.display = ''; };
+  const hideSR = d => { if(d) d.style.display = 'none'; };
+
   if (isSR) {
-    if (tabForm)   tabForm.style.display   = '';
-    if (tabReport) tabReport.style.display = '';
-    if (tabHist)   tabHist.style.display   = '';
-    if (tabSC)     tabSC.style.display     = 'none';
-    if (tabAdmin && session?.isAdmin) tabAdmin.style.display = 'inline-block';
+    showSR(tabForm); showSR(tabReport); showSR(tabHist);
+    hideSR(tabSC);
   } else if (isSC) {
-    if (tabForm)   tabForm.style.display   = 'none';
-    if (tabReport) tabReport.style.display = 'none';
-    if (tabHist)   tabHist.style.display   = 'none';
-    if (tabSC)     tabSC.style.display     = 'inline-block';
-    if (tabAdmin && session?.isAdmin) tabAdmin.style.display = 'inline-block';
+    hideSR(tabForm); hideSR(tabReport); hideSR(tabHist);
+    if (tabSC) tabSC.style.display = 'inline-block';
   }
+
+  /* Admin sempre visível para admins */
+  if (tabAdmin) tabAdmin.style.display = session?.isAdmin ? 'inline-block' : 'none';
 }
 
 function voltarBuscaHome() {
