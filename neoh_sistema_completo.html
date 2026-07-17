@@ -4921,14 +4921,16 @@ function salvarPromptSC() {
 const PPTX_TEMPLATE_B64 = 'UEsDBBQABgAIAAAAIQCPjx5mYAIAAGsZAAATAAgCW0NvbnRlbn...';
 
 async function gerarApresentacaoPPTX() {
-  const hospSel  = document.getElementById('sc-apresent-hosp');
-  const hospital  = hospSel?.options[hospSel.selectedIndex]?.dataset?.nome || hospSel?.value || 'Hospital';
-  const dtIni     = document.getElementById('sc-apresent-dt-ini')?.value||'';
-  const dtFim     = document.getElementById('sc-apresent-dt-fim')?.value||'';
-  const prompt    = document.getElementById('sc-prompt-texto')?.value||'';
-  const periodo   = dtIni && dtFim ? `${new Date(dtIni+'T12:00:00').toLocaleDateString('pt-BR')} a ${new Date(dtFim+'T12:00:00').toLocaleDateString('pt-BR')}` : 'Período não definido';
+  /* Try to get data from _apresentData first (set by gerarPreviaApresentacao) */
+  const d = _apresentData || window._apresentDataGlobal;
+  const hospSel = document.getElementById('sc-apresent-hosp') || document.getElementById('apresent-hosp');
+  const hospital = d?.hospital || hospSel?.options[hospSel?.selectedIndex]?.dataset?.nome || hospSel?.options[hospSel?.selectedIndex]?.text || hospSel?.value || '';
+  const dtIni    = d?.dtIni || document.getElementById('sc-apresent-dt-ini')?.value || document.getElementById('apresent-dt-ini')?.value || '';
+  const dtFim    = d?.dtFim || document.getElementById('sc-apresent-dt-fim')?.value || document.getElementById('apresent-dt-fim')?.value || '';
+  const prompt   = document.getElementById('sc-prompt-texto')?.value || '';
+  const periodo  = dtIni && dtFim ? (new Date(dtIni+'T12:00:00').toLocaleDateString('pt-BR') + ' a ' + new Date(dtFim+'T12:00:00').toLocaleDateString('pt-BR')) : 'Período não definido';
 
-  if (!hospital || hospital === 'Hospital') {
+  if (!hospital) {
     showToast('Selecione o hospital antes de gerar.','error'); return;
   }
 
@@ -5029,12 +5031,12 @@ let _apresentData = null;
 
 async function gerarPreviaApresentacao() {
   const sel = document.getElementById('apresent-hosp');
-  const hospital = sel?.options[sel.selectedIndex]?.dataset?.nome || '';
   const hospId   = sel?.value || '';
+  const hospital = sel?.options[sel.selectedIndex]?.dataset?.nome || sel?.options[sel.selectedIndex]?.text || '';
   const dtIni    = document.getElementById('apresent-dt-ini')?.value||'';
   const dtFim    = document.getElementById('apresent-dt-fim')?.value||'';
 
-  if (!hospId) { showToast('Selecione o hospital.','error'); return; }
+  if (!hospId || hospId === '') { showToast('Selecione o hospital.','error'); return; }
   if (!dtIni || !dtFim) { showToast('Preencha o período.','error'); return; }
 
   showToast('Gerando prévia... ⏳','');
@@ -5057,6 +5059,7 @@ async function gerarPreviaApresentacao() {
   const periodo = new Date(dtIni+'T12:00').toLocaleDateString('pt-BR') + ' a ' + new Date(dtFim+'T12:00').toLocaleDateString('pt-BR');
 
   _apresentData = { hospital, hospId, periodo, rels, ultimoSC, ultimoRel, dtIni, dtFim };
+  window._apresentDataGlobal = _apresentData;
 
   /* Gera slides de prévia */
   const slides = [
@@ -5086,9 +5089,19 @@ function expandirSlide(idx) {
 }
 
 function baixarApresentacaoPPTX() {
-  if (!_apresentData) { showToast('Gere a prévia primeiro.','error'); return; }
-  gerarApresentacaoPPTX(); /* reuse existing function */
-  registrarLog('Download PPTX', _apresentData.hospital);
+  if (!_apresentData && !window._apresentDataGlobal) {
+    showToast('Gere a prévia primeiro.','error'); return;
+  }
+  const d = _apresentData || window._apresentDataGlobal;
+  /* Set global so gerarApresentacaoPPTX can use it */
+  if (d) {
+    const hospSel = document.getElementById('apresent-hosp');
+    if (hospSel && d.hospId) {
+      hospSel.value = d.hospId;
+    }
+  }
+  gerarApresentacaoPPTX();
+  registrarLogSupabase('Apresentação', 'Download PPTX: ' + (d?.hospital||''));
 }
 
 function baixarApresentacaoPDF() {
@@ -5162,8 +5175,9 @@ function toggleAdminView(view) {
   const statsGrid = document.getElementById('admin-stats-grid');
   const drillEl   = document.getElementById('stat-drilldown');
   const btnHosp   = document.getElementById('btn-view-hosp');
+  const btnGer    = document.getElementById('btn-view-ger');
 
-  /* Hide all sub-panels */
+  /* Hide all */
   [hospPanel, gerPanel].forEach(p => { if(p) p.style.display='none'; });
   if(statsGrid) statsGrid.style.display='none';
   if(drillEl)   drillEl.style.display='none';
@@ -5171,15 +5185,20 @@ function toggleAdminView(view) {
   const activeStyle = 'background:var(--blue);color:#fff;border-color:var(--blue)';
   const inactStyle  = 'background:none;color:var(--text);border-color:var(--border)';
   if(btnHosp) btnHosp.style.cssText = inactStyle;
+  if(btnGer)  btnGer.style.cssText  = inactStyle;
 
   if (view === 'hospitais') {
     if(hospPanel)  hospPanel.style.display='';
     if(statsGrid)  statsGrid.style.display='';
     if(drillEl)    drillEl.style.display='';
     if(btnHosp)    btnHosp.style.cssText = activeStyle;
+  } else if (view === 'gerencial') {
+    if(gerPanel)  gerPanel.style.display = 'block';
+    if(statsGrid) statsGrid.style.display = 'none';
+    if(drillEl)   drillEl.style.display   = 'none';
+    if(btnGer)    btnGer.style.cssText    = activeStyle;
+    initGerencialFilters();
   }
-  /* 'gerencial' view removed from this panel — lives in Gerencial tab */
-  /* 'usuarios' view removed from this panel — lives in Configurações */
 }
 
 function atualizarStepperBusca() {
