@@ -2143,6 +2143,65 @@ Exemplo: Gere uma apresentação executiva de Sucesso do Cliente para o {{HOSPIT
   </div>
 </div>
 
+<!-- MODAL APRESENTAÇÕES SC ADMIN -->
+<div class="modal-overlay" id="modal-apresent-admin" style="display:none">
+  <div class="modal" style="max-width:900px;width:96%">
+    <h3 id="modal-apresent-titulo">📊 Apresentações — Hospital</h3>
+    <!-- Toolbar: Voltar -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn-tool" onclick="document.getElementById('modal-apresent-admin').style.display='none'">← Voltar ao Gerencial</button>
+      <button class="btn-tool accent" onclick="abrirNovaApresentacaoAdmin()">+ Nova apresentação</button>
+    </div>
+    <!-- Dica -->
+    <div style="background:#f0f4ff;border:.5px solid #c7d7f5;border-radius:8px;padding:10px 14px;font-size:12px;color:#1e40af;margin-bottom:12px">
+      💡 Clique em <strong>👁 Visualizar</strong> para ver a prévia da apresentação, ou em <strong>🖊 Prompt</strong> para criar uma nova baseada em prompt de IA.
+    </div>
+    <!-- Lista de apresentações -->
+    <div id="apresent-admin-list" style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto">
+      <div style="text-align:center;padding:32px;color:var(--muted);font-size:13px">Nenhuma apresentação gerada ainda para este hospital.</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROMPT BUILDER SC -->
+<div class="modal-overlay" id="modal-prompt-builder" style="display:none">
+  <div class="modal" style="max-width:680px;width:96%">
+    <h3>🖊 Criar prompt para apresentação</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Configure o prompt que a IA usará para gerar a apresentação de Sucesso do Cliente, validando os dados do banco Neoh.</p>
+    <div class="field">
+      <label>Hospital</label>
+      <input id="prompt-hosp-nome" readonly style="background:#f0f4ff;color:var(--blue);font-weight:600" />
+    </div>
+    <div class="field">
+      <label>Variáveis disponíveis</label>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
+        <span class="prompt-var-tag" onclick="inserirVarPromptBuilder('{{HOSPITAL}}')">{{HOSPITAL}}</span>
+        <span class="prompt-var-tag" onclick="inserirVarPromptBuilder('{{PERIODO}}')">{{PERIODO}}</span>
+        <span class="prompt-var-tag" onclick="inserirVarPromptBuilder('{{NOVOS_PEDIDOS}}')">{{NOVOS_PEDIDOS}}</span>
+        <span class="prompt-var-tag" onclick="inserirVarPromptBuilder('{{AGENDADOS}}')">{{AGENDADOS}}</span>
+        <span class="prompt-var-tag" onclick="inserirVarPromptBuilder('{{TAXA_REALIZACAO}}')">{{TAXA_REALIZACAO}}</span>
+        <span class="prompt-var-tag" onclick="inserirVarPromptBuilder('{{ORIGEM_NEOH_PCT}}')">{{ORIGEM_NEOH_PCT}}</span>
+        <span class="prompt-var-tag" onclick="inserirVarPromptBuilder('{{ENGAJAMENTO_MEDICO}}')">{{ENGAJAMENTO_MEDICO}}</span>
+        <span class="prompt-var-tag" onclick="inserirVarPromptBuilder('{{SAUDE_PROJETO}}')">{{SAUDE_PROJETO}}</span>
+        <span class="prompt-var-tag" onclick="inserirVarPromptBuilder('{{PROXIMOS_90_DIAS}}')">{{PROXIMOS_90_DIAS}}</span>
+      </div>
+    </div>
+    <div class="field">
+      <label>Prompt para geração da apresentação</label>
+      <textarea id="prompt-builder-texto" class="prompt-area" style="min-height:160px"
+        placeholder="Ex: Gere uma apresentação executiva de Sucesso do Cliente para o {{HOSPITAL}} referente ao período {{PERIODO}}. Taxa de realização: {{TAXA_REALIZACAO}}%, engajamento médico: {{ENGAJAMENTO_MEDICO}}%. Próximos 90 dias: {{PROXIMOS_90_DIAS}}."></textarea>
+    </div>
+    <div style="background:#fff8f3;border:.5px solid #fed7aa;border-radius:8px;padding:10px 14px;font-size:11px;color:#92400e;margin-bottom:12px">
+      🔗 <strong>Conexão ao banco Neoh PRD pendente.</strong> As variáveis acima serão preenchidas automaticamente com dados reais após configuração da API intermediária.
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="document.getElementById('modal-prompt-builder').style.display='none'">Cancelar</button>
+      <button class="btn-confirm" onclick="salvarESalvarPromptAdmin()" style="background:var(--blue)">💾 Salvar prompt</button>
+      <button class="btn-confirm" onclick="gerarApresentacaoComPromptAdmin()" style="background:var(--orange)">▶ Gerar apresentação</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL E-MAIL NOTIFICAÇÃO SC -->
 <div class="modal-overlay" id="modal-sc-email">
   <div class="modal" style="max-width:620px;width:95%">
@@ -3013,6 +3072,190 @@ async function verHistorialAdmin(hospitalId, hospitalNome) {
   await loadHistory(hospitalId, hospitalNome);
 }
 
+/* ══════════════════════════════════════
+   GERENCIAL SC — APRESENTAÇÕES
+   ══════════════════════════════════════ */
+let _adminApresentHospId   = null;
+let _adminApresentHospNome = '';
+let _adminPromptHospId     = null;
+
+async function verApresentacoesAdmin(hospitalId, hospitalNome) {
+  _adminApresentHospId   = hospitalId;
+  _adminApresentHospNome = hospitalNome;
+
+  document.getElementById('modal-apresent-titulo').textContent = '📊 Apresentações — ' + hospitalNome;
+
+  const { data } = await sb.from('sucesso_cliente')
+    .select('*').eq('hospital_id', hospitalId).order('created_at', {ascending:false});
+
+  const list = document.getElementById('apresent-admin-list');
+
+  if (!data || !data.length) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted);font-size:13px">Nenhuma apresentação registrada para este hospital.<br>Clique em "+ Nova apresentação" para iniciar.</div>';
+  } else {
+    list.innerHTML = '';
+    data.forEach((r, i) => {
+      const dt     = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR') : '—';
+      const saude  = r.saude || '—';
+      const saudeCls = saude==='Crítico'?'saude-critico':saude==='Atenção'?'saude-atencao':'saude-estavel';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 14px;border:.5px solid var(--border);border-radius:8px;background:#fff';
+      row.innerHTML = '<div style="flex:1">'
+        + '<div style="font-weight:600;font-size:13px">' + hospitalNome + ' — <span class="saude-badge ' + saudeCls + '">' + saude + '</span></div>'
+        + '<div style="font-size:11px;color:var(--muted);margin-top:3px">Consultor: ' + (r.consultor||'—') + ' · ' + dt + '</div>'
+        + (r.observacoes ? '<div style="font-size:11px;color:var(--blue);margin-top:2px">' + r.observacoes.substring(0,80) + (r.observacoes.length>80?'...':'') + '</div>' : '')
+        + '</div>'
+        + '<div style="display:flex;gap:6px;flex-shrink:0"></div>';
+      const btnDiv = row.querySelector('div:last-child');
+      /* Visualizar */
+      const btnVer = document.createElement('button');
+      btnVer.className = 'btn-sm';
+      btnVer.textContent = '👁 Visualizar';
+      btnVer.style.cssText = 'color:var(--teal);border-color:var(--teal)';
+      btnVer.onclick = () => visualizarPreviaApresentAdmin(r);
+      btnDiv.appendChild(btnVer);
+      /* Prompt */
+      const btnPrompt = document.createElement('button');
+      btnPrompt.className = 'btn-sm';
+      btnPrompt.textContent = '🖊 Prompt';
+      btnPrompt.style.cssText = 'color:var(--orange);border-color:var(--orange)';
+      btnPrompt.onclick = () => abrirPromptBuilderAdmin(hospitalId, hospitalNome, r.id);
+      btnDiv.appendChild(btnPrompt);
+      list.appendChild(row);
+    });
+  }
+
+  document.getElementById('modal-apresent-admin').style.display = 'flex';
+  registrarLogSupabase('SC Gerencial', 'Ver apresentações: ' + hospitalNome);
+}
+
+
+function abrirNovaApresentacaoAdmin() {
+  /* Vai para aba Apresentação com hospital pré-selecionado */
+  document.getElementById('modal-apresent-admin').style.display = 'none';
+  switchTab('apresent');
+  setTimeout(() => {
+    const sel = document.getElementById('apresent-hosp');
+    if (sel && _adminApresentHospId) {
+      sel.value = _adminApresentHospId;
+    }
+  }, 300);
+}
+
+async function visualizarPreviaApresentAdmin(record) {
+  const data = record;
+  if (!data) { showToast('Registro não encontrado.','error'); return; }
+
+  const saude = data.saude || '—';
+  const slides = [
+    { titulo:'Capa', conteudo:'<strong>' + _adminApresentHospNome + '</strong>', cor:'#1a3a6b' },
+    { titulo:'Saúde do Projeto', conteudo:'<strong>' + saude + '</strong><br><small>Consultor: ' + (data.consultor||'—') + '</small>', cor:saude==='Crítico'?'#e84040':saude==='Atenção'?'#e87722':'#1a9e75' },
+    { titulo:'Observações', conteudo:(data.observacoes||'Nenhuma observação registrada'), cor:'#1a3a6b' },
+    { titulo:'Próximos Passos', conteudo:'Reunião de Sucesso do Cliente a agendar', cor:'#e87722' },
+  ];
+
+  const previaHtml = slides.map((s,i) =>
+    '<div style="border-radius:8px;overflow:hidden;border:.5px solid var(--border);margin-bottom:8px">'
+    + '<div style="background:' + s.cor + ';color:#fff;padding:7px 12px;font-size:11px;font-weight:600">Slide ' + (i+1) + ': ' + s.titulo + '</div>'
+    + '<div style="background:#fff;padding:10px 12px;font-size:12px;color:var(--text);min-height:50px">' + s.conteudo + '</div>'
+    + '</div>'
+  ).join('');
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:14px;padding:24px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:14px';
+
+  const title = document.createElement('h3');
+  title.style.cssText = 'font-size:15px;color:var(--blue)';
+  title.textContent = '👁 Prévia — ' + _adminApresentHospNome;
+
+  const btnClose1 = document.createElement('button');
+  btnClose1.style.cssText = 'background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)';
+  btnClose1.textContent = '✕';
+  btnClose1.onclick = () => overlay.remove();
+
+  header.appendChild(title);
+  header.appendChild(btnClose1);
+  box.appendChild(header);
+
+  const previa = document.createElement('div');
+  previa.innerHTML = previaHtml;
+  box.appendChild(previa);
+
+  const footer = document.createElement('div');
+  footer.style.cssText = 'display:flex;gap:8px;margin-top:14px;justify-content:flex-end';
+
+  const btnPPTX = document.createElement('button');
+  btnPPTX.style.cssText = 'background:var(--blue);color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer';
+  btnPPTX.textContent = '⬇ Baixar PPTX';
+  btnPPTX.onclick = () => { baixarApresentacaoPPTX(); overlay.remove(); };
+
+  const btnClose2 = document.createElement('button');
+  btnClose2.style.cssText = 'background:#f0f0f0;border:none;padding:8px 16px;border-radius:7px;font-size:12px;cursor:pointer';
+  btnClose2.textContent = 'Fechar';
+  btnClose2.onclick = () => overlay.remove();
+
+  footer.appendChild(btnPPTX);
+  footer.appendChild(btnClose2);
+  box.appendChild(footer);
+
+  overlay.appendChild(box);
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+
+function abrirPromptBuilderAdmin(hospId, hospNome, scId) {
+  _adminPromptHospId = hospId;
+  document.getElementById('prompt-hosp-nome').value = hospNome;
+  /* Load saved prompt if exists */
+  const savedPrompt = localStorage.getItem('neoh_prompt_' + hospId) || '';
+  document.getElementById('prompt-builder-texto').value = savedPrompt;
+  document.getElementById('modal-prompt-builder').style.display = 'flex';
+}
+
+function inserirVarPromptBuilder(variavel) {
+  const ta = document.getElementById('prompt-builder-texto');
+  if (!ta) return;
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  ta.value = ta.value.substring(0,start) + variavel + ta.value.substring(end);
+  ta.selectionStart = ta.selectionEnd = start + variavel.length;
+  ta.focus();
+}
+
+function salvarESalvarPromptAdmin() {
+  const prompt = document.getElementById('prompt-builder-texto').value;
+  if (_adminPromptHospId) {
+    localStorage.setItem('neoh_prompt_' + _adminPromptHospId, prompt);
+  }
+  /* Also save globally */
+  try { localStorage.setItem('neoh_sc_prompt', prompt); } catch(e) {}
+  document.getElementById('modal-prompt-builder').style.display = 'none';
+  showToast('Prompt salvo!','success');
+  registrarLogSupabase('SC Gerencial', 'Prompt de apresentação salvo: ' + document.getElementById('prompt-hosp-nome').value);
+}
+
+async function gerarApresentacaoComPromptAdmin() {
+  salvarESalvarPromptAdmin();
+  /* Vai para aba Apresentação e dispara geração */
+  document.getElementById('modal-prompt-builder').style.display = 'none';
+  document.getElementById('modal-apresent-admin').style.display = 'none';
+  switchTab('apresent');
+  setTimeout(() => {
+    const sel = document.getElementById('apresent-hosp');
+    if (sel && _adminApresentHospId) sel.value = _adminApresentHospId;
+    const prompt = localStorage.getItem('neoh_prompt_' + _adminApresentHospId) || '';
+    const ta = document.getElementById('sc-prompt-texto');
+    if (ta && prompt) ta.value = prompt;
+    showToast('Hospital e prompt carregados. Clique em "▶ Gerar prévia" para continuar.','success');
+  }, 400);
+}
+
 function voltarAdminPanel() {
   window._adminHistCtx = null;
   /* Admin volta sem hospital vinculado */
@@ -3050,13 +3293,32 @@ async function loadAdminPanel() {
     const { data: hospitais, error } = await sb.from('hospitais').select('*').order('created_at', { ascending: false });
     if (error) throw error;
 
-    const { count: totalReports } = await sb.from('relatorios').select('*', { count: 'exact', head: true }).eq('cancelado', false);
+    const moduloAtivo = session?._moduloAtivo || 'status-report';
+    const isSCModulo  = moduloAtivo === 'sucesso-cliente';
+
+    /* Stats card label muda por módulo */
+    const statReportEl = document.querySelector('#stat-reports + .stat-lbl') ||
+                         document.querySelector('.stat-card.orange .stat-lbl');
+    if (statReportEl) {
+      statReportEl.textContent = isSCModulo ? 'Total de apresentações' : 'Total relatórios gerados';
+    }
+
+    let totalCount = 0;
+    if (isSCModulo) {
+      /* Conta apresentações SC */
+      const { count } = await sb.from('sucesso_cliente').select('*', { count:'exact', head:true });
+      totalCount = count || 0;
+    } else {
+      /* Conta relatórios SR */
+      const { count } = await sb.from('relatorios').select('*', { count:'exact', head:true }).eq('cancelado', false);
+      totalCount = count || 0;
+    }
 
     const ativos = hospitais.filter(h => h.ativo).length;
-    document.getElementById('stat-total').textContent = hospitais.length;
-    document.getElementById('stat-ativos').textContent = ativos;
+    document.getElementById('stat-total').textContent   = hospitais.length;
+    document.getElementById('stat-ativos').textContent  = ativos;
     document.getElementById('stat-inativos').textContent = hospitais.length - ativos;
-    document.getElementById('stat-reports').textContent = totalReports || 0;
+    document.getElementById('stat-reports').textContent = totalCount;
 
     if (!hospitais.length) {
       grid.innerHTML = '<p class="hist-empty">Nenhum hospital cadastrado ainda.<br>Clique em "+ Novo hospital" para começar.</p>';
@@ -3074,7 +3336,10 @@ async function loadAdminPanel() {
         </div>
         <span class="${h.ativo?'badge-ativo':'badge-inativo'}">${h.ativo?'Ativo':'Inativo'}</span>
         <span class="hosp-date">Criado: ${new Date(h.created_at).toLocaleDateString('pt-BR')}</span>
-        <button class="btn-sm" onclick="verHistorialAdmin('${h.id}','${(h.nome_real||h.nome).replace(/'/g,"\'")}')" style="color:var(--blue);border-color:var(--blue)">📋 Relatórios</button>
+        ${isSCModulo
+          ? '<button class="btn-sm" data-hid="' + h.id + '" data-hn="' + (h.nome_real||h.nome) + '" onclick="verApresentacoesAdmin(this.dataset.hid,this.dataset.hn)" style="color:var(--teal);border-color:var(--teal)">📊 Apresentações</button>'
+          : '<button class="btn-sm" data-hid="' + h.id + '" data-hn="' + (h.nome_real||h.nome) + '" onclick="verHistorialAdmin(this.dataset.hid,this.dataset.hn)" style="color:var(--blue);border-color:var(--blue)">📋 Relatórios</button>'
+        }
         <button class="btn-sm" onclick="toggleHospital('${h.id}',${h.ativo})">${h.ativo?'Desativar':'Ativar'}</button>
         <button class="btn-sm danger" onclick="deleteHospital('${h.id}','${h.nome}')">🗑</button>`;
       grid.appendChild(row);
