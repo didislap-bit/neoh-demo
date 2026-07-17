@@ -1721,6 +1721,7 @@ img, svg { max-width: 100%; height: auto; }
         <button class="btn-tool active" id="cfg-tab-users" onclick="setCfgTab('users')" style="background:var(--blue);color:#fff;border-color:var(--blue)">👤 Usuários</button>
         <button class="btn-tool" id="cfg-tab-hosps" onclick="setCfgTab('hosps')">🏥 Hospitais</button>
         <button class="btn-tool" id="cfg-tab-log" onclick="setCfgTab('log')">📋 Log de Ações</button>
+        <button class="btn-tool" id="cfg-tab-email" onclick="setCfgTab('email')">📧 Template E-mail</button>
       </div>
 
       <!-- USUÁRIOS -->
@@ -1731,10 +1732,10 @@ img, svg { max-width: 100%; height: auto; }
         </div>
         <div class="card">
           <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-            <input id="users-search" type="text" placeholder="🔍 Buscar por nome ou e-mail..."
-              oninput="filtrarUsuarios(this.value)"
+            <input id="cfg-users-search" type="text" placeholder="🔍 Buscar por nome ou e-mail..."
+              oninput="filtrarUsuariosCfg(this.value)"
               style="padding:7px 12px;border:.5px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;flex:1;min-width:200px;background:#fafbfc" />
-            <select id="users-filter-perfil" onchange="filtrarUsuarios()"
+            <select id="cfg-users-filter-perfil" onchange="filtrarUsuariosCfg()"
               style="padding:7px 10px;border:.5px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;background:#fafbfc;cursor:pointer">
               <option value="">Todos os perfis</option>
               <option value="Administrador_Sistema">Administrador_Sistema</option>
@@ -1767,16 +1768,62 @@ img, svg { max-width: 100%; height: auto; }
 
       <!-- LOG DE AÇÕES -->
       <div id="cfg-log-content" style="display:none">
-        <div style="font-size:14px;font-weight:600;color:var(--blue);margin-bottom:12px">📋 Log de ações do sistema</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:14px;font-weight:600;color:var(--blue)">📋 Log de ações do sistema</div>
+          <button class="btn-tool" onclick="carregarLog()" style="font-size:11px;padding:5px 10px">🔄 Atualizar</button>
+        </div>
         <div class="card">
           <div style="overflow-x:auto">
             <table class="users-table">
-              <thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Detalhes</th></tr></thead>
+              <thead><tr><th style="width:160px">Data/Hora</th><th style="width:140px">Usuário</th><th style="width:140px">Módulo/Ação</th><th>Detalhes</th></tr></thead>
               <tbody id="log-tbody"></tbody>
             </table>
           </div>
           <div id="log-empty" style="text-align:center;padding:24px;color:var(--muted);font-size:12px">
             Nenhuma ação registrada ainda.
+          </div>
+        </div>
+      </div>
+
+      <!-- TEMPLATE E-MAIL SC -->
+      <div id="cfg-email-content" style="display:none">
+        <div style="font-size:14px;font-weight:600;color:var(--blue);margin-bottom:12px">📧 Template de e-mail — Sucesso do Cliente</div>
+        <div class="card">
+          <div class="field"><label>Assunto</label><input id="cfg-email-assunto" value="[Neoh] Convite — Reunião de Sucesso do Cliente" /></div>
+          <div class="field">
+            <label>Corpo do e-mail</label>
+            <textarea id="cfg-email-corpo" style="min-height:280px;font-size:12px;line-height:1.7">Olá, bom dia a todos!
+
+Gostaríamos de convidá-los para uma reunião de sucesso do cliente para discutirmos os resultados alcançados até agora e os próximos passos do nosso projeto.
+
+📆 Detalhes da reunião:
+
+• Datas sugeridas: A combinar.
+• Horário: 10h.
+• Local: Reunião online via Microsoft Teams.
+• Duração: 60 minutos de duração.
+
+🖥️ Agenda da Reunião:
+
+1. Abertura e apresentação dos participantes.
+2. Revisão das metas e resultados anteriores.
+3. Novidades Neoh.
+4. Apresentação de Status de atividades ou demandas solicitadas.
+5. Discussão dos próximos passos e ações.
+6. Perguntas e respostas.
+
+A presença de todos é muito importante para nós, e estamos ansiosos para ouvir seus feedbacks e trabalhar juntos para garantir o sucesso contínuo do nosso projeto.
+
+Por favor, confirme sua disponibilidade respondendo ao e-mail {{EMAIL_CONSULTOR}}.
+
+Agradecemos desde já e estamos à disposição para quaisquer dúvidas.
+
+Atenciosamente,
+Consultoria Intelectah</textarea>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button onclick="salvarTemplateEmailCfg()" class="btn-tool accent">💾 Salvar template</button>
+            <span style="font-size:11px;color:var(--muted);align-self:center">Variáveis: {{HOSPITAL}} {{CONSULTOR}} {{EMAIL_CONSULTOR}} {{SAUDE}} {{DATA}}</span>
           </div>
         </div>
       </div>
@@ -1876,9 +1923,34 @@ img, svg { max-width: 100%; height: auto; }
           <option value="Realizado">Realizado</option>
           <option value="Cancelado">Cancelado</option>
         </select>
-        <select id="sc-filter-consultor" onchange="filtrarSC()" style="padding:6px 8px;border:.5px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;background:#fafbfc;cursor:pointer">
-          <option value="">Todos os consultores</option>
-        </select>
+        <div class="ms-wrapper" id="ms-sc-consultor-wrap" style="min-width:160px">
+          <div class="ms-control" id="ms-sc-consultor-ctrl" onclick="msToggle('sc-consultor')" style="min-height:32px;padding:3px 8px">
+            <span class="ms-placeholder" id="ms-sc-consultor-ph" style="font-size:12px">Todos consultores</span>
+            <span class="ms-arrow" style="font-size:9px">▼</span>
+          </div>
+          <div class="ms-dropdown" id="ms-sc-consultor-dropdown">
+            <div class="ms-search"><input type="text" placeholder="Buscar consultor..." oninput="msFilter('sc-consultor',this.value)" id="ms-sc-consultor-search" style="font-size:12px" /></div>
+            <div class="ms-list" id="ms-sc-consultor-list">
+              <div class="ms-option ms-option-all" onclick="msToggleAll('sc-consultor')">
+                <input type="checkbox" id="ms-sc-cons-todos-cb" checked /> Marcar/Desmarcar todos
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ms-wrapper" id="ms-sc-hosp-wrap" style="min-width:160px">
+          <div class="ms-control" id="ms-sc-hosp-ctrl" onclick="msToggle('sc-hosp')" style="min-height:32px;padding:3px 8px">
+            <span class="ms-placeholder" id="ms-sc-hosp-ph" style="font-size:12px">Todos hospitais</span>
+            <span class="ms-arrow" style="font-size:9px">▼</span>
+          </div>
+          <div class="ms-dropdown" id="ms-sc-hosp-dropdown">
+            <div class="ms-search"><input type="text" placeholder="Buscar hospital..." oninput="msFilter('sc-hosp',this.value)" id="ms-sc-hosp-search" style="font-size:12px" /></div>
+            <div class="ms-list" id="ms-sc-hosp-list">
+              <div class="ms-option ms-option-all" onclick="msToggleAll('sc-hosp')">
+                <input type="checkbox" id="ms-sc-hosp-todos-cb" checked /> Marcar/Desmarcar todos
+              </div>
+            </div>
+          </div>
+        </div>
         <div style="display:flex;align-items:center;gap:4px">
           <input type="date" id="sc-filter-dt-ini" onchange="filtrarSC()" style="padding:5px 8px;border:.5px solid var(--border);border-radius:7px;font-size:11px;font-family:inherit;background:#fafbfc" />
           <span style="font-size:11px;color:var(--muted)">até</span>
@@ -2033,7 +2105,14 @@ Exemplo: Gere uma apresentação executiva de Sucesso do Cliente para o {{HOSPIT
   <div class="modal" style="max-width:600px;width:95%">
     <h3>🤝 Nova reunião — Sucesso do Cliente</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
-      <div class="field" style="grid-column:1/-1"><label>Hospital</label><input id="sc-m-hospital" placeholder="Nome do hospital" /></div>
+      <div class="field" style="grid-column:1/-1;position:relative">
+        <label>Hospital</label>
+        <input id="sc-m-hospital" placeholder="Digite 3 letras para buscar..." autocomplete="off"
+          oninput="buscarHospitalSC(this.value)"
+          style="width:100%;padding:8px 10px;border:.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit" />
+        <div id="sc-hosp-sugest" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:.5px solid var(--border);border-radius:0 0 8px 8px;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.1);max-height:180px;overflow-y:auto"></div>
+        <input type="hidden" id="sc-m-hospital-id" />
+      </div>
       <div class="field">
         <label>Saúde do projeto</label>
         <select id="sc-m-saude">
@@ -3041,7 +3120,18 @@ async function salvarHospital() {
     /* Salva logo como base64 no campo logo_url se fornecida */
     if (modalLogoData) insertData.logo_url = modalLogoData;
 
-    const { data: newHosp, error } = await sb.from('hospitais').insert(insertData).select().single();
+    let hospError, newHosp;
+    if (_editHospId) {
+      const { error: updErr } = await sb.from('hospitais').update(insertData).eq('id', _editHospId);
+      hospError = updErr;
+      registrarLogSupabase('Hospitais', 'Hospital editado: ' + nomeReal);
+    } else {
+      const { data: ins, error: insErr } = await sb.from('hospitais').insert(insertData).select().single();
+      newHosp = ins; hospError = insErr;
+      registrarLogSupabase('Hospitais', 'Hospital cadastrado: ' + nomeReal);
+    }
+    const error = hospError;
+    const newHosp_compat = newHosp;
     if (error) throw error;
     showToast(`Hospital ${nomeReal} cadastrado!`, 'success');
     closeModal();
@@ -4225,7 +4315,7 @@ async function excluirUsuario(id, nome) {
    CONFIGURAÇÕES — Usuários, Hospitais, Log
    ══════════════════════════════════════ */
 function setCfgTab(tab) {
-  ['users','hosps','log'].forEach(t => {
+  ['users','hosps','log','email'].forEach(t => {
     const el = document.getElementById('cfg-' + t + '-content');
     const btn = document.getElementById('cfg-tab-' + t);
     if (el)  el.style.display  = t === tab ? 'block' : 'none';
@@ -4234,6 +4324,7 @@ function setCfgTab(tab) {
   if (tab === 'users') carregarUsuariosConfig();
   if (tab === 'hosps') carregarHospitaisConfig();
   if (tab === 'log')   carregarLog();
+  if (tab === 'email') carregarTemplateEmail();
 }
 
 async function carregarConfiguracoes() {
@@ -4268,6 +4359,81 @@ function renderUsuariosTableConfig(data) {
     </tr>`).join('');
 }
 
+/* ── FILTRAR USUÁRIOS NA CONFIG ── */
+function filtrarUsuariosCfg(q) {
+  const query  = (typeof q==='string'?q:(document.getElementById('cfg-users-search')?.value||'')).toLowerCase();
+  const perfil = document.getElementById('cfg-users-filter-perfil')?.value||'';
+  const filtered = _usuarios.filter(u =>
+    (!query || u.nome.toLowerCase().includes(query) || u.email.toLowerCase().includes(query)) &&
+    (!perfil || u.perfil===perfil)
+  );
+  renderUsuariosTableConfig(filtered);
+}
+
+/* ── EDITAR HOSPITAL ── */
+let _editHospId = null;
+
+async function editarHospital(id) {
+  const { data, error } = await sb.from('hospitais').select('*').eq('id',id).single();
+  if (error || !data) { showToast('Erro ao carregar hospital.','error'); return; }
+
+  _editHospId = id;
+  /* Preenche modal */
+  document.getElementById('m-nome').value    = data.nome_real || data.nome || '';
+  if (document.getElementById('m-cnpj')) document.getElementById('m-cnpj').value = data.cnpj||'';
+  document.getElementById('m-parceiro').value = data.parceiro||'';
+  /* Carrega e-mails */
+  _hospEmails = data.emails_notificacao || [];
+  renderEmailTags();
+  /* Abre modal */
+  const modal = document.getElementById('modal-hospital');
+  if (modal) {
+    modal.style.display='flex';
+    modal.querySelector('h3').textContent = '🏥 Editar hospital';
+    modal.querySelector('.btn-confirm').textContent = 'Salvar alterações';
+  }
+  registrarLogSupabase('Hospitais','Abrir edição: '+(data.nome_real||data.nome));
+}
+
+/* ── TEMPLATE E-MAIL CONFIG ── */
+async function carregarTemplateEmail() {
+  try {
+    const { data } = await sb.from('configuracoes').select('valor').eq('chave','email_template_sc').single();
+    if (data?.valor) {
+      const cfg = JSON.parse(data.valor);
+      if (document.getElementById('cfg-email-assunto')) document.getElementById('cfg-email-assunto').value = cfg.assunto||'';
+      if (document.getElementById('cfg-email-corpo'))   document.getElementById('cfg-email-corpo').value   = cfg.corpo||'';
+    }
+  } catch(e) {}
+}
+
+async function salvarTemplateEmailCfg() {
+  const assunto = document.getElementById('cfg-email-assunto')?.value||'';
+  const corpo   = document.getElementById('cfg-email-corpo')?.value||'';
+  try {
+    await sb.from('configuracoes').upsert({ chave:'email_template_sc', valor: JSON.stringify({assunto,corpo}) });
+    showToast('Template salvo!','success');
+    registrarLogSupabase('Configurações','Template de e-mail SC atualizado');
+  } catch(e) { showToast('Erro ao salvar template.','error'); }
+}
+
+/* ── LOG NO SUPABASE ── */
+async function registrarLogSupabase(modulo, detalhes, acao) {
+  try {
+    await sb.from('log_acoes').insert({
+      usuario_id: null,
+      usuario_nome: session?.nome || 'Sistema',
+      usuario_email: session?.email || '',
+      modulo: modulo || 'Sistema',
+      acao: acao || detalhes,
+      detalhes: detalhes,
+      created_at: new Date().toISOString()
+    });
+  } catch(e) { /* Log failure shouldn't break the app */ }
+  /* Also keep local log for immediate display */
+  registrarLog(modulo + ' — ' + (acao||''), detalhes);
+}
+
 async function carregarHospitaisConfig() {
   const grid = document.getElementById('cfg-hosps-grid');
   if (!grid) return;
@@ -4283,7 +4449,8 @@ async function carregarHospitaisConfig() {
       </div>
       <span class="${h.ativo?'badge-ativo':'badge-inativo'}">${h.ativo?'Ativo':'Inativo'}</span>
       <span style="font-size:11px;color:var(--muted)">Criado: ${new Date(h.created_at).toLocaleDateString('pt-BR')}</span>
-      <button class="btn-sm danger" onclick="excluirHospital('${h.id}','${h.nome_real||h.nome}')">🗑</button>
+      <button class="btn-sm" onclick="editarHospital('${h.id}')" title="Editar">✏️</button>
+      <button class="btn-sm danger" onclick="excluirHospital('${h.id}','${h.nome_real||h.nome}')" title="Excluir">🗑</button>
     </div>`).join('');
 }
 
@@ -4299,18 +4466,36 @@ function registrarLog(acao, detalhes) {
 }
 
 async function carregarLog() {
-  try { _actionLog = JSON.parse(localStorage.getItem('neoh_log')||'[]'); } catch(e) { _actionLog=[]; }
   const tbody = document.getElementById('log-tbody');
   const empty = document.getElementById('log-empty');
-  if (!_actionLog.length) { if(tbody)tbody.innerHTML=''; if(empty)empty.style.display='block'; return; }
-  if(empty) empty.style.display='none';
-  tbody.innerHTML = _actionLog.map(e => `
-    <tr>
-      <td style="font-size:11px;white-space:nowrap">${e.dt}</td>
-      <td style="font-size:11px">${e.usuario}</td>
-      <td style="font-weight:500;color:var(--blue)">${e.acao}</td>
-      <td style="font-size:11px;color:var(--muted)">${e.detalhes}</td>
-    </tr>`).join('');
+  if(tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--muted)">Carregando...</td></tr>';
+  try {
+    const { data, error } = await sb.from('log_acoes').select('*').order('created_at',{ascending:false}).limit(200);
+    if (error) throw error;
+    const logs = data || [];
+    if (!logs.length) { if(tbody)tbody.innerHTML=''; if(empty)empty.style.display='block'; return; }
+    if(empty) empty.style.display='none';
+    tbody.innerHTML = logs.map(e => {
+      const dt = new Date(e.created_at).toLocaleString('pt-BR');
+      return '<tr>'
+        + '<td style="font-size:11px;white-space:nowrap;color:var(--muted)">' + dt + '</td>'
+        + '<td style="font-size:11px;font-weight:500">' + (e.usuario_nome||'—') + '</td>'
+        + '<td style="font-size:11px;color:var(--blue);font-weight:500">' + (e.modulo||'—') + '</td>'
+        + '<td style="font-size:11px;color:var(--muted)">' + (e.detalhes||'—') + '</td>'
+        + '</tr>';
+    }).join('');
+  } catch(e) {
+    /* Fallback to localStorage */
+    try { _actionLog = JSON.parse(localStorage.getItem('neoh_log')||'[]'); } catch(ex) { _actionLog=[]; }
+    if (!_actionLog.length) { if(tbody)tbody.innerHTML=''; if(empty)empty.style.display='block'; return; }
+    if(empty) empty.style.display='none';
+    tbody.innerHTML = _actionLog.map(e => '<tr>'
+      + '<td style="font-size:11px;white-space:nowrap">' + e.dt + '</td>'
+      + '<td style="font-size:11px">' + e.usuario + '</td>'
+      + '<td style="font-weight:500;color:var(--blue)">' + e.acao + '</td>'
+      + '<td style="font-size:11px;color:var(--muted)">' + e.detalhes + '</td>'
+      + '</tr>').join('');
+  }
 }
 
 /* ── E-MAILS DO HOSPITAL ── */
@@ -4772,6 +4957,7 @@ function initSCPanel() {
     document.getElementById('sc-hosp-label').textContent = '🏥 ' + lbl + ' — Reuniões semestrais e saúde do projeto';
   }
   initSCFiltrosAvancados();
+  initSCMultiselects();
   carregarSCDoSupabase();
 }
 
@@ -4843,9 +5029,15 @@ function filtrarSC(query) {
   const q         = (typeof query === 'string' ? query : document.querySelector('.sc-search-input')?.value || '').toLowerCase();
   const saude     = document.getElementById('sc-filter-saude')?.value || '';
   const status    = document.getElementById('sc-filter-status')?.value || '';
-  const consultor = document.getElementById('sc-filter-consultor')?.value || '';
   const dtIni     = document.getElementById('sc-filter-dt-ini')?.value || '';
   const dtFim     = document.getElementById('sc-filter-dt-fim')?.value || '';
+  /* Multiselect values */
+  const hospItems = _msData['sc-hosp'] || [];
+  const consItems = _msData['sc-consultor'] || [];
+  const selHosps  = hospItems.filter(i=>i.selected).map(i=>i.label);
+  const selCons   = consItems.filter(i=>i.selected).map(i=>i.label);
+  const allHosps  = selHosps.length === hospItems.length || !hospItems.length;
+  const allCons   = selCons.length  === consItems.length || !consItems.length;
 
   /* Validate period max 1 year */
   if (dtIni && dtFim) {
@@ -4854,13 +5046,14 @@ function filtrarSC(query) {
   }
 
   const filtered = _scData.filter(r => {
-    const matchQ   = !q || (r.hospital||'').toLowerCase().includes(q) || (r.consultor||'').toLowerCase().includes(q);
-    const matchS   = !saude  || r.saude === saude;
-    const matchSt  = !status || r.status_reuniao === status;
-    const matchC   = !consultor || (r.consultor||'') === consultor;
-    const matchDti = !dtIni || (r.dt_reuniao && r.dt_reuniao >= dtIni);
-    const matchDtf = !dtFim || (r.dt_reuniao && r.dt_reuniao <= dtFim);
-    return matchQ && matchS && matchSt && matchC && matchDti && matchDtf;
+    const matchQ    = !q || (r.hospital||'').toLowerCase().includes(q) || (r.consultor||'').toLowerCase().includes(q);
+    const matchS    = !saude  || r.saude === saude;
+    const matchSt   = !status || r.status_reuniao === status;
+    const matchH    = allHosps || selHosps.includes(r.hospital||'');
+    const matchC    = allCons  || selCons.includes(r.consultor||'');
+    const matchDti  = !dtIni || (r.dt_reuniao && r.dt_reuniao >= dtIni);
+    const matchDtf  = !dtFim || (r.dt_reuniao && r.dt_reuniao <= dtFim);
+    return matchQ && matchS && matchSt && matchH && matchC && matchDti && matchDtf;
   });
   renderSCTable(filtered);
   atualizarSCStats(filtered);
@@ -4943,6 +5136,7 @@ async function salvarRegistroSC() {
   renderSCTable(_scData);
   atualizarSCStats(_scData);
   showToast('Registro salvo!', 'success');
+  registrarLogSupabase('Sucesso do Cliente', (editIdx!==null?'Editar':'Novo') + ' registro: ' + hospital);
 
   /* Verifica se deve enviar notificação */
   if (saude === 'Crítico' || saude === 'Atenção') {
@@ -4952,7 +5146,89 @@ async function salvarRegistroSC() {
 
 function fecharModalSC() {
   document.getElementById('modal-sc-reuniao').style.display = 'none';
+  const sugest = document.getElementById('sc-hosp-sugest');
+  if (sugest) sugest.style.display = 'none';
 }
+
+/* ── SC HOSPITAL AUTOCOMPLETE ── */
+async function buscarHospitalSC(query) {
+  const sugest = document.getElementById('sc-hosp-sugest');
+  if (!sugest) return;
+  if (!query || query.length < 3) { sugest.style.display='none'; return; }
+  try {
+    const { data } = await sb.from('hospitais').select('id,nome,nome_real,parceiro')
+      .or('nome_real.ilike.%' + query + '%,nome.ilike.%' + query + '%').eq('ativo',true).limit(8);
+    if (!data || !data.length) {
+      sugest.style.display = 'block';
+      sugest.innerHTML = '<div style="padding:10px 14px;font-size:12px;color:var(--muted)">'
+        + 'Hospital não encontrado. '
+        + '<a href="#" onclick="event.preventDefault();fecharModalSC();openModalNovoHospital()" style="color:var(--blue);font-weight:600">Cadastrar novo hospital</a>'
+        + '</div>';
+      return;
+    }
+    sugest.style.display = 'block';
+    /* Store results for later selection */
+    window._hospSugestData = {};
+    data.forEach(h => { window._hospSugestData[h.id] = h; });
+    sugest.innerHTML = data.map(h =>
+      '<div data-hid="' + h.id + '" class="hosp-sugest-item" '
+      + 'style="padding:9px 14px;font-size:12px;cursor:pointer;border-bottom:.5px solid #eee">'
+      + '<strong>' + (h.nome_real||h.nome) + '</strong>'
+      + (h.parceiro ? ' <span style="color:#9ca3af">' + h.parceiro + '</span>' : '')
+      + '</div>'
+    ).join('');
+    /* Attach click events */
+    sugest.querySelectorAll('.hosp-sugest-item').forEach(el => {
+      el.addEventListener('mouseenter', () => el.style.background='#f0f4ff');
+      el.addEventListener('mouseleave', () => el.style.background='');
+      el.addEventListener('click', () => {
+        const hid  = el.dataset.hid;
+        const hosp = window._hospSugestData[hid] || {};
+        document.getElementById('sc-m-hospital').value    = hosp.nome_real || hosp.nome || '';
+        document.getElementById('sc-m-hospital-id').value = hid;
+        sugest.style.display = 'none';
+        preencherConsultorSC(hid);
+      });
+    });
+  } catch(e) { sugest.style.display='none'; }
+}
+
+
+async function preencherConsultorSC(hospId) {
+  try {
+    /* Busca usuário com hospital_sc vinculado */
+    const { data } = await sb.from('usuarios').select('nome,email').eq('hospital_sc', hospId).limit(1);
+    if (data?.length) {
+      document.getElementById('sc-m-consultor').value = data[0].nome||'';
+      document.getElementById('sc-m-email').value     = data[0].email||'';
+    }
+    /* Também busca e-mails de notificação do hospital */
+    const { data: hosp } = await sb.from('hospitais').select('emails_notificacao').eq('id',hospId).single();
+    if (hosp?.emails_notificacao?.length && !document.getElementById('sc-m-email').value) {
+      document.getElementById('sc-m-email').value = hosp.emails_notificacao[0];
+    }
+  } catch(e) {}
+}
+
+/* ── SC MULTISELECT — HOSPITAIS E CONSULTORES ── */
+let _msData_sc = { 'sc-consultor': [], 'sc-hosp': [] };
+
+async function initSCMultiselects() {
+  /* Hospitais */
+  try {
+    const { data: hosps } = await sb.from('hospitais').select('id,nome,nome_real').eq('ativo',true).order('nome');
+    _msData['sc-hosp'] = (hosps||[]).map(h => ({ id:h.id, label:(h.nome_real||h.nome), selected:true }));
+    msRender('sc-hosp');
+  } catch(e) {}
+  /* Consultores */
+  try {
+    const { data: users } = await sb.from('usuarios').select('id,nome').order('nome');
+    _msData['sc-consultor'] = (users||[]).map(u => ({ id:u.id, label:u.nome, selected:true }));
+    msRender('sc-consultor');
+  } catch(e) {}
+}
+
+
 
 function excluirRegistroSC(i) {
   if (!confirm('Excluir este registro?')) return;
