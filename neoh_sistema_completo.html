@@ -4367,32 +4367,6 @@ async function saveToSuabase_tarja() {
 let _gerencialData = [];
 let _msData = { hosp: [] }; /* { id, label, selected } */
 
-function toggleAdminView(view) {
-  const hospPanel = document.getElementById('hospital-grid')?.closest('.card');
-  const gerPanel  = document.getElementById('gerencial-panel');
-  const btnHosp   = document.getElementById('btn-view-hosp');
-  const btnGer    = document.getElementById('btn-view-ger');
-
-  const statsGrid = document.getElementById('admin-stats-grid');
-  const drillDown_ = document.getElementById('stat-drilldown');
-
-  if (view === 'gerencial') {
-    if (hospPanel) hospPanel.style.display = 'none';
-    if (statsGrid) statsGrid.style.display = 'none';
-    if (drillDown_) drillDown_.style.display = 'none';
-    gerPanel.style.display = 'block';
-    btnHosp.style.cssText = 'background:none;color:var(--text);border-color:var(--border)';
-    btnGer.style.cssText  = 'background:var(--blue);color:#fff;border-color:var(--blue)';
-    initGerencialFilters();
-  } else {
-    if (hospPanel) hospPanel.style.display = '';
-    if (statsGrid) statsGrid.style.display = '';
-    gerPanel.style.display = 'none';
-    btnHosp.style.cssText = 'background:var(--blue);color:#fff;border-color:var(--blue)';
-    btnGer.style.cssText  = 'background:none;color:var(--text);border-color:var(--border)';
-  }
-}
-
 async function initGerencialFilters() {
   /* Set default dates: last 3 months */
   const hoje = new Date();
