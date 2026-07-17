@@ -4689,6 +4689,17 @@ async function editarHospital(id) {
   /* Carrega e-mails */
   _hospEmails = data.emails_notificacao || [];
   renderEmailTags();
+  /* Carrega a logo já cadastrada, se existir */
+  const logoDrop = document.getElementById('modal-logo-drop');
+  const logoImg  = document.getElementById('modal-logo-img');
+  if (data.logo_url && logoDrop && logoImg) {
+    logoImg.src = data.logo_url;
+    logoDrop.classList.add('has');
+  } else if (logoDrop && logoImg) {
+    logoImg.src = '';
+    logoDrop.classList.remove('has');
+  }
+  modalLogoData = null; /* só passa a ter valor se o usuário enviar uma nova imagem */
   /* Abre modal */
   const modal = document.getElementById('modal-hospital');
   if (modal) {
