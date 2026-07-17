@@ -1714,6 +1714,7 @@ img, svg { max-width: 100%; height: auto; }
         <button class="btn-tool" id="cfg-tab-hosps" onclick="setCfgTab('hosps')">🏥 Hospitais</button>
         <button class="btn-tool" id="cfg-tab-log" onclick="setCfgTab('log')">📋 Log de Ações</button>
         <button class="btn-tool" id="cfg-tab-email" onclick="setCfgTab('email')">📧 Template E-mail</button>
+        <button class="btn-tool" id="cfg-tab-prompt" onclick="setCfgTab('prompt')">🧠 Prompt Base</button>
       </div>
 
       <!-- USUÁRIOS -->
@@ -1725,7 +1726,7 @@ img, svg { max-width: 100%; height: auto; }
           <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
             <input id="cfg-users-search" type="text" placeholder="🔍 Buscar por nome ou e-mail..."
               oninput="filtrarUsuariosCfg(this.value)"
-              style="padding:7px 12px;border:.5px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;flex:1;min-width:200px;background:#fafbfc" />
+              style="padding:7px 12px;border:.5px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;width:220px;max-width:220px;background:#fafbfc" />
             <select id="cfg-users-filter-perfil" onchange="filtrarUsuariosCfg()"
               style="padding:7px 10px;border:.5px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;background:#fafbfc;cursor:pointer">
               <option value="">Todos os perfis</option>
@@ -1826,6 +1827,27 @@ Consultoria Intelectah</textarea>
           <div style="display:flex;gap:8px;margin-top:10px">
             <button onclick="salvarTemplateEmailCfg()" class="btn-tool accent">💾 Salvar template</button>
             <span style="font-size:11px;color:var(--muted);align-self:center">Variáveis: {{HOSPITAL}} {{CONSULTOR}} {{EMAIL_CONSULTOR}} {{SAUDE}} {{DATA}}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROMPT BASE -->
+      <div id="cfg-prompt-content" style="display:none">
+        <div style="font-size:14px;font-weight:600;color:var(--blue);margin-bottom:12px">🧠 Prompt base — Apresentações (Sucesso do Cliente)</div>
+        <div class="card">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6">
+            Este texto é combinado automaticamente com o prompt digitado pelo usuário na tela de
+            Apresentação, sempre que uma apresentação é gerada. Use-o para instruções fixas que
+            devem valer para <strong>todas</strong> as apresentações (tom de voz, estrutura esperada,
+            regras de consulta ao banco do Neoh, etc.).
+          </p>
+          <div class="field">
+            <label>Prompt base</label>
+            <textarea id="cfg-prompt-base-texto" style="min-height:220px;font-size:12px;line-height:1.7" placeholder="Ex: Sempre responda em português, tom formal e objetivo. Ao final, inclua uma seção de 'Próximos 90 dias'. Ao consultar o banco do Neoh, use apenas SELECTs somente leitura na base HIS do hospital informado..."></textarea>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button onclick="salvarPromptBaseCfg()" class="btn-tool accent">💾 Salvar prompt base</button>
+            <span id="cfg-prompt-base-status" style="font-size:11px;color:#1a9e75;align-self:center"></span>
           </div>
         </div>
       </div>
@@ -2257,6 +2279,12 @@ Atenciosamente,
     <button onclick="voltarHome()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;margin-left:auto">🏠 Tela Inicial</button>
   </div>
   <div style="padding:20px">
+    <!-- Aviso persistente: aparece ao vir do fluxo "Prompt" do Histórico -->
+    <div id="apresent-aviso-prompt" style="display:none;background:#fff7e6;border:1px solid #f0b429;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:#92400e;align-items:center;gap:10px">
+      <span style="font-size:16px">⚠️</span>
+      <span id="apresent-aviso-prompt-texto">Prompt carregado. Clique em "▶ Gerar Prévia" para buscar os dados e gerar a apresentação.</span>
+      <button onclick="document.getElementById('apresent-aviso-prompt').style.display='none'" style="margin-left:auto;background:none;border:1px solid #92400e;color:#92400e;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">Entendi</button>
+    </div>
     <!-- Filtros -->
     <div style="background:#f0f4ff;border:.5px solid #c7d7f5;border-radius:10px;padding:16px;margin-bottom:16px">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
@@ -2276,7 +2304,7 @@ Atenciosamente,
         </div>
         <div>
           <label style="font-size:11px;color:transparent;display:block;margin-bottom:5px">.</label>
-          <button onclick="gerarPreviaApresentacao()" style="background:var(--blue);color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">▶ Filtrar</button>
+          <button onclick="gerarPreviaApresentacao()" style="background:var(--blue);color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">▶ Gerar Prévia</button>
         </div>
       </div>
     </div>
@@ -2334,11 +2362,29 @@ Atenciosamente,
 
 <!-- MODAL VISUALIZAR APRESENTAÇÃO -->
 <div class="modal-overlay" id="modal-visualizar-apresent">
-  <div class="modal" style="max-width:560px">
+  <div class="modal" style="max-width:720px">
     <h3 id="modal-visualizar-apresent-titulo">📊 Apresentação</h3>
     <div id="modal-visualizar-apresent-corpo" style="font-size:13px;color:var(--text);line-height:1.6;max-height:60vh;overflow-y:auto"></div>
     <div class="modal-actions" style="margin-top:16px">
       <button class="btn-tool" onclick="document.getElementById('modal-visualizar-apresent').classList.remove('open')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REVISAR/COMPLEMENTAR PROMPT (botão "Prompt" do Histórico de Apresentações) -->
+<div class="modal-overlay" id="modal-prompt-apresent">
+  <div class="modal" style="max-width:560px">
+    <h3 id="modal-prompt-apresent-titulo">📋 Prompt desta apresentação</h3>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Prompt usado na última pesquisa:</div>
+    <div id="modal-prompt-apresent-original" style="background:#f8faff;border:.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text);margin-bottom:16px;max-height:120px;overflow-y:auto"></div>
+    <div class="field">
+      <label>Gostaria de complementar este prompt para a próxima pesquisa?</label>
+      <textarea id="modal-prompt-apresent-complemento" style="min-height:100px;font-size:12px" placeholder="Opcional — escreva aqui algo a mais que deseja incluir na próxima pesquisa..."></textarea>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;flex-wrap:wrap">
+      <button class="btn-tool" onclick="document.getElementById('modal-prompt-apresent').classList.remove('open')">Cancelar</button>
+      <button class="btn-tool" onclick="continuarComPromptOriginal()" title="Usa o prompt desta apresentação sem alterações">🆕 Nova apresentação (mesmo prompt)</button>
+      <button class="btn-tool accent" onclick="salvarComplementoPrompt()">💾 Salvar e continuar</button>
     </div>
   </div>
 </div>
@@ -2557,6 +2603,9 @@ function switchTab(tab) {
   document.getElementById('hospital-grid')?.closest('.card') && (document.getElementById('hospital-grid').closest('.card').style.display='none');
   document.getElementById('gerencial-panel') && (document.getElementById('gerencial-panel').style.display='none');
   document.getElementById('usuarios-panel') && (document.getElementById('usuarios-panel').style.display='none');
+  /* Título "Painel administrativo" só aparece em Configurações, não em Gerencial */
+  const adminHeaderEl = document.querySelector('#admin-panel > .admin-header');
+  if (adminHeaderEl) adminHeaderEl.style.display = (tab === 'config') ? 'flex' : 'none';
   /* Configurações panel content (lives inside admin-panel) */
   const cfgContent = document.getElementById('config-panel-content');
   const cfgInAdmin = document.getElementById('admin-panel');
@@ -3316,7 +3365,7 @@ async function gerarApresentacaoComPromptAdmin() {
     const prompt = localStorage.getItem('neoh_prompt_' + _adminApresentHospId) || '';
     const ta = document.getElementById('sc-prompt-texto');
     if (ta && prompt) ta.value = prompt;
-    showToast('Hospital e prompt carregados. Clique em "▶ Filtrar" para continuar.','success');
+    showToast('Hospital e prompt carregados. Clique em "▶ Gerar Prévia" para continuar.','success');
   }, 400);
 }
 
@@ -4674,7 +4723,7 @@ async function excluirUsuario(id, nome) {
    CONFIGURAÇÕES — Usuários, Hospitais, Log
    ══════════════════════════════════════ */
 function setCfgTab(tab) {
-  ['users','hosps','log','email'].forEach(t => {
+  ['users','hosps','log','email','prompt'].forEach(t => {
     const el = document.getElementById('cfg-' + t + '-content');
     const btn = document.getElementById('cfg-tab-' + t);
     if (el)  el.style.display  = t === tab ? 'block' : 'none';
@@ -4684,6 +4733,7 @@ function setCfgTab(tab) {
   if (tab === 'hosps') carregarHospitaisConfig();
   if (tab === 'log')   initLogTab();
   if (tab === 'email') carregarTemplateEmail();
+  if (tab === 'prompt') carregarPromptBaseCfg();
 }
 
 async function carregarConfiguracoes() {
@@ -4786,6 +4836,35 @@ async function salvarTemplateEmailCfg() {
     showToast('Template salvo!','success');
     registrarLogSupabase('Configurações','Template de e-mail SC atualizado');
   } catch(e) { showToast('Erro ao salvar template.','error'); }
+}
+
+/* ── PROMPT BASE (usado em toda geração de apresentação) ── */
+async function carregarPromptBaseCfg() {
+  try {
+    const { data } = await sb.from('configuracoes').select('valor').eq('chave','prompt_base_apresentacao').single();
+    if (data?.valor && document.getElementById('cfg-prompt-base-texto')) {
+      document.getElementById('cfg-prompt-base-texto').value = data.valor;
+    }
+  } catch(e) {}
+}
+
+async function salvarPromptBaseCfg() {
+  const texto = document.getElementById('cfg-prompt-base-texto')?.value || '';
+  try {
+    await sb.from('configuracoes').upsert({ chave:'prompt_base_apresentacao', valor: texto });
+    const st = document.getElementById('cfg-prompt-base-status');
+    if (st) { st.textContent = '✓ Prompt base salvo'; setTimeout(()=>{ st.textContent=''; }, 2500); }
+    showToast('Prompt base salvo!','success');
+    registrarLogSupabase('Configurações','Prompt base de apresentação atualizado');
+  } catch(e) { showToast('Erro ao salvar o prompt base.','error'); }
+}
+
+/* Busca o prompt base salvo (usada na hora de gerar a apresentação) */
+async function getPromptBaseApresentacao() {
+  try {
+    const { data } = await sb.from('configuracoes').select('valor').eq('chave','prompt_base_apresentacao').single();
+    return data?.valor || '';
+  } catch(e) { return ''; }
 }
 
 /* ── LOG NO SUPABASE ── */
@@ -5059,6 +5138,8 @@ async function gerarApresentacaoPPTX() {
   const dtIni    = d?.dtIni || document.getElementById('sc-apresent-dt-ini')?.value || document.getElementById('apresent-dt-ini')?.value || '';
   const dtFim    = d?.dtFim || document.getElementById('sc-apresent-dt-fim')?.value || document.getElementById('apresent-dt-fim')?.value || '';
   const prompt   = document.getElementById('sc-prompt-texto')?.value || '';
+  const promptBase = await getPromptBaseApresentacao();
+  const promptCombinado = promptBase ? (promptBase.trim() + '\n\n' + prompt.trim()) : prompt;
   const periodo  = dtIni && dtFim ? (new Date(dtIni+'T12:00:00').toLocaleDateString('pt-BR') + ' a ' + new Date(dtFim+'T12:00:00').toLocaleDateString('pt-BR')) : 'Período não definido';
 
   if (!hospital) {
@@ -5082,7 +5163,7 @@ async function gerarApresentacaoPPTX() {
         'apikey': SUPABASE_KEY,
         'Authorization': `Bearer ${SUPABASE_KEY}`
       },
-      body: JSON.stringify({ hospital, periodo, prompt })
+      body: JSON.stringify({ hospital, periodo, prompt: promptCombinado })
     });
     if (edgeRes.ok) {
       const { conteudo: conteudoIA } = await edgeRes.json();
@@ -5200,6 +5281,18 @@ async function initApresentPanel() {
     if (sel) sel.value = window._proximoHospitalApresentacao;
     window._proximoHospitalApresentacao = null;
   }
+
+  /* Mostra o aviso persistente pedindo para clicar em "Gerar Prévia" */
+  const aviso = document.getElementById('apresent-aviso-prompt');
+  if (aviso) {
+    if (window._avisoPromptApresentacao) {
+      document.getElementById('apresent-aviso-prompt-texto').textContent = window._avisoPromptApresentacao;
+      aviso.style.display = 'flex';
+      window._avisoPromptApresentacao = null;
+    } else {
+      aviso.style.display = 'none';
+    }
+  }
 }
 
 /* ══════════════════════════════════════
@@ -5315,30 +5408,101 @@ function visualizarApresentacao(id) {
   document.getElementById('modal-visualizar-apresent-titulo').textContent = `📊 ${seq} — ${r.hospital||''}`;
   const pontos = Array.isArray(c.pontos_destaque) ? c.pontos_destaque : [];
   const proximos = Array.isArray(c.proximos_90_dias) ? c.proximos_90_dias : [];
+  const periodoTxt = (r.periodo_ini||'—') + ' a ' + (r.periodo_fim||'—');
+
+  /* Prévia em formato de slides (mesmo estilo visual da tela de Apresentação) */
+  const slides = [
+    { titulo: 'Capa', conteudo: (r.hospital||'') + '<br><small>' + periodoTxt + '</small>', cor: '#1a3a6b' },
+    { titulo: 'Síntese', conteudo: c.sintese || '—', cor: '#1a9e75' },
+    { titulo: 'Pontos de destaque', conteudo: pontos.length ? ('<ul style="margin:0 0 0 16px;padding:0">'+pontos.map(p=>`<li>${p}</li>`).join('')+'</ul>') : '—', cor: '#e87722' },
+    { titulo: 'Próximos 90 dias', conteudo: proximos.length ? ('<ul style="margin:0 0 0 16px;padding:0">'+proximos.map(p=>`<li>${p}</li>`).join('')+'</ul>') : '—', cor: '#1a3a6b' },
+  ];
+
   document.getElementById('modal-visualizar-apresent-corpo').innerHTML = `
-    <p style="margin-bottom:10px"><strong>Período:</strong> ${r.periodo_ini||'—'} a ${r.periodo_fim||'—'}</p>
-    ${c.sintese ? `<p style="margin-bottom:14px">${c.sintese}</p>` : ''}
-    ${pontos.length ? `<div style="margin-bottom:14px"><strong>Pontos de destaque</strong><ul style="margin:6px 0 0 18px">${pontos.map(p=>`<li>${p}</li>`).join('')}</ul></div>` : ''}
-    ${proximos.length ? `<div><strong>Próximos 90 dias</strong><ul style="margin:6px 0 0 18px">${proximos.map(p=>`<li>${p}</li>`).join('')}</ul></div>` : ''}
-    ${r.prompt ? `<p style="margin-top:14px;font-size:11px;color:var(--muted)"><strong>Prompt usado:</strong> ${r.prompt}</p>` : ''}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:16px">
+      ${slides.map(s => `
+        <div style="border-radius:8px;overflow:hidden;border:.5px solid var(--border)">
+          <div style="background:${s.cor};color:#fff;padding:8px 10px;font-size:11px;font-weight:600">${s.titulo}</div>
+          <div style="background:#fff;padding:10px;font-size:11px;color:var(--text);min-height:70px">${s.conteudo}</div>
+        </div>`).join('')}
+    </div>
+    ${r.prompt ? `<p style="font-size:11px;color:var(--muted);margin-bottom:14px"><strong>Prompt usado:</strong> ${r.prompt}</p>` : ''}
+    <div style="display:flex;gap:8px">
+      <button class="btn-tool accent" onclick="baixarPPTXHistorico('${r.id}')">⬇ Baixar PPTX</button>
+      <button class="btn-tool" onclick="baixarApresentacaoPDF()" style="background:var(--orange);color:#fff;border-color:var(--orange)">⬇ Baixar PDF</button>
+    </div>
   `;
   document.getElementById('modal-visualizar-apresent').classList.add('open');
 }
 
-/* "Prompt" (antigo "Usar como base") — reabre a tela onde fica o campo de
-   prompt (aba Sucesso do Cliente) já preenchido com o mesmo texto usado
-   antes, para o usuário revisar/editar. Depois é só ir em "Apresentação"
-   escolher o novo período e gerar de novo. */
-function usarComoBaseApresentacao(id) {
+/* Baixa o PPTX de uma apresentação já salva no histórico, reaproveitando o
+   mesmo hospital/período/prompt para regenerar o arquivo. */
+async function baixarPPTXHistorico(id) {
   const r = _apresentacoesHist.find(x => x.id === id);
   if (!r) { showToast('Apresentação não encontrada.', 'error'); return; }
   switchTab('sc');
   setTimeout(() => {
     const promptEl = document.getElementById('sc-prompt-texto');
     if (promptEl) promptEl.value = r.prompt || '';
-    /* Guarda o hospital para pré-selecionar quando o usuário for para a aba Apresentação */
+  }, 100);
+  switchTab('apresent');
+  setTimeout(async () => {
+    const sel = document.getElementById('apresent-hosp');
+    if (sel && r.hospital_id) sel.value = r.hospital_id;
+    const dtIniEl = document.getElementById('apresent-dt-ini');
+    const dtFimEl = document.getElementById('apresent-dt-fim');
+    if (dtIniEl && r.periodo_ini) dtIniEl.value = r.periodo_ini;
+    if (dtFimEl && r.periodo_fim) dtFimEl.value = r.periodo_fim;
+    document.getElementById('modal-visualizar-apresent').classList.remove('open');
+    await gerarApresentacaoPPTX();
+  }, 250);
+}
+
+/* "Prompt" — abre um modal mostrando o prompt usado nessa apresentação,
+   com a opção de complementá-lo antes de ir para a tela de Apresentação
+   gerar uma nova pesquisa. */
+let _promptApresentIdAtual = null;
+
+function usarComoBaseApresentacao(id) {
+  const r = _apresentacoesHist.find(x => x.id === id);
+  if (!r) { showToast('Apresentação não encontrada.', 'error'); return; }
+  _promptApresentIdAtual = id;
+  const seq = r.seq_num ? formatSeqApresentacao(r.seq_num) : '';
+  document.getElementById('modal-prompt-apresent-titulo').textContent = `📋 Prompt — ${seq} ${r.hospital||''}`;
+  document.getElementById('modal-prompt-apresent-original').textContent = r.prompt || '(nenhum prompt registrado nesta apresentação)';
+  document.getElementById('modal-prompt-apresent-complemento').value = '';
+  document.getElementById('modal-prompt-apresent').classList.add('open');
+}
+
+/* Botão "Salvar e continuar" — só faz sentido se houver complemento, mas
+   funciona também se o campo estiver vazio (equivale a "Nova apresentação"). */
+function salvarComplementoPrompt() {
+  const r = _apresentacoesHist.find(x => x.id === _promptApresentIdAtual);
+  if (!r) return;
+  const complemento = document.getElementById('modal-prompt-apresent-complemento')?.value?.trim() || '';
+  const promptFinal = complemento ? ((r.prompt||'').trim() + '\n\n' + complemento) : (r.prompt || '');
+  document.getElementById('modal-prompt-apresent').classList.remove('open');
+  _irParaApresentacaoComPrompt(r, promptFinal, complemento
+    ? 'Prompt complementado e carregado. Clique em "▶ Gerar Prévia" para buscar os dados e gerar a apresentação.'
+    : 'Prompt carregado. Clique em "▶ Gerar Prévia" para buscar os dados e gerar a apresentação.');
+}
+
+/* Botão "Nova apresentação (mesmo prompt)" — usa o prompt original, sem alterações. */
+function continuarComPromptOriginal() {
+  const r = _apresentacoesHist.find(x => x.id === _promptApresentIdAtual);
+  if (!r) return;
+  document.getElementById('modal-prompt-apresent').classList.remove('open');
+  _irParaApresentacaoComPrompt(r, r.prompt || '', 'Usando o prompt desta apresentação. Clique em "▶ Gerar Prévia" para buscar os dados e gerar a apresentação.');
+}
+
+function _irParaApresentacaoComPrompt(r, promptFinal, mensagemAviso) {
+  switchTab('sc');
+  setTimeout(() => {
+    const promptEl = document.getElementById('sc-prompt-texto');
+    if (promptEl) promptEl.value = promptFinal;
     window._proximoHospitalApresentacao = r.hospital_id || '';
-    showToast('Prompt carregado. Revise aqui e depois vá em "Apresentação" para escolher o novo período.', 'success');
+    window._avisoPromptApresentacao = mensagemAviso;
+    switchTab('apresent');
   }, 150);
 }
 
