@@ -557,30 +557,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
   #report-panel { display: block !important; }
   .main-wrap { padding: 0; max-width: 100%; }
   .rpt { box-shadow: none; border-radius: 0; }
-
-  /* Cabeçalho customizado de impressão */
-  .print-header {
-    display: flex !important;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 0 8px;
-    margin-bottom: 4px;
-    border-bottom: 1px solid #e5e7eb;
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    font-size: 10px;
-    color: #6b7280;
-  }
-  .print-header .ph-left { font-size: 10px; color: #9ca3af; }
-  .print-header .ph-right {
-    font-size: 11px;
-    font-weight: 600;
-    color: #1a3a6b;
-    letter-spacing: 0.03em;
-  }
 }
-
-/* Cabeçalho de impressão — oculto na tela, visível só ao imprimir */
-.print-header { display: none; }
 
 /* ── TELA HOME ── */
 #home-screen {
@@ -1619,10 +1596,6 @@ img, svg { max-width: 100%; height: auto; }
       <button class="btn-tool" onclick="sairDoRelatorio('hist')">🗂️ Histórico do hospital</button>
       <button class="btn-tool accent" onclick="window.print()">🖨️ Imprimir / PDF</button>
     </div>
-    <div class="print-header" id="print-header">
-      <span class="ph-left" id="print-date"></span>
-      <span class="ph-right">Neoh — Status Report Executivo</span>
-    </div>
     <!-- Tela vazia — exibida quando nenhum relatório foi gerado -->
     <div id="rpt-empty" class="rpt-empty">
       <div class="rpt-empty-icon">📄</div>
@@ -1647,9 +1620,6 @@ img, svg { max-width: 100%; height: auto; }
   <div id="admin-panel" class="panel">
     <div class="admin-header">
       <h2>⚙️ Painel administrativo</h2>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn-tool" onclick="toggleAdminView('hospitais')" id="btn-view-hosp" style="background:var(--blue);color:#fff;border-color:var(--blue)">🏥 Hospitais</button>
-      </div>
     </div>
     <div class="admin-stats" id="admin-stats-grid">
       <div class="stat-card" onclick="drillDown('total')"><div class="stat-val" id="stat-total">—</div><div class="stat-lbl">Total de hospitais</div></div>
@@ -1725,10 +1695,9 @@ img, svg { max-width: 100%; height: auto; }
       <div id="cfg-users-content">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div style="font-size:14px;font-weight:600;color:var(--blue)">👤 Usuários cadastrados</div>
-          <button class="btn-tool accent" onclick="abrirModalNovoUsuario()">+ Novo usuário</button>
         </div>
         <div class="card">
-          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
             <input id="cfg-users-search" type="text" placeholder="🔍 Buscar por nome ou e-mail..."
               oninput="filtrarUsuariosCfg(this.value)"
               style="padding:7px 12px;border:.5px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;flex:1;min-width:200px;background:#fafbfc" />
@@ -1738,6 +1707,7 @@ img, svg { max-width: 100%; height: auto; }
               <option value="Administrador_Sistema">Administrador_Sistema</option>
               <option value="Usuario_hospital">Usuário_hospital</option>
             </select>
+            <button class="btn-tool accent" onclick="abrirModalNovoUsuario()" style="flex-shrink:0">+ Novo usuário</button>
           </div>
           <div style="overflow-x:auto">
             <table class="users-table" id="users-table-cfg">
@@ -1828,6 +1798,7 @@ Consultoria Intelectah</textarea>
 
     <!-- GERENCIAL PANEL -->
     <div id="gerencial-panel" style="display:none">
+      <div style="font-size:15px;font-weight:700;color:var(--blue);margin-bottom:14px" id="ger-panel-titulo">📊 Relatório Gerencial</div>
       <div class="gerencial-filters">
         <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:12px">🔍 Filtros do relatório gerencial</div>
         <div class="gerencial-filters-grid">
@@ -1854,14 +1825,14 @@ Consultoria Intelectah</textarea>
         </div>
       </div>
       <div class="gerencial-stats" id="ger-stats" style="display:none">
-        <div class="stat-card"><div class="stat-val" id="ger-total-rel" style="font-size:28px;font-weight:700;color:var(--blue)">—</div><div class="stat-lbl">Total de relatórios</div></div>
-        <div class="stat-card green"><div class="stat-val" id="ger-total-hosp" style="font-size:28px;font-weight:700;color:var(--teal)">—</div><div class="stat-lbl">Hospitais no período</div></div>
-        <div class="stat-card orange"><div class="stat-val" id="ger-media-mes" style="font-size:28px;font-weight:700;color:var(--orange)">—</div><div class="stat-lbl">Média por mês</div></div>
-        <div class="stat-card"><div class="stat-val" id="ger-ultimo-status" style="font-size:13px;font-weight:700;color:var(--blue)">—</div><div class="stat-lbl">Status mais frequente</div></div>
+        <div class="stat-card"><div class="stat-val" id="ger-total-rel" style="font-size:28px;font-weight:700;color:var(--blue)">—</div><div class="stat-lbl" id="ger-lbl-1">Total de relatórios</div></div>
+        <div class="stat-card green"><div class="stat-val" id="ger-total-hosp" style="font-size:28px;font-weight:700;color:var(--teal)">—</div><div class="stat-lbl" id="ger-lbl-2">Hospitais no período</div></div>
+        <div class="stat-card orange"><div class="stat-val" id="ger-media-mes" style="font-size:28px;font-weight:700;color:var(--orange)">—</div><div class="stat-lbl" id="ger-lbl-3">Média por mês</div></div>
+        <div class="stat-card"><div class="stat-val" id="ger-ultimo-status" style="font-size:13px;font-weight:700;color:var(--blue)">—</div><div class="stat-lbl" id="ger-lbl-4">Status mais frequente</div></div>
       </div>
       <div class="gerencial-charts" id="ger-charts" style="display:none">
-        <div class="chart-card"><h4>📊 Relatórios por hospital</h4><div id="chart-por-hospital"></div></div>
-        <div class="chart-card"><h4>📈 Relatórios por mês</h4><svg class="chart-line-svg" id="chart-por-mes"></svg></div>
+        <div class="chart-card"><h4 id="ger-chart-h1">📊 Relatórios por hospital</h4><div id="chart-por-hospital"></div></div>
+        <div class="chart-card"><h4 id="ger-chart-h2">📈 Relatórios por mês</h4><svg class="chart-line-svg" id="chart-por-mes"></svg></div>
       </div>
       <div id="ger-table-section" style="display:none">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -1870,7 +1841,13 @@ Consultoria Intelectah</textarea>
         </div>
         <div class="gerencial-table-wrap">
           <table class="gerencial-table">
-            <thead><tr><th>HOSPITAL</th><th>CD_RELATORIO</th><th>DT_RELATORIO</th><th>DS_RELATORIO</th><th>STATUS_PROJETO</th></tr></thead>
+            <thead><tr>
+              <th>HOSPITAL</th>
+              <th id="ger-th-2">CD_RELATORIO</th>
+              <th id="ger-th-3">DT_RELATORIO</th>
+              <th id="ger-th-4">DS_RELATORIO</th>
+              <th id="ger-th-5">STATUS_PROJETO</th>
+            </tr></thead>
             <tbody id="ger-table-body"></tbody>
           </table>
         </div>
@@ -1885,7 +1862,10 @@ Consultoria Intelectah</textarea>
       <h2>🤝 Sucesso do Cliente</h2>
       <p id="sc-hosp-label">Reuniões semestrais · Saúde do projeto · Apresentações</p>
     </div>
-    <button class="sc-header-btn" onclick="abrirNovaReuniaoSC()">+ Nova reunião</button>
+    <div style="display:flex;gap:8px;flex-shrink:0;margin-left:auto">
+      <button onclick="voltarHome()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap">🏠 Tela Inicial</button>
+      <button class="sc-header-btn" onclick="abrirNovaReuniaoSC()">+ Nova reunião</button>
+    </div>
   </div>
   <!-- Filtro de hospital — só para admin -->
   <div class="sc-filter-hosp-bar" id="sc-hosp-filter-bar" style="display:none">
@@ -2239,6 +2219,7 @@ Atenciosamente,
       <h2>📊 Apresentação para o Cliente</h2>
       <p>Gere a apresentação executiva de Sucesso do Cliente em PPTX ou PDF</p>
     </div>
+    <button onclick="voltarHome()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;margin-left:auto">🏠 Tela Inicial</button>
   </div>
   <div style="padding:20px">
     <!-- Filtros -->
@@ -2510,6 +2491,13 @@ function switchTab(tab) {
   } else if (cfgContent) {
     cfgContent.style.display = 'none';
   }
+  if (tab === 'admin' && session?.isAdmin) {
+    /* Aba Gerencial: mostra direto o Relatório Gerencial (sem lista de hospitais) */
+    document.getElementById('admin-stats-grid') && (document.getElementById('admin-stats-grid').style.display='none');
+    document.getElementById('hospital-grid')?.closest('.card') && (document.getElementById('hospital-grid').closest('.card').style.display='none');
+    document.getElementById('gerencial-panel') && (document.getElementById('gerencial-panel').style.display='block');
+    carregarGerencialPorModulo();
+  }
   /* Marcar aba ativa via onclick attribute */
   document.querySelectorAll('.nav-tab').forEach(b => {
     const match = (b.getAttribute('onclick') || '').includes("'" + tab + "'");
@@ -2518,7 +2506,6 @@ function switchTab(tab) {
   /* Salva aba atual no sessionStorage */
   try { sessionStorage.setItem('neoh_tab', tab); } catch(e) {}
   if (tab === 'hist') { iniciarHistPanel(); }
-  if (tab === 'admin' && session?.isAdmin) loadAdminPanel();
   if (tab === 'sc') initSCPanel();
   if (tab === 'apresent') initApresentPanel();
 }
@@ -2696,10 +2683,6 @@ async function _doGenerate(nomeHosp) {
     if (rptEl)   rptEl.style.display   = 'block';
     rptEl.innerHTML = buildReportHTML(d);
     document.getElementById('aviso-salvar').style.display = 'flex';
-    /* Atualiza data no cabeçalho de impressão */
-    const agora = new Date();
-    document.getElementById('print-date').textContent =
-      agora.toLocaleDateString('pt-BR') + ', ' + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
     /* Marca que há um relatório não salvo */
     _relatorioSalvo = false;
   }, 50);
@@ -3355,7 +3338,17 @@ function openModalNovoHospital() {
 }
 function closeModal() {
   document.getElementById('modal-hospital').classList.remove('open');
-  ['m-nome','m-codigo','m-senha','m-parceiro'].forEach(id => document.getElementById(id).value = '');
+  ['m-nome','m-cnpj','m-parceiro','m-email-input'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  _hospEmails = [];
+  const emailsList = document.getElementById('m-emails-list');
+  if (emailsList) emailsList.innerHTML = '';
+  const logoDrop = document.getElementById('modal-logo-drop');
+  if (logoDrop) logoDrop.classList.remove('has');
+  const logoImg = document.getElementById('modal-logo-img');
+  if (logoImg) logoImg.src = '';
 }
 
 async function salvarHospital() {
@@ -3409,7 +3402,7 @@ async function salvarHospital() {
       hospitalBuscado = newHosp;
       entrarComoHospital();
     } else {
-      loadAdminPanel();
+      carregarHospitaisConfig();
     }
   } catch(e) {
     showToast('Erro: ' + e.message, 'error');
@@ -4685,8 +4678,7 @@ async function salvarTemplateEmailCfg() {
 /* ── LOG NO SUPABASE ── */
 async function registrarLogSupabase(modulo, detalhes, acao) {
   try {
-    await sb.from('log_acoes').insert({
-      usuario_id: null,
+    const { error } = await sb.from('log_acoes').insert({
       usuario_nome: session?.nome || 'Sistema',
       usuario_email: session?.email || '',
       modulo: modulo || 'Sistema',
@@ -4694,7 +4686,8 @@ async function registrarLogSupabase(modulo, detalhes, acao) {
       detalhes: detalhes,
       created_at: new Date().toISOString()
     });
-  } catch(e) { /* Log failure shouldn't break the app */ }
+    if (error) console.error('Falha ao registrar log no Supabase:', error);
+  } catch(e) { console.error('Falha ao registrar log no Supabase:', e); }
   /* Also keep local log for immediate display */
   registrarLog(modulo + ' — ' + (acao||''), detalhes);
 }
@@ -4708,9 +4701,8 @@ async function carregarHospitaisConfig() {
   grid.innerHTML = data.map(h => `
     <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:.5px solid var(--border)">
       <div style="flex:1">
-        <div style="font-weight:600">${h.nome_real||h.nome}</div>
-        <div style="font-size:11px;color:var(--muted)">${h.parceiro||'—'} ${h.cnpj?'· CNPJ: '+h.cnpj:''}</div>
-        ${h.emails_notificacao?.length ? '<div style="font-size:10px;color:#1a9e75;margin-top:2px">📧 '+h.emails_notificacao.join(', ')+'</div>' : ''}
+        <div style="font-weight:600">${h.cnpj ? '<span style="color:var(--muted);font-weight:500">'+h.cnpj+'</span> — ' : ''}${h.nome_real||h.nome}${h.emails_notificacao?.length ? ' <span style="font-size:11px;color:#1a9e75;font-weight:500">· 📧 '+h.emails_notificacao[0]+(h.emails_notificacao.length>1?' (+'+(h.emails_notificacao.length-1)+')':'')+'</span>' : ''}</div>
+        <div style="font-size:11px;color:var(--muted)">${h.parceiro||'—'}</div>
       </div>
       <span class="${h.ativo?'badge-ativo':'badge-inativo'}">${h.ativo?'Ativo':'Inativo'}</span>
       <span style="font-size:11px;color:var(--muted)">Criado: ${new Date(h.created_at).toLocaleDateString('pt-BR')}</span>
@@ -5879,7 +5871,41 @@ document.addEventListener('click', e => {
   }
 });
 
+/* Dispatcher: decide qual relatório gerar conforme o módulo ativo do admin */
 async function gerarGerencial() {
+  if (session?._moduloAtivo === 'sucesso-cliente') return gerarGerencialSC();
+  return gerarGerencialSR();
+}
+
+/* Aplica os rótulos (títulos, cabeçalhos de tabela, gráficos) conforme o módulo ativo */
+function aplicarRotulosGerencial(modulo) {
+  const isSC = modulo === 'sucesso-cliente';
+  document.getElementById('ger-panel-titulo').textContent = isSC
+    ? '📊 Relatório Gerencial — Sucesso do Cliente'
+    : '📊 Relatório Gerencial — Status Report';
+  document.getElementById('ger-lbl-1').textContent = isSC ? 'Total de registros' : 'Total de relatórios';
+  document.getElementById('ger-lbl-2').textContent = 'Hospitais no período';
+  document.getElementById('ger-lbl-3').textContent = 'Média por mês';
+  document.getElementById('ger-lbl-4').textContent = isSC ? 'Saúde mais frequente' : 'Status mais frequente';
+  document.getElementById('ger-chart-h1').textContent = isSC ? '📊 Registros por hospital' : '📊 Relatórios por hospital';
+  document.getElementById('ger-chart-h2').textContent = isSC ? '📈 Registros por mês' : '📈 Relatórios por mês';
+  document.getElementById('ger-th-2').textContent = isSC ? 'CONSULTOR' : 'CD_RELATORIO';
+  document.getElementById('ger-th-3').textContent = isSC ? 'DT_REUNIÃO' : 'DT_RELATORIO';
+  document.getElementById('ger-th-4').textContent = isSC ? 'OBSERVAÇÕES' : 'DS_RELATORIO';
+  document.getElementById('ger-th-5').textContent = isSC ? 'SAÚDE_PROJETO' : 'STATUS_PROJETO';
+  /* Reseta as seções ao trocar de contexto, evitando mostrar dados do módulo errado */
+  document.getElementById('ger-stats').style.display = 'none';
+  document.getElementById('ger-charts').style.display = 'none';
+  document.getElementById('ger-table-section').style.display = 'none';
+}
+
+/* Chamado ao abrir a aba Gerencial: prepara filtros e rótulos do módulo ativo */
+async function carregarGerencialPorModulo() {
+  aplicarRotulosGerencial(session?._moduloAtivo);
+  await initGerencialFilters();
+}
+
+async function gerarGerencialSR() {
   const dtInicio = document.getElementById('ger-dt-inicio').value;
   const dtFim    = document.getElementById('ger-dt-fim').value;
   if (!dtInicio || !dtFim) { showToast('Preencha as datas.','error'); return; }
@@ -5933,7 +5959,59 @@ async function gerarGerencial() {
   }
 }
 
-function renderGerencial(data, hospMap, dtInicio, dtFim) {
+async function gerarGerencialSC() {
+  const dtInicio = document.getElementById('ger-dt-inicio').value;
+  const dtFim    = document.getElementById('ger-dt-fim').value;
+  if (!dtInicio || !dtFim) { showToast('Preencha as datas.','error'); return; }
+
+  const diff = (new Date(dtFim) - new Date(dtInicio)) / (1000*60*60*24);
+  if (diff > 366) { showToast('Período máximo de 1 ano.','error'); return; }
+  if (diff < 0)   { showToast('Data fim anterior à data início.','error'); return; }
+
+  const hospIds = getSelectedHospitals();
+
+  showToast('Gerando relatório...','');
+
+  try {
+    const { data: hosps } = await sb.from('hospitais').select('id,nome,nome_real,parceiro');
+    const hospMap = {};
+    (hosps||[]).forEach(h => { hospMap[h.id] = h; });
+
+    let q = sb.from('sucesso_cliente').select('*')
+      .gte('created_at', dtInicio + 'T00:00:00')
+      .lte('created_at', dtFim + 'T23:59:59')
+      .order('created_at', { ascending: true });
+
+    if (hospIds !== 'todos') {
+      q = q.in('hospital_id', hospIds);
+    }
+
+    const { data, error } = await q.limit(1000);
+    if (error) throw error;
+
+    /* Mapeado no mesmo formato do SR para reaproveitar o mesmo motor de renderização */
+    _gerencialData = (data||[]).map(r => {
+      const h = hospMap[r.hospital_id] || {};
+      return {
+        hospital: h.nome_real || h.nome || r.hospital || '—',
+        sistema: h.parceiro || '—',
+        cd_relatorio: r.consultor || '—',
+        dt_relatorio: r.dt_reuniao ? new Date(r.dt_reuniao+'T12:00:00').toLocaleDateString('pt-BR') : new Date(r.created_at).toLocaleString('pt-BR'),
+        ds_relatorio: r.observacoes || '—',
+        status_projeto: r.saude || '—',
+        hospital_id: r.hospital_id
+      };
+    });
+
+    renderGerencial(_gerencialData, hospMap, dtInicio, dtFim, 'sucesso-cliente');
+    showToast(`✅ ${_gerencialData.length} registro(s) encontrado(s).`, 'success');
+  } catch(e) {
+    showToast('Erro: ' + e.message, 'error');
+  }
+}
+
+function renderGerencial(data, hospMap, dtInicio, dtFim, tipo) {
+  const isSC = tipo === 'sucesso-cliente';
   /* Stats */
   const hospSet = new Set(data.map(r => r.hospital_id));
   const meses = new Set(data.map(r => r.dt_relatorio.substring(3,10)));
@@ -5993,7 +6071,9 @@ function renderGerencial(data, hospMap, dtInicio, dtFim) {
   /* Table */
   const tbody = document.getElementById('ger-table-body');
   tbody.innerHTML = data.map(r => {
-    const statusClass = r.status_projeto==='Em andamento'?'status-andamento':r.status_projeto==='Concluído'?'status-concluido':r.status_projeto==='Em risco'?'status-risco':'status-pausado';
+    const statusClass = isSC
+      ? (r.status_projeto==='Crítico'?'status-risco':r.status_projeto==='Atenção'?'status-pausado':r.status_projeto==='Saudável'?'status-concluido':'status-andamento')
+      : (r.status_projeto==='Em andamento'?'status-andamento':r.status_projeto==='Concluído'?'status-concluido':r.status_projeto==='Em risco'?'status-risco':'status-pausado');
     return `<tr>
       <td>${r.hospital}</td>
       <td style="font-weight:600;color:var(--blue)">${r.cd_relatorio}</td>
@@ -6002,7 +6082,7 @@ function renderGerencial(data, hospMap, dtInicio, dtFim) {
       <td><span class="status-badge ${statusClass}">${r.status_projeto}</span></td>
     </tr>`;
   }).join('');
-  document.getElementById('ger-table-title').textContent = `${data.length} relatório(s) — ${dtInicio} a ${dtFim}`;
+  document.getElementById('ger-table-title').textContent = `${data.length} ${isSC?'registro(s)':'relatório(s)'} — ${dtInicio} a ${dtFim}`;
   document.getElementById('ger-table-section').style.display = 'block';
 }
 
@@ -6010,10 +6090,11 @@ function renderGerencial(data, hospMap, dtInicio, dtFim) {
 function exportarExcel() {
   if (!_gerencialData.length) { showToast('Gere o relatório primeiro.','error'); return; }
 
+  const isSC = session?._moduloAtivo === 'sucesso-cliente';
   /* Build CSV that Excel opens correctly */
   const BOM = '﻿';
   const sep = ';';
-  const header = ['HOSPITAL','CD_RELATORIO','DT_RELATORIO','DS_RELATORIO','STATUS_PROJETO'].join(sep);
+  const header = ['HOSPITAL', isSC?'CONSULTOR':'CD_RELATORIO', isSC?'DT_REUNIAO':'DT_RELATORIO', isSC?'OBSERVACOES':'DS_RELATORIO', isSC?'SAUDE_PROJETO':'STATUS_PROJETO'].join(sep);
   const rows = _gerencialData.map(r =>
     [r.hospital, r.cd_relatorio, r.dt_relatorio, r.ds_relatorio, r.status_projeto]
       .map(v => `"${String(v).replace(/"/g,'""')}"`)
@@ -6094,7 +6175,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       /* Vai para a aba que estava antes do refresh */
       switchTab(savedTab);
       if (savedTab === 'hist') loadHistory();
-      if (savedTab === 'admin' && session.isAdmin) loadAdminPanel();
       if (savedTab === 'form' && session.isAdmin) carregarFiltroHospForm();
       if (savedTab === 'sc') { if (session.isAdmin) carregarHospitaisParaFiltros(); else initSCPanel(); }
       return;
