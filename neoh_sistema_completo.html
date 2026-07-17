@@ -1649,8 +1649,6 @@ img, svg { max-width: 100%; height: auto; }
       <h2>⚙️ Painel administrativo</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-tool" onclick="toggleAdminView('hospitais')" id="btn-view-hosp" style="background:var(--blue);color:#fff;border-color:var(--blue)">🏥 Hospitais</button>
-        <button class="btn-tool" onclick="toggleAdminView('usuarios')" id="btn-view-users">👤 Usuários</button>
-        <button class="btn-tool" onclick="toggleAdminView('gerencial')" id="btn-view-ger">📊 Relatório Gerencial</button>
         <button class="btn-tool accent" onclick="openModalNovoHospital()">+ Novo hospital</button>
       </div>
     </div>
@@ -3043,7 +3041,10 @@ async function deleteSnapshot(id) {
    PAINEL ADMIN
    ══════════════════════════════════════ */
 async function loadAdminPanel() {
+  /* Gerencial tab shows only hospital stats */
+  toggleAdminView('hospitais');
   const grid = document.getElementById('hospital-grid');
+  if (!grid) return;
   grid.innerHTML = '<div class="loading"><div class="spinner"></div><br>Carregando...</div>';
 
   try {
@@ -4892,42 +4893,29 @@ function gerarCorpoEmailSC(hospital, emailConsultor) {
 const _origToggleAdminView = toggleAdminView;
 // Redeclare to add users support
 function toggleAdminView(view) {
-  const hospPanel   = document.getElementById('hospital-grid')?.closest('.card');
-  const gerPanel    = document.getElementById('gerencial-panel');
-  const usersPanel  = document.getElementById('usuarios-panel');
-  const statsGrid   = document.getElementById('admin-stats-grid');
-  const drillEl     = document.getElementById('stat-drilldown');
-  const btnHosp     = document.getElementById('btn-view-hosp');
-  const btnGer      = document.getElementById('btn-view-ger');
-  const btnUsers    = document.getElementById('btn-view-users');
+  const hospPanel = document.getElementById('hospital-grid')?.closest('.card');
+  const gerPanel  = document.getElementById('gerencial-panel');
+  const statsGrid = document.getElementById('admin-stats-grid');
+  const drillEl   = document.getElementById('stat-drilldown');
+  const btnHosp   = document.getElementById('btn-view-hosp');
 
-  /* Hide all */
-  [hospPanel, gerPanel, usersPanel].forEach(p => { if(p) p.style.display='none'; });
+  /* Hide all sub-panels */
+  [hospPanel, gerPanel].forEach(p => { if(p) p.style.display='none'; });
+  if(statsGrid) statsGrid.style.display='none';
+  if(drillEl)   drillEl.style.display='none';
 
-  const activeStyle  = 'background:var(--blue);color:#fff;border-color:var(--blue)';
-  const inactStyle   = 'background:none;color:var(--text);border-color:var(--border)';
-  if(btnHosp)  btnHosp.style.cssText  = inactStyle;
-  if(btnGer)   btnGer.style.cssText   = inactStyle;
-  if(btnUsers) btnUsers.style.cssText = inactStyle;
+  const activeStyle = 'background:var(--blue);color:#fff;border-color:var(--blue)';
+  const inactStyle  = 'background:none;color:var(--text);border-color:var(--border)';
+  if(btnHosp) btnHosp.style.cssText = inactStyle;
 
   if (view === 'hospitais') {
     if(hospPanel)  hospPanel.style.display='';
     if(statsGrid)  statsGrid.style.display='';
     if(drillEl)    drillEl.style.display='';
     if(btnHosp)    btnHosp.style.cssText = activeStyle;
-  } else if (view === 'gerencial') {
-    if(gerPanel)   gerPanel.style.display='block';
-    if(statsGrid)  statsGrid.style.display='none';
-    if(drillEl)    drillEl.style.display='none';
-    if(btnGer)     btnGer.style.cssText  = activeStyle;
-    initGerencialFilters();
-  } else if (view === 'usuarios') {
-    if(usersPanel) usersPanel.style.display='block';
-    if(statsGrid)  statsGrid.style.display='none';
-    if(drillEl)    drillEl.style.display='none';
-    if(btnUsers)   btnUsers.style.cssText = activeStyle;
-    carregarUsuarios();
   }
+  /* 'gerencial' view removed from this panel — lives in Gerencial tab */
+  /* 'usuarios' view removed from this panel — lives in Configurações */
 }
 
 function atualizarStepperBusca() {
