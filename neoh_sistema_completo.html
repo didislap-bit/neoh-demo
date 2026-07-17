@@ -293,6 +293,28 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #eef1f6; colo
 .hist-info span { font-size: 12px; color: var(--muted); }
 .hist-actions { display: flex; gap: 8px; }
 .btn-sm { padding: 5px 13px; font-size: 12px; border-radius: 6px; cursor: pointer; border: 0.5px solid var(--border); background: none; color: var(--text); font-weight: 500; transition: all .12s; }
+
+/* Tooltip customizado — aparece quase instantaneamente (o padrão do navegador leva ~1.5s) */
+.tooltip { position: relative; }
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e2535;
+  color: #fff;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .05s ease;
+  z-index: 1000;
+}
+.tooltip:hover::after { opacity: 1; transition-delay: .05s; }
 .btn-sm:hover { background: var(--gray-bg); }
 .btn-sm.danger { color: var(--red); border-color: #fca5a5; }
 .btn-sm.danger:hover { background: #fee2e2; }
@@ -2504,7 +2526,11 @@ function switchTab(tab) {
   });
   /* Salva aba atual no sessionStorage */
   try { sessionStorage.setItem('neoh_tab', tab); } catch(e) {}
+  /* Log de navegação: registra qualquer tela acessada pelo usuário */
+  const NOMES_TELAS = { form:'Formulário', report:'Relatório', hist:'Histórico', admin:'Gerencial', sc:'Sucesso do Cliente', config:'Configurações', apresent:'Apresentação' };
+  registrarLogSupabase('Navegação', 'Acessou a tela: ' + (NOMES_TELAS[tab]||tab), 'Visualizar tela');
   if (tab === 'hist') { iniciarHistPanel(); }
+  if (tab === 'form' && session?.isAdmin) { carregarFiltroHospForm(); }
   if (tab === 'sc') initSCPanel();
   if (tab === 'apresent') initApresentPanel();
 }
@@ -4625,10 +4651,10 @@ function renderUsuariosTableConfig(data) {
       <td style="font-size:11px">${u.hospital_sc||'—'}</td>
       <td>${u.bloqueado?'<span class="status-bloqueado"></span><span style="font-size:11px;color:#ef4444">Bloqueado</span>':'<span class="status-ativo"></span><span style="font-size:11px;color:#22c55e">Ativo</span>'}</td>
       <td style="white-space:nowrap">
-        <button class="btn-sm" onclick="editarUsuario('${u.id}')" title="Editar usuário">✏️</button>
-        <button class="btn-sm" onclick="resetarSenhaUsuario('${u.id}','${u.nome}')" title="Redefinir senha">🔑</button>
-        <button class="btn-sm ${u.bloqueado?'':'danger'}" onclick="toggleBloquearUsuario('${u.id}',${u.bloqueado})" title="${u.bloqueado?'Desbloquear usuário':'Bloquear usuário'}">${u.bloqueado?'🔓':'🔒'}</button>
-        <button class="btn-sm danger" onclick="excluirUsuario('${u.id}','${u.nome}')" title="Excluir usuário">🗑</button>
+        <button class="btn-sm tooltip" data-tooltip="Editar usuário" onclick="editarUsuario('${u.id}')">✏️</button>
+        <button class="btn-sm tooltip" data-tooltip="Redefinir senha" onclick="resetarSenhaUsuario('${u.id}','${u.nome}')">🔑</button>
+        <button class="btn-sm tooltip ${u.bloqueado?'':'danger'}" data-tooltip="${u.bloqueado?'Desbloquear usuário':'Bloquear usuário'}" onclick="toggleBloquearUsuario('${u.id}',${u.bloqueado})">${u.bloqueado?'🔓':'🔒'}</button>
+        <button class="btn-sm tooltip danger" data-tooltip="Excluir usuário" onclick="excluirUsuario('${u.id}','${u.nome}')">🗑</button>
       </td>
     </tr>`).join('');
 }
