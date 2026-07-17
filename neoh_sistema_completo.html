@@ -5772,7 +5772,7 @@ async function initGerencialFilters() {
     _msData.hosp = (data||[]).map(h => ({
       id: h.id,
       label: (h.nome_real||h.nome) + (h.parceiro ? ' ('+h.parceiro+')' : ''),
-      selected: true
+      selected: false
     }));
     msRender('hosp');
   } catch(e) {}
@@ -5857,8 +5857,8 @@ async function drillDown(type) {
 function getSelectedHospitals() {
   const items = _msData.hosp || [];
   const selected = items.filter(i => i.selected).map(i => i.id);
-  if (selected.length === 0 || selected.length === items.length) return 'todos';
-  return selected;
+  if (items.length > 0 && selected.length === items.length) return 'todos';
+  return selected; /* pode vir vazio — quem chama deve validar antes de consultar */
 }
 
 /* ── MULTISELECT ENGINE ── */
@@ -6009,6 +6009,10 @@ async function gerarGerencialSR() {
   if (diff < 0)   { showToast('Data fim anterior à data início.','error'); return; }
 
   const hospIds = getSelectedHospitals();
+  if (hospIds !== 'todos' && hospIds.length === 0) {
+    showToast('Selecione pelo menos um hospital (ou marque "Marcar/Desmarcar todos").', 'error');
+    return;
+  }
 
   showToast('Gerando relatório...','');
 
@@ -6062,6 +6066,10 @@ async function gerarGerencialSC() {
   if (diff < 0)   { showToast('Data fim anterior à data início.','error'); return; }
 
   const hospIds = getSelectedHospitals();
+  if (hospIds !== 'todos' && hospIds.length === 0) {
+    showToast('Selecione pelo menos um hospital (ou marque "Marcar/Desmarcar todos").', 'error');
+    return;
+  }
 
   showToast('Gerando relatório...','');
 
