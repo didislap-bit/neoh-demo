@@ -1759,9 +1759,20 @@ img, svg { max-width: 100%; height: auto; }
       <div id="cfg-log-content" style="display:none">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div style="font-size:14px;font-weight:600;color:var(--blue)">📋 Log de ações do sistema</div>
-          <button class="btn-tool" onclick="carregarLog()" style="font-size:11px;padding:5px 10px">🔄 Atualizar</button>
+          <button class="btn-tool" onclick="filtrarLog()" style="font-size:11px;padding:5px 10px">🔄 Atualizar</button>
         </div>
         <div class="card">
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:end">
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px">Data início</label>
+              <input type="date" id="log-dt-inicio" style="padding:7px 10px;border:.5px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;background:#fafbfc" />
+            </div>
+            <div>
+              <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px">Data fim</label>
+              <input type="date" id="log-dt-fim" style="padding:7px 10px;border:.5px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;background:#fafbfc" />
+            </div>
+            <button class="btn-tool accent" onclick="filtrarLog()" style="padding:8px 16px">▶ Filtrar</button>
+          </div>
           <div style="overflow-x:auto">
             <table class="users-table">
               <thead><tr><th style="width:160px">Data/Hora</th><th style="width:140px">Usuário</th><th style="width:140px">Módulo/Ação</th><th>Detalhes</th></tr></thead>
@@ -1769,7 +1780,7 @@ img, svg { max-width: 100%; height: auto; }
             </table>
           </div>
           <div id="log-empty" style="text-align:center;padding:24px;color:var(--muted);font-size:12px">
-            Nenhuma ação registrada ainda.
+            Selecione um período e clique em "▶ Filtrar" para carregar os registros.
           </div>
         </div>
       </div>
@@ -4627,7 +4638,7 @@ function setCfgTab(tab) {
   });
   if (tab === 'users') carregarUsuariosConfig();
   if (tab === 'hosps') carregarHospitaisConfig();
-  if (tab === 'log')   carregarLog();
+  if (tab === 'log')   initLogTab();
   if (tab === 'email') carregarTemplateEmail();
 }
 
@@ -4780,16 +4791,49 @@ function registrarLog(acao, detalhes) {
   try { localStorage.setItem('neoh_log', JSON.stringify(_actionLog.slice(0,200))); } catch(e){}
 }
 
-async function carregarLog() {
+/* Prepara a aba de Log: define datas padrão (últimos 7 dias) sem buscar nada ainda,
+   evitando carregar todo o histórico de uma vez ao simplesmente abrir a tela. */
+function initLogTab() {
   const tbody = document.getElementById('log-tbody');
   const empty = document.getElementById('log-empty');
+  if (tbody) tbody.innerHTML = '';
+  if (empty) { empty.style.display = 'block'; empty.textContent = 'Selecione um período e clique em "▶ Filtrar" para carregar os registros.'; }
+  const hoje = new Date();
+  const seteDias = new Date(); seteDias.setDate(hoje.getDate() - 7);
+  const dtInicioEl = document.getElementById('log-dt-inicio');
+  const dtFimEl = document.getElementById('log-dt-fim');
+  if (dtInicioEl && !dtInicioEl.value) dtInicioEl.value = seteDias.toISOString().split('T')[0];
+  if (dtFimEl && !dtFimEl.value) dtFimEl.value = hoje.toISOString().split('T')[0];
+}
+
+async function filtrarLog() {
+  const tbody = document.getElementById('log-tbody');
+  const empty = document.getElementById('log-empty');
+  const dtInicio = document.getElementById('log-dt-inicio')?.value || '';
+  const dtFim    = document.getElementById('log-dt-fim')?.value || '';
+
+  if (!dtInicio || !dtFim) {
+    showToast('Selecione a data início e a data fim.', 'error');
+    return;
+  }
+  const diff = (new Date(dtFim) - new Date(dtInicio)) / (1000*60*60*24);
+  if (diff < 0) { showToast('Data fim anterior à data início.', 'error'); return; }
+  if (diff > 366) { showToast('Período máximo de 1 ano.', 'error'); return; }
+
   if(tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--muted)">Carregando...</td></tr>';
+  if(empty) empty.style.display = 'none';
   try {
-    const { data, error } = await sb.from('log_acoes').select('*').order('created_at',{ascending:false}).limit(200);
+    const { data, error } = await sb.from('log_acoes').select('*')
+      .gte('created_at', dtInicio + 'T00:00:00')
+      .lte('created_at', dtFim + 'T23:59:59')
+      .order('created_at',{ascending:false}).limit(500);
     if (error) throw error;
     const logs = data || [];
-    if (!logs.length) { if(tbody)tbody.innerHTML=''; if(empty)empty.style.display='block'; return; }
-    if(empty) empty.style.display='none';
+    if (!logs.length) {
+      if(tbody)tbody.innerHTML='';
+      if(empty) { empty.textContent = 'Nenhuma ação registrada nesse período.'; empty.style.display='block'; }
+      return;
+    }
     tbody.innerHTML = logs.map(e => {
       const dt = new Date(e.created_at).toLocaleString('pt-BR');
       return '<tr>'
@@ -4800,16 +4844,8 @@ async function carregarLog() {
         + '</tr>';
     }).join('');
   } catch(e) {
-    /* Fallback to localStorage */
-    try { _actionLog = JSON.parse(localStorage.getItem('neoh_log')||'[]'); } catch(ex) { _actionLog=[]; }
-    if (!_actionLog.length) { if(tbody)tbody.innerHTML=''; if(empty)empty.style.display='block'; return; }
-    if(empty) empty.style.display='none';
-    tbody.innerHTML = _actionLog.map(e => '<tr>'
-      + '<td style="font-size:11px;white-space:nowrap">' + e.dt + '</td>'
-      + '<td style="font-size:11px">' + e.usuario + '</td>'
-      + '<td style="font-weight:500;color:var(--blue)">' + e.acao + '</td>'
-      + '<td style="font-size:11px;color:var(--muted)">' + e.detalhes + '</td>'
-      + '</tr>').join('');
+    if(tbody) tbody.innerHTML = '';
+    if(empty) { empty.textContent = 'Erro ao carregar o log: ' + e.message; empty.style.display = 'block'; }
   }
 }
 
