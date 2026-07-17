@@ -3396,16 +3396,20 @@ async function salvarHospital() {
   const cnpj = (document.getElementById('m-cnpj')?.value||'').replace(/\D/g,'');
   if (!nomeReal) { showToast('Preencha o nome do hospital.', 'error'); return; }
 
-  /* Validar CNPJ duplicado */
+  /* Validar CNPJ duplicado — ignora o próprio hospital quando estiver editando */
   if (cnpj) {
-    const { data: existCNPJ } = await sb.from('hospitais').select('id,nome_real').eq('cnpj', cnpj);
+    let qCnpj = sb.from('hospitais').select('id,nome_real').eq('cnpj', cnpj);
+    if (_editHospId) qCnpj = qCnpj.neq('id', _editHospId);
+    const { data: existCNPJ } = await qCnpj;
     if (existCNPJ?.length) {
       showToast('CNPJ já cadastrado: ' + (existCNPJ[0].nome_real||existCNPJ[0].nome), 'error');
       return;
     }
   }
-  /* Validar nome duplicado */
-  const { data: existNome } = await sb.from('hospitais').select('id').ilike('nome_real', nomeReal.trim());
+  /* Validar nome duplicado — ignora o próprio hospital quando estiver editando */
+  let qNome = sb.from('hospitais').select('id').ilike('nome_real', nomeReal.trim());
+  if (_editHospId) qNome = qNome.neq('id', _editHospId);
+  const { data: existNome } = await qNome;
   if (existNome?.length) {
     if (!confirm('Já existe um hospital com nome similar: "' + nomeReal + '". Deseja cadastrar mesmo assim?')) return;
   }
