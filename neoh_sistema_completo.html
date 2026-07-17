@@ -1472,7 +1472,6 @@ img, svg { max-width: 100%; height: auto; }
     </div>
     <div class="topnav-right">
       <span class="topnav-hospital" id="topnav-hospital"></span>
-      <button class="btn-nav" onclick="voltarHome()" title="Tela Inicial" id="btn-tela-inicial">🏠 <span class="tab-txt">Tela Inicial</span></button>
       <button class="btn-nav" onclick="doLogout()" title="Sair">🔓 <span class="tab-txt">Sair</span></button>
     </div>
   </div>
@@ -1611,12 +1610,12 @@ img, svg { max-width: 100%; height: auto; }
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="aviso-salvar-btn" id="aviso-btn-salvar" onclick="saveToSuabase_tarja()">☁️ Salvar agora</button>
-        <button class="aviso-salvar-btn" style="background:#1a3a6b" onclick="sairDoRelatorio('inicio')">🏠 Tela inicial</button>
+        <button class="aviso-salvar-btn" style="background:#1a3a6b" onclick="voltarHome()">🏠 Tela inicial</button>
       </div>
     </div>
     <div class="report-toolbar">
       <button class="btn-tool" onclick="sairDoRelatorio('form')">✏️ Editar formulário</button>
-      <button class="btn-tool" onclick="sairDoRelatorio('inicio')">🏠 Tela inicial</button>
+      <button class="btn-tool" onclick="voltarHome()">🏠 Tela inicial</button>
       <button class="btn-tool" onclick="sairDoRelatorio('hist')">🗂️ Histórico do hospital</button>
       <button class="btn-tool accent" onclick="window.print()">🖨️ Imprimir / PDF</button>
     </div>
@@ -2868,7 +2867,7 @@ function sairModoLeitura() {
   if (toolbar) {
     toolbar.innerHTML = `
       <button class="btn-tool" onclick="sairDoRelatorio('form')">✏️ Editar formulário</button>
-      <button class="btn-tool" onclick="sairDoRelatorio('inicio')">🏠 Tela inicial</button>
+      <button class="btn-tool" onclick="voltarHome()">🏠 Tela inicial</button>
       <button class="btn-tool" onclick="sairDoRelatorio('hist')">🗂️ Histórico do hospital</button>
       <button class="btn-tool accent" onclick="window.print()">🖨️ Imprimir / PDF</button>`;
   }
