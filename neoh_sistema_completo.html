@@ -2476,25 +2476,24 @@ function switchTab(tab) {
     const p = document.getElementById(t+'-panel');
     if (p) p.classList.toggle('active', t === tab);
   });
+  /* Por padrão, esconde todo o conteúdo interno do admin-panel (gerencial,
+     stats, lista de hospitais, configurações). Cada aba reexibe só o que precisa. */
+  document.getElementById('admin-stats-grid') && (document.getElementById('admin-stats-grid').style.display='none');
+  document.getElementById('hospital-grid')?.closest('.card') && (document.getElementById('hospital-grid').closest('.card').style.display='none');
+  document.getElementById('gerencial-panel') && (document.getElementById('gerencial-panel').style.display='none');
+  document.getElementById('usuarios-panel') && (document.getElementById('usuarios-panel').style.display='none');
   /* Configurações panel content (lives inside admin-panel) */
   const cfgContent = document.getElementById('config-panel-content');
   const cfgInAdmin = document.getElementById('admin-panel');
   if (tab === 'config' && cfgContent && cfgInAdmin) {
     cfgInAdmin.classList.add('active');
     cfgContent.style.display = 'block';
-    /* Hide the default admin content */
-    document.getElementById('admin-stats-grid') && (document.getElementById('admin-stats-grid').style.display='none');
-    document.getElementById('hospital-grid')?.closest('.card') && (document.getElementById('hospital-grid').closest('.card').style.display='none');
-    document.getElementById('gerencial-panel') && (document.getElementById('gerencial-panel').style.display='none');
-    document.getElementById('usuarios-panel') && (document.getElementById('usuarios-panel').style.display='none');
     carregarConfiguracoes();
   } else if (cfgContent) {
     cfgContent.style.display = 'none';
   }
   if (tab === 'admin' && session?.isAdmin) {
     /* Aba Gerencial: mostra direto o Relatório Gerencial (sem lista de hospitais) */
-    document.getElementById('admin-stats-grid') && (document.getElementById('admin-stats-grid').style.display='none');
-    document.getElementById('hospital-grid')?.closest('.card') && (document.getElementById('hospital-grid').closest('.card').style.display='none');
     document.getElementById('gerencial-panel') && (document.getElementById('gerencial-panel').style.display='block');
     carregarGerencialPorModulo();
   }
@@ -2732,6 +2731,7 @@ async function _doSaveToSupabase(hospitalId, nomeHospital) {
     document.getElementById('aviso-salvar').style.display = 'none';
     const label = nomeHospital ? ' para ' + nomeHospital : '';
     showToast('✅ Relatório salvo' + label + '!', 'success');
+    registrarLogSupabase('Status Report', 'Relatório salvo' + label + ' (seq. ' + nextSeq + ')', 'Gerar relatório');
     marcarSalvo();
     loadHistory();
   } catch(e) {
@@ -3026,6 +3026,7 @@ async function cancelarRelatorio(id, seq) {
     const { error } = await sb.from('relatorios').update({ cancelado: true }).eq('id', id);
     if (error) throw error;
     showToast(`Relatório Rel. ${seq} cancelado.`, 'success');
+    registrarLogSupabase('Status Report', 'Relatório Rel. ' + seq + ' cancelado', 'Cancelar relatório');
     loadHistory();
   } catch(e) {
     showToast('Erro: ' + e.message, 'error');
@@ -3333,11 +3334,13 @@ async function loadAdminPanel() {
 }
 
 function openModalNovoHospital() {
-  document.getElementById('modal-hospital').classList.add('open');
-  document.getElementById('m-nome').focus();
-}
-function closeModal() {
-  document.getElementById('modal-hospital').classList.remove('open');
+  _editHospId = null;
+  const modal = document.getElementById('modal-hospital');
+  modal.style.display = ''; /* remove qualquer override inline deixado por uma edição anterior */
+  modal.classList.add('open');
+  modal.querySelector('h3').textContent = '🏥 Cadastrar novo hospital';
+  modal.querySelector('.btn-confirm').textContent = 'Cadastrar';
+  /* Formulário limpo para um cadastro novo */
   ['m-nome','m-cnpj','m-parceiro','m-email-input'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -3349,6 +3352,14 @@ function closeModal() {
   if (logoDrop) logoDrop.classList.remove('has');
   const logoImg = document.getElementById('modal-logo-img');
   if (logoImg) logoImg.src = '';
+  modalLogoData = null;
+  document.getElementById('m-nome').focus();
+}
+function closeModal() {
+  /* Cancelar só sai da tela — não apaga os dados já preenchidos/cadastrados */
+  const modal = document.getElementById('modal-hospital');
+  modal.classList.remove('open');
+  modal.style.display = ''; /* garante que nenhum estilo inline deixe o modal preso aberto */
 }
 
 async function salvarHospital() {
@@ -4042,6 +4053,7 @@ async function doLoginUnificado() {
     };
 
     try { const s={...session}; sessionStorage.setItem('neoh_session', JSON.stringify(s)); } catch(e) {}
+    registrarLogSupabase('Acesso', 'Login realizado', 'Login');
 
     document.getElementById('login-screen').style.display = 'none';
 
@@ -4343,13 +4355,15 @@ async function salvarUsuario() {
       if (error) throw error;
     }
     fecharModalUsuario();
-    carregarUsuarios();
+    carregarUsuariosConfig();
     if (!_usuarioEditId) {
       /* Novo usuário: gerar token e enviar e-mail de boas-vindas */
       await enviarEmailBoasVindas(email, nome);
       showToast('Usuário cadastrado! E-mail de boas-vindas enviado.', 'success');
+      registrarLogSupabase('Usuários', 'Usuário cadastrado: ' + nome + ' (' + email + ')', 'Novo usuário');
     } else {
       showToast('Usuário atualizado!', 'success');
+      registrarLogSupabase('Usuários', 'Usuário atualizado: ' + nome + ' (' + email + ')', 'Editar usuário');
     }
   } catch(e) {
     showToast('Erro: ' + (e.message||e), 'error');
@@ -4550,8 +4564,9 @@ async function toggleBloquearUsuario(id, bloqueado) {
   try {
     const { error } = await sb.from('usuarios').update({ bloqueado: !bloqueado }).eq('id', id);
     if (error) throw error;
-    carregarUsuarios();
+    carregarUsuariosConfig();
     showToast(`Usuário ${bloqueado?'desbloqueado':'bloqueado'} com sucesso!`,'success');
+    registrarLogSupabase('Usuários', `Usuário ${acao}do (id ${id})`, acao==='bloquear'?'Bloquear usuário':'Desbloquear usuário');
   } catch(e) {
     showToast('Erro: ' + e.message,'error');
   }
@@ -4562,8 +4577,9 @@ async function excluirUsuario(id, nome) {
   try {
     const { error } = await sb.from('usuarios').delete().eq('id', id);
     if (error) throw error;
-    carregarUsuarios();
+    carregarUsuariosConfig();
     showToast('Usuário excluído.','success');
+    registrarLogSupabase('Usuários', 'Usuário excluído: ' + nome, 'Excluir usuário');
   } catch(e) {
     showToast('Erro: ' + e.message,'error');
   }
@@ -4609,10 +4625,10 @@ function renderUsuariosTableConfig(data) {
       <td style="font-size:11px">${u.hospital_sc||'—'}</td>
       <td>${u.bloqueado?'<span class="status-bloqueado"></span><span style="font-size:11px;color:#ef4444">Bloqueado</span>':'<span class="status-ativo"></span><span style="font-size:11px;color:#22c55e">Ativo</span>'}</td>
       <td style="white-space:nowrap">
-        <button class="btn-sm" onclick="editarUsuario('${u.id}')">✏️</button>
-        <button class="btn-sm" onclick="resetarSenhaUsuario('${u.id}','${u.nome}')" title="Reset senha">🔑</button>
-        <button class="btn-sm ${u.bloqueado?'':'danger'}" onclick="toggleBloquearUsuario('${u.id}',${u.bloqueado})">${u.bloqueado?'🔓':'🔒'}</button>
-        <button class="btn-sm danger" onclick="excluirUsuario('${u.id}','${u.nome}')">🗑</button>
+        <button class="btn-sm" onclick="editarUsuario('${u.id}')" title="Editar usuário">✏️</button>
+        <button class="btn-sm" onclick="resetarSenhaUsuario('${u.id}','${u.nome}')" title="Redefinir senha">🔑</button>
+        <button class="btn-sm ${u.bloqueado?'':'danger'}" onclick="toggleBloquearUsuario('${u.id}',${u.bloqueado})" title="${u.bloqueado?'Desbloquear usuário':'Bloquear usuário'}">${u.bloqueado?'🔓':'🔒'}</button>
+        <button class="btn-sm danger" onclick="excluirUsuario('${u.id}','${u.nome}')" title="Excluir usuário">🗑</button>
       </td>
     </tr>`).join('');
 }
@@ -4646,7 +4662,8 @@ async function editarHospital(id) {
   /* Abre modal */
   const modal = document.getElementById('modal-hospital');
   if (modal) {
-    modal.style.display='flex';
+    modal.style.display = ''; /* remove qualquer estilo inline residual */
+    modal.classList.add('open');
     modal.querySelector('h3').textContent = '🏥 Editar hospital';
     modal.querySelector('.btn-confirm').textContent = 'Salvar alterações';
   }
