@@ -3415,15 +3415,14 @@ function handleModalLogo(e) {
    LOGIN UNIFICADO — detecta perfil pelo banco
    ══════════════════════════════════════ */
 async function doLoginUnificado() {
-  const email = document.getElementById('login-email').value.trim().toLowerCase();
-  const senha = document.getElementById('login-senha-unif').value.trim();
+  const email = (document.getElementById('login-email')?.value || '').trim().toLowerCase();
+  const senha = (document.getElementById('login-senha-unif')?.value || '').trim();
   const btn   = document.getElementById('login-btn-unif');
   const err   = document.getElementById('login-error');
-  err.classList.remove('show');
 
+  if (err) err.classList.remove('show');
   if (!email || !senha) { showLoginError('Preencha o e-mail e a senha.'); return; }
-
-  btn.disabled = true; btn.textContent = 'Aguardando...';
+  if (btn) { btn.disabled = true; btn.textContent = 'Aguardando...'; }
 
   try {
     /* Busca usuário no banco */
@@ -3432,13 +3431,13 @@ async function doLoginUnificado() {
 
     if (error || !data) {
       showLoginError('E-mail ou senha incorretos.');
-      btn.disabled = false; btn.textContent = 'Entrar';
+      if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
       return;
     }
 
     if (data.bloqueado) {
       showLoginError('Acesso não permitido, favor entrar em contato com o administrador do sistema.');
-      btn.disabled = false; btn.textContent = 'Entrar';
+      if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
       return;
     }
 
@@ -3478,7 +3477,7 @@ async function doLoginUnificado() {
     showLoginError('Erro de conexão. Tente novamente.');
   }
 
-  btn.disabled = false; btn.textContent = 'Entrar';
+  if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
 }
 
 function showLoginError(msg) {
@@ -3798,27 +3797,30 @@ async function enviarEmailBoasVindas(email, nome) {
 }
 
 function gerarEmailBoasVindas(nome, url) {
-  return \`Olá \${nome},\n\nBem-vindo(a) ao sistema Neoh — Status Report Executivo!\n\nClique no link abaixo para definir sua senha de acesso:\n\${url}\n\nEste link é válido por 48 horas.\n\nAtenciosamente,\nEquipe Intelectah | Neoh\`;
+  return 'Olá ' + nome + ',\n\nBem-vindo(a) ao sistema Neoh — Status Report Executivo!\n\nClique no link abaixo para definir sua senha de acesso:\n' + url + '\n\nEste link é válido por 48 horas.\n\nAtenciosamente,\nEquipe Intelectah | Neoh';
 }
 
 function mostrarLinkSenha(nome, email, url) {
-  /* Modal com link copiável quando e-mail falha */
   const div = document.createElement('div');
   div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center';
-  div.innerHTML = \`
-    <div style="background:#fff;border-radius:14px;padding:28px;max-width:480px;width:94%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-      <div style="font-size:32px;margin-bottom:10px">📧</div>
-      <h3 style="font-size:16px;font-weight:700;margin-bottom:6px">Link de acesso para \${nome}</h3>
-      <p style="font-size:12px;color:#6b7280;margin-bottom:14px">Envie este link para <strong>\${email}</strong>:</p>
-      <div style="background:#f0f4ff;border:.5px solid #c7d7f5;border-radius:8px;padding:10px 14px;font-size:11px;color:#1a3a6b;word-break:break-all;margin-bottom:14px;text-align:left">\${url}</div>
-      <div style="display:flex;gap:8px;justify-content:center">
-        <button onclick="navigator.clipboard.writeText('\${url}');this.textContent='✅ Copiado!'" style="background:var(--blue);color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">📋 Copiar link</button>
-        <button onclick="this.closest('div[style*=fixed]').remove()" style="background:#f0f0f0;border:none;padding:9px 18px;border-radius:7px;font-size:13px;cursor:pointer">Fechar</button>
-      </div>
-    </div>\`;
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#fff;border-radius:14px;padding:28px;max-width:480px;width:94%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)';
+  box.innerHTML = '<div style="font-size:32px;margin-bottom:10px">📧</div>'
+    + '<h3 style="font-size:16px;font-weight:700;margin-bottom:6px">Link de acesso para ' + nome + '</h3>'
+    + '<p style="font-size:12px;color:#6b7280;margin-bottom:14px">Envie este link para <strong>' + email + '</strong>:</p>'
+    + '<div style="background:#f0f4ff;border:.5px solid #c7d7f5;border-radius:8px;padding:10px 14px;font-size:11px;color:#1a3a6b;word-break:break-all;margin-bottom:14px;text-align:left">' + url + '</div>'
+    + '<div style="display:flex;gap:8px;justify-content:center">'
+    + '<button id="copy-link-btn" style="background:var(--blue);color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">📋 Copiar link</button>'
+    + '<button id="close-link-btn" style="background:#f0f0f0;border:none;padding:9px 18px;border-radius:7px;font-size:13px;cursor:pointer">Fechar</button>'
+    + '</div>';
+  div.appendChild(box);
   document.body.appendChild(div);
+  document.getElementById('copy-link-btn').onclick = function() {
+    navigator.clipboard.writeText(url);
+    this.textContent = '✅ Copiado!';
+  };
+  document.getElementById('close-link-btn').onclick = function() { div.remove(); };
 }
-
 /* ── VERIFICAR TOKEN NA URL AO CARREGAR ── */
 async function verificarTokenURL() {
   const params = new URLSearchParams(window.location.search);
@@ -4948,7 +4950,15 @@ document.addEventListener('keydown', e => {
 document.addEventListener('DOMContentLoaded', async () => {
   /* Verifica se há token de definição de senha na URL */
   const hasToken = await verificarTokenURL();
-  if (hasToken) return; /* Mostra tela de definição de senha */
+  if (hasToken) return;
+
+  /* Versão do sistema — limpa sessão se mudou */
+  const SYS_VERSION = '2.1';
+  const savedVersion = sessionStorage.getItem('neoh_version');
+  if (savedVersion !== SYS_VERSION) {
+    sessionStorage.clear();
+    sessionStorage.setItem('neoh_version', SYS_VERSION);
+  }
 
   /* Tenta restaurar sessão do sessionStorage */
   try {
