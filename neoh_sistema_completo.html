@@ -1491,6 +1491,9 @@ img, svg { max-width: 100%; height: auto; }
     <button class="nav-tab" id="apresent-tab" style="display:none;border:1px solid rgba(26,158,117,.5);color:#1a9e75" onclick="switchTab('apresent')">
       <span class="tab-icon">📊</span><span class="tab-txt"> Apresentação</span>
     </button>
+    <button class="nav-tab" id="apresenthist-tab" style="display:none;border:1px solid rgba(26,158,117,.5);color:#1a9e75" onclick="switchTab('apresenthist')">
+      <span class="tab-icon">🗂️</span><span class="tab-txt"> Hist. Apresentações</span>
+    </button>
     <button class="nav-tab admin-tab" id="admin-tab" style="display:none" onclick="switchTab('admin')">
       <span class="tab-icon">📈</span><span class="tab-txt"> Gerencial</span>
     </button>
@@ -2273,7 +2276,7 @@ Atenciosamente,
         </div>
         <div>
           <label style="font-size:11px;color:transparent;display:block;margin-bottom:5px">.</label>
-          <button onclick="gerarPreviaApresentacao()" style="background:var(--blue);color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">▶ Gerar prévia</button>
+          <button onclick="gerarPreviaApresentacao()" style="background:var(--blue);color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">▶ Filtrar</button>
         </div>
       </div>
     </div>
@@ -2296,6 +2299,46 @@ Atenciosamente,
       <div id="apresent-list-items">
         <div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">Nenhuma apresentação gerada ainda.</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTÓRICO DE APRESENTAÇÕES (SC) -->
+<div id="apresenthist-panel" class="panel" style="padding:0">
+  <div class="sc-header" style="background:linear-gradient(135deg,#1a3a6b,#0f2347)">
+    <div>
+      <h2>🗂️ Histórico de Apresentações</h2>
+      <p>Busque apresentações já geradas por hospital e período</p>
+    </div>
+    <button onclick="voltarHome()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;margin-left:auto">🏠 Tela Inicial</button>
+  </div>
+  <div class="sc-body">
+    <div class="gerencial-filters">
+      <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:12px">🔍 Buscar apresentações</div>
+      <div class="gerencial-filters-grid">
+        <div class="filter-field">
+          <label>Hospital</label>
+          <select id="apresenthist-hosp" style="width:100%;padding:7px 10px;border:.5px solid var(--border);border-radius:7px;font-size:12px;font-family:inherit;background:#fafbfc">
+            <option value="">Todos os hospitais</option>
+          </select>
+        </div>
+        <div class="filter-field"><label>Data início</label><input type="date" id="apresenthist-dt-ini" /></div>
+        <div class="filter-field"><label>Data fim</label><input type="date" id="apresenthist-dt-fim" /></div>
+        <div class="filter-field"><label>&nbsp;</label><button class="btn-gerar-gerencial" onclick="filtrarApresentacoesHistorico()">▶ Filtrar</button></div>
+      </div>
+    </div>
+
+    <div id="apresenthist-content"></div>
+  </div>
+</div>
+
+<!-- MODAL VISUALIZAR APRESENTAÇÃO -->
+<div class="modal-overlay" id="modal-visualizar-apresent">
+  <div class="modal" style="max-width:560px">
+    <h3 id="modal-visualizar-apresent-titulo">📊 Apresentação</h3>
+    <div id="modal-visualizar-apresent-corpo" style="font-size:13px;color:var(--text);line-height:1.6;max-height:60vh;overflow-y:auto"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-tool" onclick="document.getElementById('modal-visualizar-apresent').classList.remove('open')">Fechar</button>
     </div>
   </div>
 </div>
@@ -2504,7 +2547,7 @@ function doLogout() {
    ══════════════════════════════════════ */
 function switchTab(tab) {
   /* Mostrar/ocultar painéis */
-  ['form','report','hist','admin','sc','config','apresent'].forEach(t => {
+  ['form','report','hist','admin','sc','config','apresent','apresenthist'].forEach(t => {
     const p = document.getElementById(t+'-panel');
     if (p) p.classList.toggle('active', t === tab);
   });
@@ -2537,12 +2580,13 @@ function switchTab(tab) {
   /* Salva aba atual no sessionStorage */
   try { sessionStorage.setItem('neoh_tab', tab); } catch(e) {}
   /* Log de navegação: registra qualquer tela acessada pelo usuário */
-  const NOMES_TELAS = { form:'Formulário', report:'Relatório', hist:'Histórico', admin:'Gerencial', sc:'Sucesso do Cliente', config:'Configurações', apresent:'Apresentação' };
+  const NOMES_TELAS = { form:'Formulário', report:'Relatório', hist:'Histórico', admin:'Gerencial', sc:'Sucesso do Cliente', config:'Configurações', apresent:'Apresentação', apresenthist:'Histórico de Apresentações' };
   registrarLogSupabase('Navegação', 'Acessou a tela: ' + (NOMES_TELAS[tab]||tab), 'Visualizar tela');
   if (tab === 'hist') { iniciarHistPanel(); }
   if (tab === 'form' && session?.isAdmin) { carregarFiltroHospForm(); }
   if (tab === 'sc') initSCPanel();
   if (tab === 'apresent') initApresentPanel();
+  if (tab === 'apresenthist') initApresentHistPanel();
 }
 
 /* ══════════════════════════════════════
@@ -3272,7 +3316,7 @@ async function gerarApresentacaoComPromptAdmin() {
     const prompt = localStorage.getItem('neoh_prompt_' + _adminApresentHospId) || '';
     const ta = document.getElementById('sc-prompt-texto');
     if (ta && prompt) ta.value = prompt;
-    showToast('Hospital e prompt carregados. Clique em "▶ Gerar prévia" para continuar.','success');
+    showToast('Hospital e prompt carregados. Clique em "▶ Filtrar" para continuar.','success');
   }, 400);
 }
 
@@ -4240,6 +4284,7 @@ function configurarTabsPorModulo(modulo) {
   const tabHist    = document.getElementById('tab-hist');
   const tabSC      = document.getElementById('sc-tab');
   const tabApresent= document.getElementById('apresent-tab');
+  const tabApresentHist = document.getElementById('apresenthist-tab');
   const tabAdmin   = document.getElementById('admin-tab');
   const tabConfig  = document.getElementById('config-tab');
 
@@ -4249,11 +4294,11 @@ function configurarTabsPorModulo(modulo) {
   if (isSR) {
     /* Status Report: Form, Relatório, Histórico, Gerencial, Configurações */
     show(tabForm); show(tabReport); show(tabHist);
-    hide(tabSC); hide(tabApresent);
+    hide(tabSC); hide(tabApresent); hide(tabApresentHist);
   } else if (isSC) {
-    /* Sucesso do Cliente: SC, Apresentação, Gerencial, Configurações */
+    /* Sucesso do Cliente: SC, Apresentação, Hist. Apresentações, Gerencial, Configurações */
     hide(tabForm); hide(tabReport); hide(tabHist);
-    show(tabSC); show(tabApresent);
+    show(tabSC); show(tabApresent); show(tabApresentHist);
   }
 
   /* Gerencial e Configurações visíveis para admins em ambos os módulos */
@@ -5009,6 +5054,7 @@ async function gerarApresentacaoPPTX() {
   /* Try to get data from _apresentData first (set by gerarPreviaApresentacao) */
   const d = _apresentData || window._apresentDataGlobal;
   const hospSel = document.getElementById('sc-apresent-hosp') || document.getElementById('apresent-hosp');
+  const hospitalId = d?.hospId || hospSel?.value || '';
   const hospital = d?.hospital || hospSel?.options[hospSel?.selectedIndex]?.dataset?.nome || hospSel?.options[hospSel?.selectedIndex]?.text || hospSel?.value || '';
   const dtIni    = d?.dtIni || document.getElementById('sc-apresent-dt-ini')?.value || document.getElementById('apresent-dt-ini')?.value || '';
   const dtFim    = d?.dtFim || document.getElementById('sc-apresent-dt-fim')?.value || document.getElementById('apresent-dt-fim')?.value || '';
@@ -5021,36 +5067,35 @@ async function gerarApresentacaoPPTX() {
 
   showToast('Gerando apresentação... ⏳','');
 
-  /* Usa Claude API para processar o prompt e gerar conteúdo */
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: `Você é um especialista em Sucesso do Cliente para o sistema Neoh (Intelectah). 
-          Gere um sumário executivo estruturado para uma apresentação PPTX baseado neste prompt:
-          
-          HOSPITAL: ${hospital}
-          PERÍODO: ${periodo}
-          
-          PROMPT DO USUÁRIO:
-          ${prompt}
-          
-          Responda APENAS em JSON com esta estrutura:
-          {"titulo": "...", "periodo": "...", "hospital": "...", "pontos_destaque": ["...","...","..."], "proximos_90_dias": ["...","...","..."], "sintese": "..."}`
-        }]
-      })
-    });
-    
-    const aiData = await response.json();
-    const aiText = aiData.content?.[0]?.text || '';
-    let conteudo = {};
-    try { conteudo = JSON.parse(aiText.replace(/```json|```/g,'')); } catch(e) { conteudo = {titulo: hospital, periodo, hospital}; }
+  /* Conteúdo básico local — usado como respaldo caso a Edge Function falhe */
+  let conteudo = { titulo: hospital, periodo, hospital, sintese: prompt ? prompt.trim() : '' };
 
+  /* A geração assistida por IA passa pela Edge Function do Supabase
+     (supabase/functions/gerar-apresentacao), que guarda a chave da
+     Anthropic no servidor. O navegador nunca chama api.anthropic.com
+     diretamente. */
+  try {
+    const edgeRes = await fetch(`${SUPABASE_URL}/functions/v1/gerar-apresentacao`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({ hospital, periodo, prompt })
+    });
+    if (edgeRes.ok) {
+      const { conteudo: conteudoIA } = await edgeRes.json();
+      if (conteudoIA) conteudo = conteudoIA;
+    } else {
+      console.warn('Edge Function retornou erro, usando conteúdo local como fallback.');
+    }
+  } catch(e) {
+    /* Função indisponível/offline — segue com o conteúdo básico local */
+    console.warn('Falha ao chamar a Edge Function, usando conteúdo local como fallback:', e);
+  }
+
+  try {
     /* Baixa template e gera PPTX customizado via pptxgenjs no navegador */
     /* Por ora, baixa o template com metadados inseridos no nome */
     const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
@@ -5083,10 +5128,49 @@ async function gerarApresentacaoPPTX() {
     if (lista.querySelector('div[style]')) lista.innerHTML = '';
     lista.insertBefore(item, lista.firstChild);
 
+    /* Salva no histórico de apresentações (tabela apresentacoes) */
+    try {
+      const seqApresentacao = await getNextSeqApresentacao(hospitalId);
+      await sb.from('apresentacoes').insert({
+        hospital_id: hospitalId || null,
+        hospital,
+        seq_num: seqApresentacao,
+        periodo_ini: dtIni || null,
+        periodo_fim: dtFim || null,
+        prompt,
+        conteudo,
+        criado_por: session?.nome || 'Sistema'
+      });
+      registrarLogSupabase('Apresentação', 'Apresentação gerada: ' + hospital + (seqApresentacao ? ' (' + formatSeqApresentacao(seqApresentacao) + ')' : ''), 'Gerar apresentação');
+    } catch(e) {
+      /* Não interrompe o download se o histórico falhar ao salvar */
+      console.warn('Falha ao salvar apresentação no histórico:', e);
+    }
+
     showToast('✅ Apresentação gerada e baixada!','success');
   } catch(e) {
     showToast('Erro ao gerar: ' + e.message,'error');
   }
+}
+
+/* ── NUMERAÇÃO SEQUENCIAL DAS APRESENTAÇÕES (Ap. 2026001) ── */
+async function getNextSeqApresentacao(hospitalId) {
+  if (!hospitalId) return null;
+  try {
+    const { data, error } = await sb
+      .from('apresentacoes')
+      .select('seq_num')
+      .eq('hospital_id', hospitalId)
+      .order('seq_num', { ascending: false })
+      .limit(1);
+    if (error || !data || !data.length) return 1;
+    return (data[0].seq_num || 0) + 1;
+  } catch { return 1; }
+}
+
+function formatSeqApresentacao(seqNum) {
+  const ano = new Date().getFullYear();
+  return 'Ap. ' + ano + String(seqNum).padStart(3, '0');
 }
 
 /* ══════════════════════════════════════
@@ -5110,6 +5194,152 @@ async function initApresentPanel() {
   const seisM = new Date(); seisM.setMonth(hoje.getMonth()-6);
   document.getElementById('apresent-dt-ini').value = seisM.toISOString().split('T')[0];
   document.getElementById('apresent-dt-fim').value = hoje.toISOString().split('T')[0];
+
+  /* Se veio do fluxo "Prompt" do Histórico de Apresentações, pré-seleciona o hospital */
+  if (window._proximoHospitalApresentacao) {
+    if (sel) sel.value = window._proximoHospitalApresentacao;
+    window._proximoHospitalApresentacao = null;
+  }
+}
+
+/* ══════════════════════════════════════
+   HISTÓRICO DE APRESENTAÇÕES (SC)
+   ══════════════════════════════════════ */
+async function initApresentHistPanel() {
+  const sel = document.getElementById('apresenthist-hosp');
+  if (sel && sel.options.length <= 1) {
+    const { data } = await sb.from('hospitais').select('id,nome,nome_real').order('nome');
+    sel.innerHTML = '<option value="">Todos os hospitais</option>';
+    (data||[]).forEach(h => {
+      const opt = document.createElement('option');
+      opt.value = h.id;
+      opt.textContent = h.nome_real || h.nome;
+      sel.appendChild(opt);
+    });
+  }
+  const hoje = new Date();
+  const seisM = new Date(); seisM.setMonth(hoje.getMonth()-6);
+  const dtIniEl = document.getElementById('apresenthist-dt-ini');
+  const dtFimEl = document.getElementById('apresenthist-dt-fim');
+  if (dtIniEl && !dtIniEl.value) dtIniEl.value = seisM.toISOString().split('T')[0];
+  if (dtFimEl && !dtFimEl.value) dtFimEl.value = hoje.toISOString().split('T')[0];
+  const cont = document.getElementById('apresenthist-content');
+  if (cont && !cont.dataset.loaded) {
+    cont.innerHTML = '<p class="hist-empty">Selecione os filtros e clique em "▶ Filtrar" para buscar.</p>';
+  }
+}
+
+let _apresentacoesHist = [];
+
+async function filtrarApresentacoesHistorico() {
+  const cont = document.getElementById('apresenthist-content');
+  const hospId  = document.getElementById('apresenthist-hosp')?.value || '';
+  const dtIni   = document.getElementById('apresenthist-dt-ini')?.value || '';
+  const dtFim   = document.getElementById('apresenthist-dt-fim')?.value || '';
+
+  if (!dtIni || !dtFim) {
+    showToast('Preencha as datas antes de filtrar.', 'error');
+    return;
+  }
+  const diff = (new Date(dtFim) - new Date(dtIni)) / (1000*60*60*24);
+  if (diff < 0) { showToast('Data fim anterior à data início.', 'error'); return; }
+
+  cont.innerHTML = '<div class="loading"><div class="spinner"></div><br>Carregando...</div>';
+
+  try {
+    let q = sb.from('apresentacoes').select('*')
+      .gte('criado_em', dtIni + 'T00:00:00')
+      .lte('criado_em', dtFim + 'T23:59:59')
+      .order('criado_em', { ascending: true });
+    if (hospId) q = q.eq('hospital_id', hospId);
+
+    const { data, error } = await q.limit(300);
+    if (error) throw error;
+    _apresentacoesHist = data || [];
+
+    if (!_apresentacoesHist.length) {
+      cont.innerHTML = '<p class="hist-empty">Nenhuma apresentação encontrada nesse período.</p>';
+      return;
+    }
+
+    /* Agrupar por Ano → Mês, igual ao Histórico do Status Report */
+    const grupos = {};
+    _apresentacoesHist.forEach(r => {
+      const dt = new Date(r.criado_em);
+      const ano = dt.getFullYear();
+      const mes = dt.getMonth() + 1;
+      const mesN = dt.toLocaleString('pt-BR', { month: 'long' });
+      const key = `${ano}-${String(mes).padStart(2,'0')}`;
+      const lbl = `${mesN.charAt(0).toUpperCase()+mesN.slice(1)} ${ano}`;
+      if (!grupos[key]) grupos[key] = { label: lbl, items: [] };
+      grupos[key].items.push(r);
+    });
+
+    cont.innerHTML = '';
+    Object.keys(grupos).sort().reverse().forEach(key => {
+      const g = grupos[key];
+      const group = document.createElement('div'); group.className = 'hist-group';
+      group.innerHTML = `<div class="hist-group-title">📅 <span class="hist-group-month">${g.label}</span> <span style="font-size:11px;color:#9ca3af;font-weight:400">${g.items.length} apresentação(ões)</span></div>`;
+
+      const list = document.createElement('div'); list.className = 'hist-list';
+      [...g.items].sort((a,b) => (b.seq_num||0)-(a.seq_num||0)).forEach(r => {
+        const seq = r.seq_num ? formatSeqApresentacao(r.seq_num) : 'Ap. ???';
+        const dt = new Date(r.criado_em).toLocaleString('pt-BR');
+        const card = document.createElement('div');
+        card.className = 'hist-card';
+        card.innerHTML = `
+          <div class="hist-info">
+            <div class="hist-card-title"><span class="hist-seq">${seq}</span><strong>${r.hospital||'—'}</strong></div>
+            <span>Período: ${r.periodo_ini||'—'} a ${r.periodo_fim||'—'} &nbsp;·&nbsp; Gerado em ${dt} &nbsp;·&nbsp; Por: ${r.criado_por||'—'}</span>
+          </div>
+          <div class="hist-actions">
+            <button class="btn-sm" onclick="visualizarApresentacao('${r.id}')">👁 Visualizar</button>
+            <button class="btn-sm" onclick="usarComoBaseApresentacao('${r.id}')">📋 Prompt</button>
+          </div>`;
+        list.appendChild(card);
+      });
+      group.appendChild(list);
+      cont.appendChild(group);
+    });
+  } catch(e) {
+    cont.innerHTML = `<p class="hist-empty">Erro: ${e.message}</p>`;
+  }
+}
+
+/* "Visualizar" — mostra o conteúdo já gerado, sem refazer a consulta */
+function visualizarApresentacao(id) {
+  const r = _apresentacoesHist.find(x => x.id === id);
+  if (!r) { showToast('Apresentação não encontrada.', 'error'); return; }
+  const c = r.conteudo || {};
+  const seq = r.seq_num ? formatSeqApresentacao(r.seq_num) : '';
+  document.getElementById('modal-visualizar-apresent-titulo').textContent = `📊 ${seq} — ${r.hospital||''}`;
+  const pontos = Array.isArray(c.pontos_destaque) ? c.pontos_destaque : [];
+  const proximos = Array.isArray(c.proximos_90_dias) ? c.proximos_90_dias : [];
+  document.getElementById('modal-visualizar-apresent-corpo').innerHTML = `
+    <p style="margin-bottom:10px"><strong>Período:</strong> ${r.periodo_ini||'—'} a ${r.periodo_fim||'—'}</p>
+    ${c.sintese ? `<p style="margin-bottom:14px">${c.sintese}</p>` : ''}
+    ${pontos.length ? `<div style="margin-bottom:14px"><strong>Pontos de destaque</strong><ul style="margin:6px 0 0 18px">${pontos.map(p=>`<li>${p}</li>`).join('')}</ul></div>` : ''}
+    ${proximos.length ? `<div><strong>Próximos 90 dias</strong><ul style="margin:6px 0 0 18px">${proximos.map(p=>`<li>${p}</li>`).join('')}</ul></div>` : ''}
+    ${r.prompt ? `<p style="margin-top:14px;font-size:11px;color:var(--muted)"><strong>Prompt usado:</strong> ${r.prompt}</p>` : ''}
+  `;
+  document.getElementById('modal-visualizar-apresent').classList.add('open');
+}
+
+/* "Prompt" (antigo "Usar como base") — reabre a tela onde fica o campo de
+   prompt (aba Sucesso do Cliente) já preenchido com o mesmo texto usado
+   antes, para o usuário revisar/editar. Depois é só ir em "Apresentação"
+   escolher o novo período e gerar de novo. */
+function usarComoBaseApresentacao(id) {
+  const r = _apresentacoesHist.find(x => x.id === id);
+  if (!r) { showToast('Apresentação não encontrada.', 'error'); return; }
+  switchTab('sc');
+  setTimeout(() => {
+    const promptEl = document.getElementById('sc-prompt-texto');
+    if (promptEl) promptEl.value = r.prompt || '';
+    /* Guarda o hospital para pré-selecionar quando o usuário for para a aba Apresentação */
+    window._proximoHospitalApresentacao = r.hospital_id || '';
+    showToast('Prompt carregado. Revise aqui e depois vá em "Apresentação" para escolher o novo período.', 'success');
+  }, 150);
 }
 
 let _apresentData = null;
