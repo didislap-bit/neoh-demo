@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fluxograma Swimlane Editável · Neoh</title>
+<style>
+  :root{ --bg:#0f172a; --ink:#1e293b; --muted:#64748b; --line:#cbd5e1; --cellbg:#fafbfc; --accent:#2563eb; }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    background:linear-gradient(180deg,#f8fafc,#eef2f7); color:var(--ink); line-height:1.4;}
+  [contenteditable]{outline:none}
+  [contenteditable]:hover{background:#fff7d6; border-radius:4px}
+  [contenteditable]:focus{background:#fff2b3; border-radius:4px; box-shadow:0 0 0 2px #f59e0b}
+  [contenteditable]:empty:before{content:attr(data-placeholder); color:#94a3b8; font-style:italic}
+
+  .toolbar{position:sticky; top:0; z-index:20; background:#0f172a; color:#fff; padding:10px 16px;
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .toolbar b{font-size:.85rem; margin-right:auto}
+  .btn{border:none; padding:7px 13px; border-radius:8px; font-size:.78rem; font-weight:700; cursor:pointer;}
+  .btn-primary{background:#2563eb; color:#fff}
+  .btn-ghost{background:#334155; color:#fff}
+  .btn-danger{background:#7f1d1d; color:#fff}
+  .btn-mini{border:none; background:#e2e8f0; color:#334155; border-radius:6px; width:20px; height:20px;
+    font-size:.7rem; cursor:pointer; line-height:1; padding:0;}
+  .btn-mini:hover{background:#cbd5e1}
+
+  header{padding:20px 20px 6px; text-align:center;}
+  header h1{margin:0 0 4px; font-size:1.4rem; display:inline-block; min-width:280px}
+  header p{margin:0; color:var(--muted); font-size:.85rem; display:inline-block; min-width:280px}
+
+  .wrap{max-width:1360px; margin:0 auto; padding:14px 14px 60px}
+
+  .guia-panel{display:none; background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:16px;
+    margin-bottom:16px; font-size:.83rem;}
+  .guia-panel.open{display:block}
+  .guia-panel ul{padding-left:18px; margin:8px 0}
+  .guia-panel li{margin-bottom:6px}
+
+  .ficha{background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 18px; margin-bottom:16px;
+    font-size:.85rem; box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .ficha .row{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:6px 24px;}
+  .ficha p{margin:6px 0}
+  .ficha b{color:#334155}
+
+  .scroller{overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:#fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .grid{display:grid; min-width:900px;}
+  .corner{grid-row:1; grid-column:1; position:sticky; left:0; z-index:3; background:#0f172a; color:#fff;
+    padding:10px; font-size:.72rem; font-weight:700; display:flex; align-items:center; border-top-left-radius:14px;}
+  .phase{background:#0f172a; color:#fff; padding:8px; text-align:center; font-size:.76rem; font-weight:700;
+    border-left:1px solid #1e293b; position:relative;}
+  .phase-name{display:block; padding:2px 4px}
+  .phase .btn-mini{position:absolute; top:2px; right:2px; background:#1e293b; color:#fbbf24}
+  .add-phase-col{background:#1e293b; display:flex; align-items:center; justify-content:center; cursor:pointer;
+    color:#94a3b8; font-size:1.1rem; font-weight:700;}
+  .add-phase-col:hover{background:#334155; color:#fff}
+
+  .lane-label{position:sticky; left:0; z-index:2; padding:10px; font-size:.78rem; font-weight:700; color:#fff;
+    display:flex; align-items:center; gap:6px; border-top:1px solid #fff; position:relative;}
+  .lane-name{flex:1}
+  .lane-label input[type=color]{width:20px; height:20px; border:none; padding:0; background:none; cursor:pointer}
+  .lane-label .btn-mini{background:#00000030; color:#fff}
+
+  .cell{border-left:1px solid #eef2f7; border-top:1px solid #eef2f7; padding:8px; background:var(--cellbg);
+    display:flex; flex-direction:column; gap:8px;}
+  .add-card-ghost{border:1.5px dashed var(--line); border-radius:8px; padding:6px; text-align:center;
+    font-size:.7rem; color:var(--muted); cursor:pointer;}
+  .add-card-ghost:hover{background:#eef2ff; color:#4338ca; border-color:#4338ca}
+
+  .add-lane-row{grid-column:1/-1; padding:8px; text-align:center; border:1.5px dashed var(--line); border-radius:8px;
+    margin:6px; color:var(--muted); font-size:.8rem; cursor:pointer; background:#fff;}
+  .add-lane-row:hover{background:#eef2ff; color:#4338ca; border-color:#4338ca}
+
+  .card{background:#fff; border-radius:10px; padding:9px 10px 8px; box-shadow:0 1px 2px rgba(0,0,0,.08);
+    border-left:4px solid var(--line); position:relative;}
+  .card .num{position:absolute; top:-9px; left:-9px; width:22px; height:22px; border-radius:50%;
+    background:var(--ink); color:#fff; display:grid; place-items:center; font-size:.68rem; font-weight:700; text-align:center;}
+  .card h3{margin:0 0 4px; font-size:.8rem; padding-left:2px}
+  .card p{margin:0; font-size:.72rem; color:var(--muted); padding-left:2px}
+  .card-toolbar{display:flex; gap:4px; margin-top:6px; align-items:center; flex-wrap:wrap;}
+  .tag{font-size:.62rem; padding:1px 6px; border-radius:18px; font-weight:600; min-width:26px; display:inline-block; text-align:center;}
+  .tag.rn{background:#eef2ff; color:#4338ca} .tag.tr{background:#dcfce7; color:#15803d}
+  .to-field{display:block; margin-top:5px; font-size:.65rem; font-weight:600; color:#334155;
+    background:#f1f5f9; border-radius:6px; padding:2px 6px; min-height:14px;}
+  .dec{background:#fef2f2; border-left-color:#dc2626 !important;}
+  .dec h3{color:#991b1b}
+  .card-actions{display:flex; gap:3px; margin-left:auto}
+
+  h2.sec{font-size:1.02rem; margin:28px 0 10px}
+  .tbl-wrap{background:#fff; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,.07); overflow:hidden;}
+  table{width:100%; border-collapse:collapse; font-size:.8rem;}
+  th,td{padding:7px 10px; text-align:left; border-bottom:1px solid #eef2f7; vertical-align:top}
+  th{background:#0f172a; color:#fff; font-size:.74rem}
+  tr:last-child td{border-bottom:none}
+  td .btn-mini{float:right}
+  .add-row-btn{display:block; width:100%; text-align:center; padding:8px; font-size:.76rem; color:var(--muted);
+    border:1.5px dashed var(--line); border-radius:0 0 10px 10px; cursor:pointer; background:#fafbfc;}
+  .add-row-btn:hover{background:#eef2ff; color:#4338ca}
+  footer{text-align:center; color:var(--muted); font-size:.75rem; padding:20px}
+
+  .btn-ai{background:#0f766e; color:#fff}
+  .ficha-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .ai-hint-btn{border:none; background:#ecfeff; color:#0f766e; font-size:.72rem; font-weight:700; padding:4px 10px;
+    border-radius:14px; cursor:pointer;}
+  .ai-hint-btn:hover{background:#ccfbf1}
+  .tbl-actions{display:flex; gap:8px; align-items:stretch;}
+  .tbl-actions .add-row-btn{flex:1; border-radius:0}
+  .tbl-actions .add-row-btn:first-child{border-radius:0 0 0 10px}
+  .tbl-actions .add-row-btn:last-child{border-radius:0 0 10px 0}
+
+  .ai-panel-wrap{position:fixed; top:0; right:-360px; width:340px; height:100vh; background:#fff;
+    border-left:1px solid var(--line); box-shadow:-4px 0 16px rgba(0,0,0,.08); z-index:50; transition:right .25s ease;
+    display:flex; flex-direction:column;}
+  .ai-panel-wrap.open{right:0}
+  .ai-panel-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px;
+    background:#0f172a; color:#fff; font-size:.85rem;}
+  .ai-panel-head .btn-mini{background:#334155; color:#fff}
+  .ai-panel-hint{font-size:.76rem; color:var(--muted); padding:10px 16px; margin:0; border-bottom:1px solid #eef2f7}
+  #ai-panel-body{flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:10px;}
+  .tip-item{background:#f0fdfa; border-left:4px solid #0f766e; border-radius:8px; padding:10px 12px; font-size:.8rem;}
+  .tip-item b{display:block; font-size:.72rem; color:#0f766e; margin-bottom:4px; text-transform:uppercase;}
+  .tip-item p{margin:0; color:#134e4a; white-space:pre-wrap;}
+  .tip-loading{color:var(--muted) !important; font-style:italic}
+  .tip-error{color:#b91c1c !important}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <b>🧭 Fluxograma Swimlane Editável</b>
+  <button class="btn btn-ghost" onclick="toggleGuia()">📘 Guia rápido</button>
+  <button class="btn btn-ghost" onclick="loadExample()">📋 Carregar exemplo</button>
+  <button class="btn btn-danger" onclick="clearAll()">🗑 Limpar tudo</button>
+  <button class="btn btn-ai" onclick="reviewFull()">✅ Revisar fluxo completo com IA</button>
+  <button class="btn btn-ghost" onclick="toggleAiPanel()">🤖 Assistente IA</button>
+  <button class="btn btn-primary" onclick="exportHTML()">⬇️ Baixar fluxograma (.html)</button>
+</div>
+
+<div id="ai-panel-wrap" class="ai-panel-wrap">
+  <div class="ai-panel-head">
+    <b>🤖 Assistente de preenchimento</b>
+    <button class="btn-mini" onclick="toggleAiPanel()">×</button>
+  </div>
+  <p class="ai-panel-hint">Clique nos botões 💡 espalhados pelo fluxograma para receber dicas da IA sobre o que você está preenchendo. As dicas aparecem aqui.</p>
+  <div id="ai-panel-body"></div>
+</div>
+
+<header>
+  <h1 id="meta-title" contenteditable="true" data-placeholder="Clique para nomear o fluxo: Fluxo TO-BE — [processo]">Fluxo TO-BE — [nomeie o processo]</h1><br>
+  <p id="meta-subtitle" contenteditable="true" data-placeholder="Subtítulo: quem conduz, com quais sistemas se integra">Orquestrado pelo Neoh · integrado a HIS e Banco de Dados</p>
+</header>
+
+<div class="wrap">
+
+  <div class="guia-panel" id="guia-panel">
+    <b>Como preencher direto no fluxograma:</b>
+    <ul>
+      <li>Clique em qualquer texto (título, descrição, nomes de raia/fase, ficha técnica) para editar — é como um documento normal.</li>
+      <li>Use os botões <b>+</b> tracejados para adicionar raia, fase ou atividade no cruzamento certo.</li>
+      <li>Em cada card: <b>num.</b> é a sequência (1,2,3…) — use <b>!</b> para exceção e <b>★</b> para atividade transversal; o botão <b>◆</b> transforma o card em decisão (fica vermelho); os campos <b>RN</b>/<b>E-</b> são as tags de regra de negócio e exceção tratada; o campo abaixo do card é para os caminhos "Sim → / Não →" (só decisões precisam disso).</li>
+      <li>As tabelas abaixo do fluxograma (Regras de Negócio, Exceções, KPIs) também são editáveis célula a célula — use "+ adicionar linha".</li>
+      <li>Lembre-se de preencher a <b>Ficha Técnica</b> (Objetivo, Escopo, Evento inicial/final, Entradas/Saídas, Atores, Sistemas) — são os 14 elementos obrigatórios de todo fluxograma hospitalar.</li>
+      <li>Quando terminar, clique em <b>"Baixar fluxograma (.html)"</b> para gerar o arquivo final, limpo, pronto para o repositório.</li>
+    </ul>
+  </div>
+
+  <div class="ficha">
+    <div class="ficha-head">
+      <b>📋 Ficha Técnica</b>
+      <button class="ai-hint-btn" onclick="reviewFicha()">💡 Dica da IA</button>
+    </div>
+    <div class="row">
+      <p><b>Objetivo:</b> <span id="meta-objetivo" contenteditable="true" data-placeholder="O que este processo entrega, em uma frase"></span></p>
+      <p><b>Escopo:</b> <span id="meta-escopo" contenteditable="true" data-placeholder="O que entra e o que fica de fora"></span></p>
+    </div>
+    <div class="row">
+      <p><b>Evento inicial:</b> <span id="meta-eventoInicial" contenteditable="true" data-placeholder="O que dispara o processo"></span></p>
+      <p><b>Evento final:</b> <span id="meta-eventoFinal" contenteditable="true" data-placeholder="Como o processo termina"></span></p>
+    </div>
+    <div class="row">
+      <p><b>Entradas:</b> <span id="meta-entradas" contenteditable="true" data-placeholder="Dados/documentos necessários para começar"></span></p>
+      <p><b>Saídas:</b> <span id="meta-saidas" contenteditable="true" data-placeholder="O que o processo produz ao final"></span></p>
+    </div>
+    <div class="row">
+      <p><b>Atores:</b> <span id="meta-atores" contenteditable="true" data-placeholder="Ex.: Customer Success, CS Manager, Suporte"></span></p>
+      <p><b>Sistemas:</b> <span id="meta-sistemas" contenteditable="true" data-placeholder="Ex.: Neoh, HIS, Banco de Dados, IA"></span></p>
+    </div>
+  </div>
+
+  <div class="scroller"><div id="grid" class="grid"></div></div>
+
+  <h2 class="sec">Regras de negócio</h2>
+  <div class="tbl-wrap">
+    <table><thead><tr><th style="width:90px">Código</th><th>Descrição (SE...ENTÃO...)</th><th style="width:90px">Passo(s)</th><th style="width:30px"></th></tr></thead>
+    <tbody id="rules-body"></tbody></table>
+    <div class="tbl-actions">
+      <div class="add-row-btn" onclick="addRule()">+ adicionar regra</div>
+      <div class="add-row-btn" onclick="reviewTable('rules')">💡 Revisar regras com IA</div>
+    </div>
+  </div>
+
+  <h2 class="sec">Exceções tratadas</h2>
+  <div class="tbl-wrap">
+    <table><thead><tr><th style="width:70px">Código</th><th style="width:180px">Exceção</th><th style="width:80px">Passo(s)</th><th>Tratamento</th><th style="width:30px"></th></tr></thead>
+    <tbody id="exc-body"></tbody></table>
+    <div class="tbl-actions">
+      <div class="add-row-btn" onclick="addExc()">+ adicionar exceção</div>
+      <div class="add-row-btn" onclick="reviewTable('excs')">💡 Revisar exceções com IA</div>
+    </div>
+  </div>
+
+  <h2 class="sec">Indicadores (KPIs)</h2>
+  <div class="tbl-wrap">
+    <table><thead><tr><th style="width:180px">KPI</th><th>Descrição</th><th style="width:100px">Onde é medido</th><th style="width:30px"></th></tr></thead>
+    <tbody id="kpi-body"></tbody></table>
+    <div class="tbl-actions">
+      <div class="add-row-btn" onclick="addKpi()">+ adicionar KPI</div>
+      <div class="add-row-btn" onclick="reviewTable('kpis')">💡 Revisar KPIs com IA</div>
+    </div>
+  </div>
+
+</div>
+<footer>Fluxograma Swimlane Editável · edite direto na tela · exporte quando estiver pronto</footer>
+
+<script>
+let state = { lanes:[], phases:[], cards:[], rules:[], excs:[], kpis:[] };
+let seq = { lane:0, phase:0, card:0, rule:0, exc:0, kpi:0 };
+const PALETTE = ['#2563eb','#7c3aed','#db2777','#ea580c','#0f766e','#d97706','#15803d','#4338ca'];
+
+function toggleGuia(){ document.getElementById('guia-panel').classList.toggle('open'); }
+
+/* ---------- SCRAPE: lê o DOM atual para o state antes de qualquer mudança estrutural ---------- */
+function scrape(){
+  state.lanes.forEach(l=>{
+    const n=document.getElementById('lane-name-'+l.id), c=document.getElementById('lane-color-'+l.id);
+    if(n) l.name=n.innerText; if(c) l.color=c.value;
+  });
+  state.phases.forEach(p=>{
+    const n=document.getElementById('phase-name-'+p.id); if(n) p.name=n.innerText;
+  });
+  state.cards.forEach(c=>{
+    const g=k=>document.getElementById('card-'+c.id+'-'+k);
+    const num=g('num'), title=g('title'), desc=g('desc'), rn=g('rn'), tr=g('tr'), to=g('to'), el=document.getElementById('card-'+c.id);
+    if(num) c.num=num.innerText; if(title) c.title=title.innerText; if(desc) c.desc=desc.innerText;
+    if(rn) c.rn=rn.innerText; if(tr) c.tr=tr.innerText; if(to) c.to=to.innerText;
+    if(el) c.dec = el.classList.contains('dec');
+  });
+  state.rules.forEach(r=>{
+    const g=k=>document.getElementById('rule-'+r.id+'-'+k);
+    const a=g('code'),b=g('desc'),d=g('step'); if(a)r.code=a.innerText; if(b)r.desc=b.innerText; if(d)r.step=d.innerText;
+  });
+  state.excs.forEach(x=>{
+    const g=k=>document.getElementById('exc-'+x.id+'-'+k);
+    const a=g('code'),b=g('name'),d=g('step'),e=g('desc');
+    if(a)x.code=a.innerText; if(b)x.name=b.innerText; if(d)x.step=d.innerText; if(e)x.desc=e.innerText;
+  });
+  state.kpis.forEach(k=>{
+    const g=key=>document.getElementById('kpi-'+k.id+'-'+key);
+    const a=g('name'),b=g('desc'),d=g('step'); if(a)k.name=a.innerText; if(b)k.desc=b.innerText; if(d)k.step=d.innerText;
+  });
+  const mt=document.getElementById('meta-title'), ms=document.getElementById('meta-subtitle');
+  state.metaTitle = mt?mt.innerText:''; state.metaSubtitle = ms?ms.innerText:'';
+  state.meta = {};
+  ['objetivo','escopo','eventoInicial','eventoFinal','entradas','saidas','atores','sistemas'].forEach(k=>{
+    const el=document.getElementById('meta-'+k); state.meta[k]= el?el.innerText:'';
+  });
+}
+
+/* ---------- STRUCTURAL ACTIONS ---------- */
+function addLane(){
+  scrape(); seq.lane++;
+  state.lanes.push({id:seq.lane, name:'', color: PALETTE[(state.lanes.length)%PALETTE.length]});
+  renderGrid();
+  document.getElementById('lane-name-'+seq.lane).focus();
+}
+function removeLane(id){ scrape(); state.lanes=state.lanes.filter(l=>l.id!==id); state.cards=state.cards.filter(c=>c.laneId!==id); renderGrid(); }
+function addPhase(){
+  scrape(); seq.phase++;
+  state.phases.push({id:seq.phase, name:''});
+  renderGrid();
+  document.getElementById('phase-name-'+seq.phase).focus();
+}
+function removePhase(id){ scrape(); state.phases=state.phases.filter(p=>p.id!==id); state.cards=state.cards.filter(c=>c.phaseId!==id); renderGrid(); }
+function addCard(laneId, phaseId){
+  scrape(); seq.card++;
+  state.cards.push({id:seq.card, laneId, phaseId, num:String(state.cards.length+1), title:'', desc:'', rn:'', tr:'', to:'', dec:false});
+  renderGrid();
+  document.getElementById('card-'+seq.card+'-title').focus();
+}
+function removeCard(id){ scrape(); state.cards=state.cards.filter(c=>c.id!==id); renderGrid(); }
+function toggleDec(id){ scrape(); const c=state.cards.find(x=>x.id===id); c.dec=!c.dec; renderGrid(); }
+
+function addRule(){ scrape(); seq.rule++; state.rules.push({id:seq.rule, code:'', desc:'', step:''}); renderTables(); document.getElementById('rule-'+seq.rule+'-code').focus(); }
+function removeRule(id){ scrape(); state.rules=state.rules.filter(r=>r.id!==id); renderTables(); }
+function addExc(){ scrape(); seq.exc++; state.excs.push({id:seq.exc, code:'', name:'', step:'', desc:''}); renderTables(); document.getElementById('exc-'+seq.exc+'-code').focus(); }
+function removeExc(id){ scrape(); state.excs=state.excs.filter(x=>x.id!==id); renderTables(); }
+function addKpi(){ scrape(); seq.kpi++; state.kpis.push({id:seq.kpi, name:'', desc:'', step:''}); renderTables(); document.getElementById('kpi-'+seq.kpi+'-name').focus(); }
+function removeKpi(id){ scrape(); state.kpis=state.kpis.filter(k=>k.id!==id); renderTables(); }
+
+/* ---------- RENDER ---------- */
+function ce(id, text, placeholder){ return `<span id="${id}" contenteditable="true" data-placeholder="${placeholder||''}">${text||''}</span>`; }
+
+function renderGrid(){
+  const el = document.getElementById('grid');
+  const nPhase = state.phases.length;
+  el.style.gridTemplateColumns = `190px repeat(${nPhase}, minmax(150px,1fr)) 46px`;
+  let html = '';
+  // header row
+  html += `<div class="corner" style="grid-row:1;grid-column:1">Raia ↓ / Fase →</div>`;
+  state.phases.forEach((p,i)=>{
+    html += `<div class="phase" style="grid-row:1;grid-column:${i+2}">
+      <button class="btn-mini" title="remover fase" onclick="removePhase(${p.id})">×</button>
+      <span class="phase-name" id="phase-name-${p.id}" contenteditable="true" data-placeholder="Nome da fase">${p.name||''}</span>
+    </div>`;
+  });
+  html += `<div class="add-phase-col" style="grid-row:1;grid-column:${nPhase+2}" title="adicionar fase" onclick="addPhase()">+</div>`;
+
+  // lane rows
+  state.lanes.forEach((l, li)=>{
+    const row = li+2;
+    html += `<div class="lane-label" style="grid-row:${row};grid-column:1;background:${l.color}">
+      <button class="btn-mini" title="remover raia" onclick="removeLane(${l.id})">×</button>
+      <span class="lane-name" id="lane-name-${l.id}" contenteditable="true" data-placeholder="Nome da raia">${l.name||''}</span>
+      <input type="color" id="lane-color-${l.id}" value="${l.color}" onchange="scrape()">
+    </div>`;
+    state.phases.forEach((p,pi)=>{
+      const col = pi+2;
+      const cardsHere = state.cards.filter(c=>c.laneId===l.id && c.phaseId===p.id);
+      html += `<div class="cell" style="grid-row:${row};grid-column:${col}">`;
+      cardsHere.forEach(c=>{
+        html += `<div class="card ${c.dec?'dec':''}" id="card-${c.id}" style="${c.dec?'':'border-left-color:'+l.color}">
+          <span class="num" id="card-${c.id}-num" contenteditable="true" data-placeholder="#">${c.num||''}</span>
+          <h3 id="card-${c.id}-title" contenteditable="true" data-placeholder="Título da atividade">${c.title||''}</h3>
+          <p id="card-${c.id}-desc" contenteditable="true" data-placeholder="Descrição (se decisão, comece com uma pergunta)">${c.desc||''}</p>
+          <span class="to-field" id="card-${c.id}-to" contenteditable="true" data-placeholder="Sim → ... · Não → ... (se for decisão)">${c.to||''}</span>
+          <div class="card-toolbar">
+            <span class="tag rn" id="card-${c.id}-rn" contenteditable="true" data-placeholder="RN?">${c.rn||''}</span>
+            <span class="tag tr" id="card-${c.id}-tr" contenteditable="true" data-placeholder="E-?">${c.tr||''}</span>
+            <span class="card-actions">
+              <button class="btn-mini" title="dica da IA sobre este card" onclick="reviewCard(${c.id})">💡</button>
+              <button class="btn-mini" title="marcar/desmarcar como decisão" onclick="toggleDec(${c.id})">◆</button>
+              <button class="btn-mini" title="remover card" onclick="removeCard(${c.id})">×</button>
+            </span>
+          </div>
+        </div>`;
+      });
+      html += `<div class="add-card-ghost" onclick="addCard(${l.id},${p.id})">+ atividade</div>`;
+      html += `</div>`;
+    });
+  });
+  html += `<div class="add-lane-row" style="grid-row:${state.lanes.length+2}" onclick="addLane()">+ Adicionar raia</div>`;
+  el.innerHTML = html;
+}
+
+function renderTables(){
+  document.getElementById('rules-body').innerHTML = state.rules.map(r=>`
+    <tr><td>${ce('rule-'+r.id+'-code', r.code, 'RN1')}</td>
+        <td>${ce('rule-'+r.id+'-desc', r.desc, 'SE [condição] ENTÃO [ação]')}</td>
+        <td>${ce('rule-'+r.id+'-step', r.step, 'ex.: 5')}</td>
+        <td><button class="btn-mini" onclick="removeRule(${r.id})">×</button></td></tr>`).join('') || '';
+  document.getElementById('exc-body').innerHTML = state.excs.map(x=>`
+    <tr><td>${ce('exc-'+x.id+'-code', x.code, 'E-01')}</td>
+        <td>${ce('exc-'+x.id+'-name', x.name, 'Nome da exceção')}</td>
+        <td>${ce('exc-'+x.id+'-step', x.step, 'ex.: 3')}</td>
+        <td>${ce('exc-'+x.id+'-desc', x.desc, 'Como o processo trata esta exceção')}</td>
+        <td><button class="btn-mini" onclick="removeExc(${x.id})">×</button></td></tr>`).join('') || '';
+  document.getElementById('kpi-body').innerHTML = state.kpis.map(k=>`
+    <tr><td>${ce('kpi-'+k.id+'-name', k.name, 'Nome do KPI')}</td>
+        <td>${ce('kpi-'+k.id+'-desc', k.desc, 'O que ele mede')}</td>
+        <td>${ce('kpi-'+k.id+'-step', k.step, 'passo')}</td>
+        <td><button class="btn-mini" onclick="removeKpi(${k.id})">×</button></td></tr>`).join('') || '';
+}
+
+function renderAll(){ renderGrid(); renderTables(); }
+
+/* ---------- STARTER / EXAMPLE / CLEAR ---------- */
+function seedStarter(){
+  state = { lanes:[], phases:[], cards:[], rules:[], excs:[], kpis:[] };
+  seq = { lane:0, phase:0, card:0, rule:0, exc:0, kpi:0 };
+  seq.lane++; state.lanes.push({id:seq.lane, name:'', color:PALETTE[0]});
+  seq.phase++; state.phases.push({id:seq.phase, name:''});
+  seq.card++; state.cards.push({id:seq.card, laneId:1, phaseId:1, num:'1', title:'', desc:'', rn:'', tr:'', to:'', dec:false});
+}
+
+function clearAll(){
+  if(!confirm('Isso apaga tudo que você preencheu. Confirmar?')) return;
+  seedStarter(); renderAll();
+}
+
+function loadExample(){
+  if(state.cards.length>0 && !confirm('Isso substitui o conteúdo atual pelo exemplo. Confirmar?')) return;
+  state = { lanes:[], phases:[], cards:[], rules:[], excs:[], kpis:[] };
+  seq = { lane:0, phase:0, card:0, rule:0, exc:0, kpi:0 };
+
+  document.getElementById('meta-title').innerText='Fluxo TO-BE — Customer Success & Status Report Executivo';
+  document.getElementById('meta-subtitle').innerText='Orquestrado pelo Neoh · integrado a HIS e Banco de Dados, com apoio de IA';
+  document.getElementById('meta-objetivo').innerText='Automatizar o monitoramento da saúde do cliente e a geração do Status Report Executivo.';
+  document.getElementById('meta-escopo').innerText='Não cobre faturamento, autorizações clínicas nem jornada cirúrgica.';
+  document.getElementById('meta-eventoInicial').innerText='Job agendado ou solicitação manual do CS';
+  document.getElementById('meta-eventoFinal').innerText='Relatório publicado e notificações enviadas';
+  document.getElementById('meta-entradas').innerText='Cadastro do cliente, indicadores de uso, dados do HIS, formulário do CS';
+  document.getElementById('meta-saidas').innerText='Status Report publicado, dashboard atualizado, reunião agendada';
+  document.getElementById('meta-atores').innerText='Customer Success, CS Manager, Comercial';
+  document.getElementById('meta-sistemas').innerText='Neoh, HIS, Banco de Dados, IA, Motor de Notificações';
+
+  const laneDefs=[['Customer Success','#2563eb'],['CS Manager','#7c3aed'],['Neoh (Orquestração)','#db2777'],['Inteligência Artificial','#ea580c'],['Notificações / Dashboard','#d97706']];
+  laneDefs.forEach(([name,color])=>{ seq.lane++; state.lanes.push({id:seq.lane, name, color}); });
+  const phaseDefs=['1 · Disparo & Coleta','2 · Consolidação','3 · Classificação IA','4 · Aprovação','5 · Publicação & Notificação'];
+  phaseDefs.forEach(name=>{ seq.phase++; state.phases.push({id:seq.phase, name}); });
+
+  const L=n=>state.lanes[n-1].id, P=n=>state.phases[n-1].id;
+  const addC=(o)=>{ seq.card++; state.cards.push({id:seq.card, ...o}); };
+  addC({laneId:L(1),phaseId:P(1),num:'1',title:'Aciona ciclo (opcional)',desc:'Job diário/semanal ou solicitação manual do CS.',rn:'',tr:'',to:'',dec:false});
+  addC({laneId:L(3),phaseId:P(1),num:'2',title:'Consulta Banco de Dados e HIS',desc:'Recupera cadastro, histórico e dados operacionais.',rn:'',tr:'',to:'',dec:false});
+  addC({laneId:L(3),phaseId:P(2),num:'3',title:'Dados obrigatórios OK?',desc:'Verifica completude antes de enviar à IA.',rn:'RN5',tr:'E-10',to:'Não → bloqueia e notifica CS · Sim → segue',dec:true});
+  addC({laneId:L(4),phaseId:P(3),num:'4',title:'IA analisa e classifica',desc:'Classificação: Estável / Atenção / Crítico.',rn:'RN2·RN3',tr:'',to:'',dec:false});
+  addC({laneId:L(2),phaseId:P(4),num:'5',title:'Aprova relatório crítico',desc:'Obrigatório apenas se classificação = Crítico.',rn:'RN4',tr:'',to:'Não → retorna · Sim → publica',dec:true});
+  addC({laneId:L(3),phaseId:P(5),num:'6',title:'Publica Status Report',desc:'Versiona e publica; versões anteriores permanecem imutáveis.',rn:'RN6',tr:'',to:'',dec:false});
+  addC({laneId:L(5),phaseId:P(5),num:'7',title:'Dispara notificações',desc:'E-mail e mensageria para CS, CS Manager e Comercial.',rn:'',tr:'',to:'',dec:false});
+
+  state.rules=[
+    {id:++seq.rule, code:'RN1', step:'★', desc:'SE dias desde última reunião ≥ 180 ENTÃO agendar reunião de sucesso.'},
+    {id:++seq.rule, code:'RN2', step:'4', desc:'SE chamados críticos > limite ENTÃO classificar no mínimo como Atenção.'},
+    {id:++seq.rule, code:'RN3', step:'4', desc:'SE NPS < 6 OU queda de uso > 30% ENTÃO classificar como Crítico.'},
+    {id:++seq.rule, code:'RN4', step:'5', desc:'SE classificação = Crítico ENTÃO exigir aprovação do CS Manager.'},
+    {id:++seq.rule, code:'RN5', step:'3', desc:'SE dados obrigatórios ausentes ENTÃO bloquear consolidação.'},
+    {id:++seq.rule, code:'RN6', step:'6', desc:'Relatórios publicados não são editáveis; nova versão é sempre gerada.'}
+  ];
+  state.excs=[
+    {id:++seq.exc, code:'E-01', name:'Cliente inativo', step:'2', desc:'Encerra fluxo, registra motivo, notifica Comercial.'},
+    {id:++seq.exc, code:'E-02', name:'Integração HIS/API indisponível', step:'2', desc:'Retry automático (3x), fallback última base válida, alerta ao Suporte.'},
+    {id:++seq.exc, code:'E-10', name:'Dados obrigatórios não preenchidos', step:'3', desc:'Bloqueia avanço, notifica CS para completar formulário.'}
+  ];
+  state.kpis=[
+    {id:++seq.kpi, name:'Tempo de ciclo', desc:'Tempo médio da coleta à publicação do relatório.', step:'1→6'},
+    {id:++seq.kpi, name:'Acurácia da IA', desc:'% de classificações confirmadas sem alteração pelo CS Manager.', step:'4·5'},
+    {id:++seq.kpi, name:'SLA de publicação', desc:'% de relatórios publicados dentro do prazo.', step:'6'}
+  ];
+  renderAll();
+}
+
+/* ---------- EXPORT ---------- */
+function exportHTML(){
+  scrape();
+  const m = state;
+  const nPhase = m.phases.length;
+  let grid = `<div class="scroller"><div class="grid" style="grid-template-columns:190px repeat(${nPhase}, minmax(150px,1fr))">`;
+  grid += `<div class="corner">Raia ↓ / Fase →</div>`;
+  m.phases.forEach(p=> grid += `<div class="phase">${p.name||''}</div>`);
+  m.lanes.forEach(l=>{
+    grid += `<div class="lane-label" style="background:${l.color}">${l.name||''}</div>`;
+    m.phases.forEach(p=>{
+      const cs = m.cards.filter(c=>c.laneId===l.id && c.phaseId===p.id);
+      grid += `<div class="cell">`;
+      cs.forEach(c=>{
+        grid += `<div class="card ${c.dec?'dec':''}" ${c.dec?'':'style="border-left-color:'+l.color+'"'}>
+          <span class="num">${c.num||''}</span><h3>${c.title||''}</h3><p>${c.desc||''}</p>
+          <div class="tags">${c.rn?`<span class="tag rn">${c.rn}</span>`:''}${c.tr?`<span class="tag tr">✓ ${c.tr}</span>`:''}</div>
+          ${c.to?`<span class="to">${c.to}</span>`:''}
+        </div>`;
+      });
+      grid += `</div>`;
+    });
+  });
+  grid += `</div></div>`;
+
+  const ruleRows = m.rules.map(r=>`<tr><td>${r.code}</td><td>${r.desc}</td><td>${r.step||'—'}</td></tr>`).join('');
+  const excRows = m.excs.map(x=>`<tr><td>${x.code}</td><td>${x.name}</td><td>${x.step||'—'}</td><td>${x.desc}</td></tr>`).join('');
+  const kpiRows = m.kpis.map(k=>`<tr><td>${k.name}</td><td>${k.desc}</td><td>${k.step||'—'}</td></tr>`).join('');
+  const laneRows = m.lanes.map(l=>{
+    const ativ = m.cards.filter(c=>c.laneId===l.id).map(c=>c.title).filter(Boolean).join('; ') || '—';
+    return `<tr><td><b>${l.name}</b></td><td>${ativ}</td></tr>`;
+  }).join('');
+
+  const doc = `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>${m.metaTitle}</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+background:linear-gradient(180deg,#f8fafc,#eef2f7);color:#1e293b;line-height:1.4}
+header{background:#0f172a;color:#fff;padding:26px 20px;text-align:center}
+header h1{margin:0 0 6px;font-size:1.5rem} header p{margin:0;color:#94a3b8;font-size:.88rem}
+.wrap{max-width:1320px;margin:0 auto;padding:22px 14px 56px}
+.ficha{background:#fff;border:1px solid #cbd5e1;border-radius:10px;padding:16px;margin:0 0 20px;font-size:.88rem;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.ficha .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px 24px}
+.scroller{overflow-x:auto;border:1px solid #cbd5e1;border-radius:14px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.grid{display:grid;min-width:900px}
+.corner{position:sticky;left:0;z-index:3;background:#0f172a;color:#fff;padding:10px;font-size:.74rem;font-weight:700;display:flex;align-items:center;border-top-left-radius:14px}
+.phase{background:#0f172a;color:#fff;padding:10px 8px;text-align:center;font-size:.78rem;font-weight:700;border-left:1px solid #1e293b}
+.lane-label{position:sticky;left:0;z-index:2;padding:12px 10px;font-size:.8rem;font-weight:700;color:#fff;display:flex;align-items:center;border-top:1px solid #fff}
+.cell{border-left:1px solid #eef2f7;border-top:1px solid #eef2f7;padding:8px;background:#fafbfc;display:flex;flex-direction:column;gap:8px}
+.card{background:#fff;border-radius:10px;padding:9px 10px;box-shadow:0 1px 2px rgba(0,0,0,.08);border-left:4px solid #cbd5e1;position:relative}
+.card .num{position:absolute;top:-9px;left:-9px;width:22px;height:22px;border-radius:50%;background:#1e293b;color:#fff;display:grid;place-items:center;font-size:.7rem;font-weight:700}
+.card h3{margin:0 0 4px;font-size:.8rem;padding-left:2px} .card p{margin:0;font-size:.73rem;color:#64748b;padding-left:2px}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;padding-left:2px}
+.tag{font-size:.63rem;padding:1px 6px;border-radius:18px;font-weight:600}
+.tag.rn{background:#eef2ff;color:#4338ca} .tag.tr{background:#dcfce7;color:#15803d}
+.to{display:inline-block;margin-top:5px;font-size:.66rem;font-weight:600;color:#334155;background:#f1f5f9;border-radius:6px;padding:2px 6px}
+.dec{background:#fef2f2 !important;border-left-color:#dc2626 !important} .dec h3{color:#991b1b}
+h2.sec{font-size:1.05rem;margin:30px 0 12px}
+table{width:100%;border-collapse:collapse;font-size:.8rem;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid #eef2f7;vertical-align:top} th{background:#0f172a;color:#fff;font-size:.76rem}
+footer{text-align:center;color:#64748b;font-size:.76rem;padding:18px}
+</style></head>
+<body>
+<header><h1>${m.metaTitle}</h1><p>${m.metaSubtitle||''}</p></header>
+<div class="wrap">
+  <div class="ficha">
+    <div class="row">
+      <p><b>Objetivo:</b> ${m.meta.objetivo||'—'}</p>
+      <p><b>Escopo:</b> ${m.meta.escopo||'—'}</p>
+    </div>
+    <div class="row">
+      <p><b>Evento inicial:</b> ${m.meta.eventoInicial||'—'}</p>
+      <p><b>Evento final:</b> ${m.meta.eventoFinal||'—'}</p>
+    </div>
+    <div class="row">
+      <p><b>Entradas:</b> ${m.meta.entradas||'—'}</p>
+      <p><b>Saídas:</b> ${m.meta.saidas||'—'}</p>
+    </div>
+    <div class="row">
+      <p><b>Atores:</b> ${m.meta.atores||'—'}</p>
+      <p><b>Sistemas:</b> ${m.meta.sistemas||'—'}</p>
+    </div>
+  </div>
+  ${grid}
+  <h2 class="sec">Matriz de raias</h2>
+  <table><thead><tr><th>Raia</th><th>Atividades</th></tr></thead><tbody>${laneRows||'<tr><td colspan=2>—</td></tr>'}</tbody></table>
+  <h2 class="sec">Regras de negócio</h2>
+  <table><thead><tr><th>Código</th><th>Descrição</th><th>Passo(s)</th></tr></thead><tbody>${ruleRows||'<tr><td colspan=3>—</td></tr>'}</tbody></table>
+  <h2 class="sec">Exceções tratadas</h2>
+  <table><thead><tr><th>Código</th><th>Exceção</th><th>Passo(s)</th><th>Tratamento</th></tr></thead><tbody>${excRows||'<tr><td colspan=4>—</td></tr>'}</tbody></table>
+  <h2 class="sec">Indicadores (KPIs)</h2>
+  <table><thead><tr><th>KPI</th><th>Descrição</th><th>Onde é medido</th></tr></thead><tbody>${kpiRows||'<tr><td colspan=3>—</td></tr>'}</tbody></table>
+</div>
+<footer>Gerado a partir do Fluxograma Swimlane Editável · Neoh</footer>
+</body></html>`;
+
+  const blob = new Blob([doc], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (m.metaTitle||'fluxograma').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')+'.html';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- ASSISTENTE IA (dicas contextuais) ---------- */
+function toggleAiPanel(){ document.getElementById('ai-panel-wrap').classList.toggle('open'); }
+function escapeHTML(s){ return (s||'').replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+
+async function callAI(promptText, label){
+  document.getElementById('ai-panel-wrap').classList.add('open');
+  const panel = document.getElementById('ai-panel-body');
+  const id = 'tip-'+Date.now()+Math.floor(Math.random()*1000);
+  const item = document.createElement('div');
+  item.className='tip-item'; item.id=id;
+  item.innerHTML = `<b>${escapeHTML(label)}</b><p class="tip-loading">Pensando...</p>`;
+  panel.appendChild(item);
+  panel.scrollTop = panel.scrollHeight;
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        messages:[{role:'user', content: promptText}]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim() || 'A IA não retornou uma resposta.';
+    document.getElementById(id).innerHTML = `<b>${escapeHTML(label)}</b><p>${escapeHTML(text)}</p>`;
+  }catch(err){
+    document.getElementById(id).innerHTML = `<b>${escapeHTML(label)}</b><p class="tip-error">Não consegui consultar a IA agora. Essa dica funciona quando o fluxograma é visualizado dentro do Claude.</p>`;
+  }
+}
+
+const AI_PERSONA = "Você é um Analista de Processos Hospitalares, Especialista em BPM e Consultor de Sistemas Hospitalares, revisando o preenchimento de um fluxograma TO-BE de um hospital/HealthTech. Seja direto, prático e breve (no máximo 4-5 bullets curtos), em português do Brasil. Aponte o que está bom, o que falta e sugira uma melhoria concreta. Não repita instruções genéricas de BPM, foque no conteúdo específico apresentado.";
+
+function reviewFicha(){
+  scrape();
+  const m = state.meta;
+  const prompt = `${AI_PERSONA}\n\nO usuário está preenchendo a Ficha Técnica de um fluxograma. Dados atuais:\nTítulo: ${state.metaTitle}\nObjetivo: ${m.objetivo||'(vazio)'}\nEscopo: ${m.escopo||'(vazio)'}\nEvento inicial: ${m.eventoInicial||'(vazio)'}\nEvento final: ${m.eventoFinal||'(vazio)'}\nEntradas: ${m.entradas||'(vazio)'}\nSaídas: ${m.saidas||'(vazio)'}\nAtores: ${m.atores||'(vazio)'}\nSistemas: ${m.sistemas||'(vazio)'}\n\nDê uma dica objetiva sobre o que falta ou pode ficar mais claro nesta ficha técnica.`;
+  callAI(prompt, 'Ficha Técnica');
+}
+
+function reviewCard(cardId){
+  scrape();
+  const c = state.cards.find(x=>x.id===cardId);
+  if(!c) return;
+  const lane = state.lanes.find(l=>l.id===c.laneId);
+  const phase = state.phases.find(p=>p.id===c.phaseId);
+  const prompt = `${AI_PERSONA}\n\nO usuário está preenchendo um card de atividade no fluxograma.\nRaia (responsável): ${lane?lane.name:'(sem nome)'}\nFase: ${phase?phase.name:'(sem nome)'}\nNúmero: ${c.num}\nÉ decisão? ${c.dec?'Sim':'Não'}\nTítulo: ${c.title||'(vazio)'}\nDescrição: ${c.desc||'(vazio)'}\nTag de regra (RN): ${c.rn||'(nenhuma)'}\nTag de exceção (E-): ${c.tr||'(nenhuma)'}\nCaminhos Sim/Não: ${c.to||'(vazio)'}\n\nDê uma dica objetiva: a descrição está clara? se for decisão, os caminhos Sim/Não e a regra de negócio estão faltando? falta alguma tag?`;
+  callAI(prompt, `Card ${c.num}: ${c.title||'(sem título)'}`);
+}
+
+function reviewTable(type){
+  scrape();
+  let label, prompt;
+  if(type==='rules'){
+    label = 'Regras de negócio';
+    const rows = state.rules.map(r=>`${r.code||'(sem código)'}: ${r.desc||'(vazio)'} [passo ${r.step||'?'}]`).join('\n') || '(nenhuma regra cadastrada)';
+    prompt = `${AI_PERSONA}\n\nRegras de negócio cadastradas até agora:\n${rows}\n\nCards de decisão existentes no fluxo: ${state.cards.filter(c=>c.dec).map(c=>c.title).join('; ')||'(nenhum)'}\n\nDê uma dica: as regras estão no formato SE...ENTÃO...? alguma decisão do fluxo está sem regra correspondente?`;
+  } else if(type==='excs'){
+    label = 'Exceções tratadas';
+    const rows = state.excs.map(x=>`${x.code||'(sem código)'}: ${x.name||'(vazio)'} — ${x.desc||'(sem tratamento)'}`).join('\n') || '(nenhuma exceção cadastrada)';
+    prompt = `${AI_PERSONA}\n\nExceções cadastradas até agora:\n${rows}\n\nDê uma dica: falta alguma exceção comum em processos hospitalares (ex.: integração indisponível, dados inconsistentes, timeout, usuário sem permissão)? o tratamento descrito é acionável?`;
+  } else {
+    label = 'Indicadores (KPIs)';
+    const rows = state.kpis.map(k=>`${k.name||'(sem nome)'}: ${k.desc||'(vazio)'}`).join('\n') || '(nenhum KPI cadastrado)';
+    prompt = `${AI_PERSONA}\n\nKPIs cadastrados até agora:\n${rows}\n\nDê uma dica: os KPIs cobrem tempo de ciclo, qualidade/acurácia e disponibilidade? falta algum indicador importante para este tipo de processo?`;
+  }
+  callAI(prompt, label);
+}
+
+function reviewFull(){
+  scrape();
+  const m = state;
+  const cardsSummary = m.cards.map(c=>{
+    const lane = m.lanes.find(l=>l.id===c.laneId), phase = m.phases.find(p=>p.id===c.phaseId);
+    return `${c.num}. [${lane?lane.name:'?'} / ${phase?phase.name:'?'}] ${c.title||'(sem título)'}${c.dec?' (DECISÃO)':''}${c.rn?` RN:${c.rn}`:''}${c.tr?` E:${c.tr}`:''}`;
+  }).join('\n') || '(nenhum card cadastrado)';
+  const prompt = `${AI_PERSONA}\n\nRevise o fluxograma completo abaixo e aponte lacunas em relação aos 14 elementos obrigatórios (objetivo, escopo, evento inicial, entradas, atores, sistemas, decisões, regras de negócio, exceções, tratamento de erros, notificações, integrações, evento final, atores possíveis). Seja específico ao que falta.\n\nTÍTULO: ${m.metaTitle}\nOBJETIVO: ${m.meta.objetivo||'(vazio)'}\nESCOPO: ${m.meta.escopo||'(vazio)'}\nEVENTO INICIAL: ${m.meta.eventoInicial||'(vazio)'}\nEVENTO FINAL: ${m.meta.eventoFinal||'(vazio)'}\nATORES: ${m.meta.atores||'(vazio)'}\nSISTEMAS: ${m.meta.sistemas||'(vazio)'}\n\nRAIAS: ${m.lanes.map(l=>l.name).join(', ')||'(nenhuma)'}\nFASES: ${m.phases.map(p=>p.name).join(', ')||'(nenhuma)'}\n\nATIVIDADES:\n${cardsSummary}\n\nREGRAS DE NEGÓCIO: ${m.rules.length}\nEXCEÇÕES TRATADAS: ${m.excs.length}\nKPIS: ${m.kpis.length}\n\nDê no máximo 6 bullets com as lacunas mais importantes a corrigir, em ordem de prioridade.`;
+  callAI(prompt, '✅ Revisão completa do fluxo');
+}
+
+/* init */
+seedStarter();
+renderAll();
+</script>
+</body>
+</html>
