@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fluxo TO-BE — Agendamento Cirúrgico SUS · Swimlane (Neoh)</title>
+<style>
+  :root{
+    --bg:#0f172a; --ink:#1e293b; --muted:#64748b; --line:#cbd5e1; --cellbg:#fafbfc;
+    --nir:#0891b2; --nir-bg:#ecfeff;
+    --cir:#2563eb; --cir-bg:#eff6ff;
+    --neoh:#7c3aed; --neoh-bg:#f5f3ff;
+    --agd:#db2777; --agd-bg:#fdf2f8;
+    --cc:#ea580c; --cc-bg:#fff7ed;
+    --his:#475569; --his-bg:#f1f5f9;
+    --fase:#4338ca; --fase-bg:#eef2ff; --val:#b45309; --val-bg:#fff5ea;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    background:linear-gradient(180deg,#f8fafc,#eef2f7); color:var(--ink); line-height:1.4;}
+  header{background:var(--bg); color:#fff; padding:26px 20px; text-align:center;}
+  header h1{margin:0 0 6px; font-size:clamp(1.15rem,2.6vw,1.7rem)}
+  header p{margin:0; color:#94a3b8; font-size:.88rem}
+  .wrap{max-width:1280px; margin:0 auto; padding:22px 14px 56px}
+
+  .legend{display:flex; flex-wrap:wrap; gap:8px 16px; justify-content:center; margin:0 auto 14px;
+    padding:12px; background:#fff; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.08); font-size:.8rem;}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .dot{width:13px; height:13px; border-radius:4px; flex:none}
+  .hint{text-align:center; font-size:.76rem; color:var(--muted); margin:0 0 14px}
+
+  .scroller{overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:#fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .grid{display:grid; grid-template-columns:172px repeat(5, minmax(180px,1fr)); min-width:1020px;}
+
+  .corner{position:sticky; left:0; z-index:3; background:#0f172a; color:#fff;
+    padding:10px; font-size:.74rem; font-weight:700; display:flex; align-items:center; border-top-left-radius:14px;}
+  .phase{background:#0f172a; color:#fff; padding:10px 8px; text-align:center; font-size:.78rem; font-weight:700;
+    border-left:1px solid #1e293b;}
+  .phase small{display:block; color:#94a3b8; font-weight:500; font-size:.68rem; margin-top:2px}
+
+  .lane-label{position:sticky; left:0; z-index:2; padding:12px 10px; font-size:.8rem; font-weight:700; color:#fff;
+    display:flex; align-items:center; border-top:1px solid #fff;}
+  .cell{border-left:1px solid #eef2f7; border-top:1px solid #eef2f7; padding:8px; background:var(--cellbg);
+    display:flex; flex-direction:column; gap:8px;}
+
+  .card{background:#fff; border-radius:10px; padding:9px 10px; box-shadow:0 1px 2px rgba(0,0,0,.08);
+    border-left:4px solid var(--line); position:relative;}
+  .card .num{position:absolute; top:-9px; left:-9px; width:22px; height:22px; border-radius:50%;
+    background:var(--ink); color:#fff; display:grid; place-items:center; font-size:.7rem; font-weight:700;}
+  .card h3{margin:0 0 4px; font-size:.8rem; padding-left:2px}
+  .card p{margin:0; font-size:.73rem; color:var(--muted); padding-left:2px}
+  .tags{display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; padding-left:2px}
+  .tag{font-size:.63rem; padding:1px 6px; border-radius:18px; font-weight:600}
+  .tag.fase{background:var(--fase-bg); color:var(--fase)} .tag.val{background:var(--val-bg); color:var(--val)}
+  .to{display:inline-block; margin-top:5px; font-size:.66rem; font-weight:600; color:#334155;
+    background:#f1f5f9; border-radius:6px; padding:2px 6px;}
+  .dec{background:#fef2f2; border-left-color:#dc2626;}
+  .dec h3{color:#991b1b}
+
+  .nir .card{border-left-color:var(--nir)} .cir .card{border-left-color:var(--cir)}
+  .neoh .card{border-left-color:var(--neoh)} .agd .card{border-left-color:var(--agd)}
+  .cc .card{border-left-color:var(--cc)}
+  .his .card{border-left-style:dashed; border-left-color:var(--his); background:#f8fafc}
+
+  h2.sec{font-size:1.05rem; margin:34px 0 12px}
+  table{width:100%; border-collapse:collapse; font-size:.8rem; background:#fff; border-radius:10px; overflow:hidden;
+    box-shadow:0 1px 3px rgba(0,0,0,.07)}
+  th,td{padding:8px 10px; text-align:left; border-bottom:1px solid #eef2f7; vertical-align:top}
+  th{background:#0f172a; color:#fff; font-size:.76rem}
+  tr:last-child td{border-bottom:none}
+  table.req td.c{white-space:nowrap; font-weight:700}
+  .st{display:inline-block; font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:18px}
+  .st-ok{background:#dcfce7; color:#15803d}
+  .st-no{background:#fee2e2; color:#b91c1c}
+  .st-val{background:#fff5ea; color:#b45309}
+  tr.val td{background:#fffbf4}
+  tr.no td{background:#fef2f2}
+  .cov{display:flex; gap:14px; flex-wrap:wrap; font-size:.82rem; margin:0 0 12px; color:#334155}
+  .cov b{font-size:1.05rem}
+  .box{background:#fffbeb; border:1px solid #fde68a; border-radius:12px; padding:14px 16px; font-size:.85rem; color:#334155}
+  .box h3{margin:0 0 8px; font-size:.9rem; color:#92400e}
+  .box ul{margin:0; padding-left:20px}
+  .box li{margin:4px 0}
+  footer{text-align:center; color:var(--muted); font-size:.76rem; padding:18px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Fluxo TO-BE — Agendamento Cirúrgico SUS · Swimlane</h1>
+  <p>Hospital Adventista do Pênfigo · raias por responsável × fases · conduzido pelo Neoh · integração com MV/HIS · autorização via portal AIH</p>
+</header>
+
+<div class="wrap">
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--nir)"></i>NIR / Regulação</span>
+    <span><i class="dot" style="background:var(--cir)"></i>Equipe Médica Reguladora</span>
+    <span><i class="dot" style="background:var(--neoh)"></i>Pré-agendamento</span>
+    <span><i class="dot" style="background:var(--agd)"></i>Agendamento</span>
+    <span><i class="dot" style="background:var(--cc)"></i>Centro Cirúrgico / Bate-mapa</span>
+    <span><i class="dot" style="background:var(--his)"></i>MV / HIS</span>
+  </div>
+  <p class="hint">↔ Deslize para o lado para ver todas as fases · números indicam a sequência do fluxo (1→16) · <b>fase</b> = status do pedido no Neoh · <span style="color:#b45309">⚠ a validar</span> = ponto ainda não confirmado com o hospital</p>
+
+  <div class="scroller">
+    <div class="grid">
+
+      <!-- HEADER ROW -->
+      <div class="corner">Raia ↓ / Fase →</div>
+      <div class="phase">1 · Pedido &amp; Triagem</div>
+      <div class="phase">2 · Integração</div>
+      <div class="phase">3 · Autorização AIH</div>
+      <div class="phase">4 · Agenda &amp; Mapa</div>
+      <div class="phase">5 · Bate-mapa &amp; Execução</div>
+
+      <!-- LANE 1: NIR / REGULAÇÃO -->
+      <div class="lane-label nir" style="background:var(--nir)">NIR / Regulação</div>
+      <div class="cell nir">
+        <div class="card"><span class="num">1</span><h3>Recebe dados da regulação e gera o pedido</h3><p>Assim que a regulação envia as informações do paciente, o NIR lança o pedido no Neoh. Entrada única de triagem.</p><div class="tags"><span class="tag fase">SOLICITADO</span></div></div>
+        <div class="card"><span class="num">2</span><h3>Disponibiliza pedido para Equipe Médica Reguladora</h3><p>Após lançar como SOLICITADO, o NIR disponibiliza o pedido no Neoh para a Equipe Médica Reguladora.</p><div class="tags"><span class="tag fase">TRIAGEM DO PACIENTE</span></div><span class="to">⟶ Equipe Médica Reguladora</span></div>
+        <div class="card"><h3>Validação automática de OPME (tabela SIGTAP)</h3><p>Quando o procedimento escolhido no pedido possui OPMEs vinculados, o Neoh <b>valida automaticamente a tabela SIGTAP</b> e exibe os OPMEs no formulário, já com a <b>quantidade compatível determinada pelo SUS</b>.</p></div>
+      </div>
+      <div class="cell nir">
+        <div class="card dec"><span class="num">9</span><h3>NIR valida: é TOE, MAC ou Urgência/Emergência?</h3><p>A Equipe do NIR analisa o tipo de cirurgia — Trauma Ortopédico Eletivo (TOE), Média e Alta Complexidade (MAC) ou urgência/emergência — e, quando aplicável, estabelece a troca de fase para <b>AGUARDANDO AGENDAMENTO</b>.</p><div class="tags"><span class="tag fase">AGUARDANDO AGENDAMENTO</span></div><span class="to">Não ⟶ segue fluxo padrão (autorização da AIH antes do agendamento) · Sim (TOE/MAC) ⟶ AGUARDANDO AGENDAMENTO ⟶ Pré-agendamento</span></div>
+        <div class="card"><h3>Obs.: Urgência/Emergência</h3><p>Pode ser agendada <b>diretamente no mapa cirúrgico</b> (sem passar pela fase) ou, caso precise aguardar, também recebe a fase <b>AGUARDANDO AGENDAMENTO</b> para dar o start ao setor de Pré-agendamento.</p></div>
+      </div>
+      <div class="cell nir">
+        <div class="card"><span class="num">10</span><h3>Solicita autorização da AIH</h3><p>NIR acessa o portal (externo ao Neoh) para dar entrada na autorização da AIH. Etapa do <b>fluxo padrão</b> — não se aplica a casos TOE, MAC ou urgência/emergência, cuja AIH é solicitada depois da cirurgia.</p><div class="tags"><span class="tag fase">SOL. AUTORIZAÇÃO AIH</span><span class="tag val">✅ manual — sem previsão de automatizar, pois o Neoh não possui integração com o portal da AIH</span></div></div>
+        <div class="card"><span class="num">11</span><h3>Registra AIH autorizada</h3><p>Após retorno do portal, o NIR troca a fase do pedido no Neoh.</p><div class="tags"><span class="tag fase">AIH AUTORIZADA</span></div><span class="to">⟶ Agendamento</span></div>
+      </div>
+      <div class="cell"></div>
+      <div class="cell nir">
+        <div class="card"><span class="num">16</span><h3>Fluxo pós: solicita e registra a AIH após a cirurgia</h3><p>Exclusivo para casos <b>TOE, MAC ou urgência/emergência</b>: como a autorização costuma ocorrer depois da realização da cirurgia, o NIR solicita e registra a AIH autorizada nesta etapa, já com o procedimento realizado.</p><div class="tags"><span class="tag fase">AIH AUTORIZADA</span></div></div>
+      </div>
+
+      <!-- LANE 2: CIRURGIÃO -->
+      <div class="lane-label cir" style="background:var(--cir)">Equipe Médica Reguladora</div>
+      <div class="cell cir">
+        <div class="card dec"><span class="num">3</span><h3>Equipe visualiza o pedido?</h3><p>O pedido fica disponível para toda a Equipe Médica Reguladora. Enquanto nenhum médico visualiza, o pedido permanece pendente nesta etapa.</p><div class="tags"><span class="tag fase">TRIAGEM DO PACIENTE</span></div><span class="to">Sim ⟶ segue para análise</span></div>
+        <div class="card"><span class="num">4</span><h3>Algum médico da equipe assume a análise</h3><p>Não há médico fixo responsável: qualquer médico da equipe pode assumir a análise do pedido, de forma coletiva e não individual.</p><div class="tags"><span class="tag fase">TRIAGEM DO PACIENTE</span><span class="tag val">⚠ momento atual: sem acesso dos médicos — operado pela equipe administrativa em treinamento</span></div></div>
+        <div class="card"><span class="num">5</span><h3>Programação Cirúrgica por Equipe</h3><p>Antes da decisão, a equipe realiza a programação cirúrgica do caso (viabilidade, data, recursos necessários).</p></div>
+        <div class="card dec"><span class="num">6</span><h3>Aprova ou nega o pedido</h3><p>A decisão é da Equipe Médica Reguladora, não de um médico específico.</p><div class="tags"><span class="tag fase">TRIAGEM DO PACIENTE</span></div><span class="to">Aprovado ⟶ Neoh gera pré-agendamento · Negado ⟶ fase NEGADO</span></div>
+        <div class="card dec"><span class="num">!</span><h3>Pedido negado</h3><p>Se não aprovado, o pedido é encerrado nesta fase. <b>Motivo obrigatório</b> no registro; <b>histórico da negativa</b> mantido no Neoh; o caso pode passar por <b>nova avaliação posteriormente</b> caso haja mudança de cenário clínico ou nova solicitação. O <b>NIR recebe a informação</b> de que houve a negativa do agendamento pela Equipe Médica Reguladora.</p><div class="tags"><span class="tag fase">NEGADO</span></div><span class="to">Sem nova avaliação após prazo ⟶ Pré-agendamento cancela (fase CANCELADO)</span></div>
+      </div>
+      <div class="cell"></div>
+      <div class="cell"></div>
+      <div class="cell"></div>
+      <div class="cell"></div>
+
+      <!-- LANE 3: NEOH -->
+      <div class="lane-label neoh" style="background:var(--neoh)">Pré-agendamento</div>
+      <div class="cell neoh">
+        <div class="card dec"><span class="num">7</span><h3>Cancelamento por tempo em NEGADO</h3><p>Se o pedido permanecer na fase NEGADO por <b>15 dias corridos</b> sem nova avaliação, o responsável do setor de Pré-agendamento pode cancelar o pedido. O Neoh troca a fase automaticamente para <b>CANCELADO</b>.</p><div class="tags"><span class="tag fase">CANCELADO</span></div></div>
+      </div>
+      <div class="cell neoh">
+        <div class="card"><span class="num">8</span><h3>Gera o pré-agendamento no MV/HIS</h3><p>Pedido aprovado pela Equipe Médica Reguladora entra no processo de integração. A integração é <b>automática, desde que o usuário clique no botão "Integrar"</b>: isso gera um pré-agendamento no MV <b>sem reserva de sala</b>.</p><div class="tags"><span class="tag fase">PRE-AGENDADO</span></div><span class="to">⟶ MV/HIS</span></div>
+      </div>
+      <div class="cell"></div>
+      <div class="cell neoh">
+        <div class="card"><span class="num">12</span><h3>Recebe AGUARDANDO AGENDAMENTO e inclui no mapa cirúrgico</h3><p>Ao receber a fase AGUARDANDO AGENDAMENTO (definida pelo NIR para TOE, MAC ou urgência/emergência), o setor de Pré-agendamento inclui diretamente o caso no mapa cirúrgico, sem aguardar a autorização prévia da AIH.</p><div class="tags"><span class="tag fase">AGUARDANDO AGENDAMENTO</span></div><span class="to">⟶ Centro Cirúrgico</span></div>
+      </div>
+      <div class="cell neoh">
+        <div class="card"><h3>Baixa automática pós-execução</h3><p>Ao ser confirmada no MV a realização da cirurgia, o Neoh recebe a confirmação e troca a fase do pedido para <b>REALIZADO</b>, impedindo apenas <b>edições do pedido</b> a partir daí.</p><div class="tags"><span class="tag fase">REALIZADO</span></div></div>
+        <div class="card"><span class="num">★</span><h3>Acompanhamento das fases do pedido</h3><p>Linha do tempo com todas as trocas de fase (SOLICITADO → TRIAGEM → PRE-AGENDADO → AGUARDANDO AGENDAMENTO/AIH AUTORIZADA → AGENDADO → REALIZADO) e histórico de negativas.</p></div>
+      </div>
+
+      <!-- LANE 4: AGENDAMENTO -->
+      <div class="lane-label agd" style="background:var(--agd)">Agendamento</div>
+      <div class="cell"></div>
+      <div class="cell"></div>
+      <div class="cell"></div>
+      <div class="cell agd">
+        <div class="card"><span class="num">13</span><h3>Revisão cirúrgica e confirmação no mapa</h3><p>Fluxo padrão: ao receber a fase AIH AUTORIZADA, o setor de Agendamento revisa e confirma o caso no mapa cirúrgico. (Casos TOE, MAC ou urgência/emergência seguem por outro caminho — ver card 12, Pré-agendamento.)</p><div class="tags"><span class="tag fase">AIH AUTORIZADA</span></div><span class="to">⟶ AGENDADO ⟶ Centro Cirúrgico</span></div>
+      </div>
+      <div class="cell"></div>
+
+      <!-- LANE 5: CENTRO CIRÚRGICO / BATE-MAPA -->
+      <div class="lane-label cc" style="background:var(--cc)">Centro Cirúrgico / Bate-mapa</div>
+      <div class="cell"></div>
+      <div class="cell"></div>
+      <div class="cell"></div>
+      <div class="cell"></div>
+      <div class="cell cc">
+        <div class="card"><span class="num">14</span><h3>Avaliação do bate-mapa</h3><p>Conferência final do caso agendado antes da cirurgia, seguindo o <b>mesmo modelo utilizado por setores de outros fluxos</b> do hospital.</p></div>
+        <div class="card"><span class="num">15</span><h3>Realização da cirurgia</h3><p>Execução do procedimento após aprovação no bate-mapa. Ao ser <b>confirmada no MV</b>, o Neoh recebe a confirmação e troca a fase para <b>REALIZADO</b>, impedindo apenas <b>edições do pedido</b> a partir daí.</p><span class="to">⟶ MV/HIS confirma execução</span></div>
+      </div>
+
+      <!-- LANE 6: MV / HIS -->
+      <div class="lane-label his" style="background:var(--his)">MV / HIS</div>
+      <div class="cell"></div>
+      <div class="cell his">
+        <div class="card"><h3>Recebe pré-agendamento</h3><p>Registro do caso como PRE-AGENDADO no MV, gerado automaticamente a partir do clique no botão "Integrar", <b>sem reserva de sala</b>.</p></div>
+      </div>
+      <div class="cell"></div>
+      <div class="cell his">
+        <div class="card"><h3>Mapa cirúrgico atualizado</h3><p>Caso confirmado como AGENDADO refletido no mapa do HIS.</p></div>
+      </div>
+      <div class="cell his">
+        <div class="card"><h3>Confirma execução da cirurgia</h3><p>Registro da cirurgia realizada no MV, que dispara a troca de fase para <b>REALIZADO</b> no Neoh.</p><span class="to">⟶ Neoh troca fase para REALIZADO (impede apenas edições)</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MATRIZ DE RAIAS -->
+  <h2 class="sec">Matriz de raias (responsável × atividades × sistema × handoff)</h2>
+  <table>
+    <thead><tr><th>Raia</th><th>Atividades no fluxo SUS</th><th>Sistemas</th><th>Recebe de</th><th>Entrega para</th></tr></thead>
+    <tbody>
+      <tr><td><b>NIR / Regulação</b></td><td>Recebe dados da regulação; gera o pedido; disponibiliza para a Equipe Médica Reguladora; valida se é TOE/MAC/urgência-emergência e estabelece a fase AGUARDANDO AGENDAMENTO; solicita e registra autorização da AIH (antes do agendamento no fluxo padrão, ou depois da cirurgia em casos TOE/MAC/urgência-emergência)</td><td>Neoh, Portal AIH (externo)</td><td>Regulação (externo)</td><td>Equipe Médica Reguladora, Pré-agendamento, Agendamento</td></tr>
+      <tr><td><b>Equipe Médica Reguladora</b></td><td>Visualiza o pedido; qualquer médico da equipe assume a análise; realiza a programação cirúrgica; aprova ou nega de forma coletiva, com motivo em caso de negativa</td><td>Neoh</td><td>NIR</td><td>Neoh (se aprovado) · encerra fluxo (se negado, com possibilidade de nova avaliação futura)</td></tr>
+      <tr><td><b>Pré-agendamento</b></td><td>Registra fases do pedido; canal exclusivo de comunicação entre NIR e Equipe Médica Reguladora; ao receber AGUARDANDO AGENDAMENTO (do NIR), inclui diretamente o caso no mapa cirúrgico; cancela pedidos parados em NEGADO após prazo estabelecido (15 dias corridos)</td><td>Neoh</td><td>NIR, Equipe Médica Reguladora, MV/HIS</td><td>MV/HIS, Centro Cirúrgico</td></tr>
+      <tr><td><b>Agendamento</b></td><td>Revisão cirúrgica; confirmação no mapa cirúrgico — apenas no fluxo padrão (a partir da AIH AUTORIZADA)</td><td>Neoh, MV</td><td>NIR (AIH AUTORIZADA)</td><td>Centro Cirúrgico</td></tr>
+      <tr><td><b>Centro Cirúrgico / Bate-mapa</b></td><td>Avaliação do bate-mapa; realização da cirurgia; ao confirmar a execução no MV, aciona a troca de fase para REALIZADO (impede apenas edições do pedido)</td><td>Neoh, MV</td><td>Agendamento (fluxo padrão) ou Pré-agendamento (TOE/MAC/urgência-emergência)</td><td>Execução; MV/HIS (confirmação) → Neoh (fase REALIZADO)</td></tr>
+      <tr><td><b>MV / HIS</b></td><td>Recebe pré-agendamento; reflete mapa cirúrgico atualizado; confirma execução da cirurgia (dispara troca de fase para REALIZADO no Neoh)</td><td>MV (HIS)</td><td>Neoh</td><td>Neoh, Agendamento</td></tr>
+    </tbody>
+  </table>
+
+  <!-- FASES DO PEDIDO -->
+  <h2 class="sec">Fases (status) do pedido no Neoh</h2>
+  <table class="req">
+    <thead><tr><th>#</th><th>Fase / Status</th><th>Descrição</th><th>Raia responsável</th><th>Coluna do fluxo</th></tr></thead>
+    <tbody>
+      <tr><td class="c">1</td><td><span class="st st-ok">SOLICITADO</span></td><td>Pedido gerado pelo NIR a partir dos dados da regulação.</td><td>NIR / Regulação</td><td>1 · Pedido &amp; Triagem</td></tr>
+      <tr><td class="c">2</td><td><span class="st st-ok">TRIAGEM DO PACIENTE</span></td><td>Pedido disponibilizado para a Equipe Médica Reguladora; qualquer médico da equipe pode assumir a análise; inclui a programação cirúrgica antes da decisão.</td><td>NIR → Equipe Médica Reguladora</td><td>1 · Pedido &amp; Triagem</td></tr>
+      <tr class="no"><td class="c">3</td><td><span class="st st-no">NEGADO</span></td><td>Equipe não aprovou (decisão coletiva, não de um médico específico). Motivo obrigatório; histórico da negativa mantido no Neoh; possibilidade de nova avaliação posteriormente.</td><td>Equipe Médica Reguladora</td><td>1 · Pedido &amp; Triagem (exceção)</td></tr>
+      <tr class="no"><td class="c">3b</td><td><span class="st st-no">CANCELADO</span></td><td>Pedido permaneceu em NEGADO por <b>15 dias corridos</b> sem nova avaliação; o responsável do setor de Pré-agendamento cancela e o Neoh troca a fase automaticamente.</td><td>Pré-agendamento</td><td>1 · Pedido &amp; Triagem (exceção final)</td></tr>
+      <tr><td class="c">4</td><td><span class="st st-ok">PRE-AGENDADO</span></td><td>Pedido aprovado entra no processo de integração com o MV/HIS; integração automática ao clicar no botão "Integrar", gerando um pré-agendamento sem reserva de sala.</td><td>Pré-agendamento</td><td>2 · Integração</td></tr>
+      <tr class="val"><td class="c">4b</td><td><span class="st st-val">AGUARDANDO AGENDAMENTO</span></td><td>NIR valida que o caso é <b>TOE, MAC ou urgência/emergência</b> e estabelece esta fase: a autorização da AIH costuma ocorrer depois da cirurgia (fluxo pós), então o pedido segue direto para o agendamento sem aguardar a AIH prévia.</td><td>NIR / Regulação</td><td>2 · Integração (fluxo alternativo)</td></tr>
+      <tr class="val"><td class="c">5</td><td><span class="st st-val">SOL. AUTORIZAÇÃO AIH</span></td><td>NIR acessa o portal externo para solicitar a autorização da AIH. No <b>fluxo padrão</b>, ocorre antes do agendamento; em TOE/MAC/urgência-emergência, ocorre depois da cirurgia (fluxo pós).</td><td>NIR / Regulação</td><td>3 · Autorização AIH</td></tr>
+      <tr><td class="c">6</td><td><span class="st st-ok">AIH AUTORIZADA</span></td><td>Retorno positivo do portal; NIR atualiza a fase no Neoh — antes do agendamento (fluxo padrão) ou depois da cirurgia (fluxo pós, TOE/MAC/urgência-emergência).</td><td>NIR / Regulação</td><td>3 · Autorização AIH</td></tr>
+      <tr><td class="c">7</td><td><span class="st st-ok">AGENDADO</span></td><td>Confirmação no mapa cirúrgico: pelo Agendamento (fluxo padrão, a partir da AIH AUTORIZADA) ou pelo Pré-agendamento (TOE/MAC/urgência-emergência, a partir da AGUARDANDO AGENDAMENTO).</td><td>Agendamento</td><td>4 · Agenda &amp; Mapa</td></tr>
+      <tr><td class="c">8</td><td><span class="st st-ok">REALIZADO</span></td><td>Ao ser confirmada a realização da cirurgia no MV, o Neoh troca a fase para REALIZADO, impedindo apenas edições do pedido a partir daí.</td><td>Centro Cirúrgico</td><td>5 · Bate-mapa &amp; Execução</td></tr>
+    </tbody>
+  </table>
+
+  <!-- OBSERVAÇÕES CONFIRMADAS -->
+  <h2 class="sec">Observações do fluxo</h2>
+  <div class="box" style="background:#f0fdf4; border-color:#bbf7d0">
+    <h3 style="color:#15803d">✅ Confirmado com o hospital</h3>
+    <ul>
+      <li>A comunicação entre NIR e Equipe Médica Reguladora é realizada <b>exclusivamente pelo Neoh</b> — não há canal paralelo (e-mail, WhatsApp, etc.) para tramitar o pedido.</li>
+      <li><b>Por enquanto, os médicos não têm acesso ao sistema.</b> A Equipe Médica Reguladora, no fluxo, é operada pela <b>equipe administrativa</b>, que está sendo treinada no processo. A inclusão dos médicos no Neoh está prevista para uma etapa posterior. Não há médico fixo responsável — a decisão continua sendo coletiva, hoje conduzida pela equipe administrativa em nome da equipe médica.</li>
+      <li>Registro de negativa: <b>motivo obrigatório</b>, <b>histórico da negativa</b> mantido no Neoh, <b>possibilidade de nova avaliação posteriormente</b>, e o <b>NIR recebe a informação</b> de que houve a negativa pela Equipe Médica Reguladora.</li>
+      <li>A validação de casos <b>TOE, MAC ou urgência/emergência</b> é responsabilidade da <b>Equipe do NIR</b>, que estabelece a troca de fase para <b>AGUARDANDO AGENDAMENTO</b>. O setor de <b>Pré-agendamento</b> recebe essa fase e é quem inclui o caso diretamente no mapa cirúrgico (não passa pelo Agendamento nesses casos).</li>
+      <li>Casos de <b>urgência/emergência</b> podem ser agendados diretamente no mapa cirúrgico, sem passar pela fase, ou — se precisarem aguardar — também recebem AGUARDANDO AGENDAMENTO para dar o start ao Pré-agendamento.</li>
+      <li><b>Portal da AIH:</b> o acesso é manual e <b>não há previsão de automatizar</b> essa etapa, pois o Neoh não possui integração com o portal.</li>
+      <li><b>Integração PRE-AGENDADO:</b> é automática a partir do clique do usuário no botão <b>"Integrar"</b>, gerando um pré-agendamento no MV <b>sem reserva de sala</b>.</li>
+      <li><b>OPME:</b> quando o procedimento escolhido possui OPMEs vinculados, o Neoh valida automaticamente a <b>tabela SIGTAP</b> e exibe os OPMEs no formulário, já com a <b>quantidade compatível determinada pelo SUS</b>.</li>
+      <li><b>Bate-mapa:</b> segue o <b>mesmo modelo utilizado por setores de outros fluxos</b> do hospital.</li>
+      <li><b>Cancelamento por NEGADO:</b> o prazo é de <b>15 dias corridos</b>.</li>
+      <li><b>Fase final:</b> ao confirmar a execução da cirurgia no MV, o Neoh troca a fase do pedido para <b>REALIZADO</b>, o que impede <b>apenas edições do pedido</b> a partir daí (não bloqueia consultas/relatórios).</li>
+      <li><b>Fluxo pós (TOE/MAC/urgência-emergência):</b> outros registros podem ocorrer após a cirurgia (fora do Neoh), mas o essencial no Neoh é a validação correta das trocas de fase — nesses casos, o usuário precisa informar a fase AGUARDANDO AGENDAMENTO.</li>
+    </ul>
+  </div>
+
+  <!-- PONTOS EM ABERTO -->
+  <p style="text-align:center; color:#15803d; font-size:.85rem; font-weight:600; margin:18px 0 4px">✅ Não há pontos em aberto pendentes de validação no momento.</p>
+
+</div>
+
+<footer>Fonte: texto "Fluxograma SUS - Hospital Adventista do Pênfigo" fornecido pelo usuário em 27/07/2026 · Modelo visual reaproveitado do fluxo TO-BE Convênio (swimlane Neoh) · Itens marcados com ⚠ ainda pendentes de validação com o hospital.</footer>
+</body>
+</html>
