@@ -2513,6 +2513,19 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="ritoRescheduleConfirmOverlay">
+  <div class="modal-box" style="max-width:420px;">
+    <button class="modal-close" id="ritoRescheduleConfirmClose">✕</button>
+    <h3 style="color:var(--navy); margin:0 0 10px 0;">Confirmar novo horário</h3>
+    <p style="font-size:13px; color:var(--text);">Mover <b id="ritoRescheduleItemName"></b> de <b id="ritoRescheduleFrom"></b> para <b id="ritoRescheduleTo"></b>?</p>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+      <button class="cfg-btn secondary" id="ritoRescheduleConfirmNo" type="button">Cancelar</button>
+      <button class="cfg-btn" id="ritoRescheduleConfirmYes" type="button">Confirmar</button>
+    </div>
+  </div>
+</div>
+</div>
+
 <div class="modal-overlay" id="scenarioModalOverlay">
   <div class="modal-box" style="max-width:680px; width:92vw;">
     <button class="modal-close" id="scenarioModalClose">✕</button>
@@ -4095,7 +4108,9 @@ function ritoDropCellAt(x, y){
   return el ? el.closest('.cal-hourbg.cal-clickable, .cal-allday-cell.cal-clickable') : null;
 }
 
-async function handleRitoDrop(slug, cell){
+let pendingReschedule = null; // { slug, novoDiaHorario, resumoNovo, anterior } aguardando confirmação no popup
+
+function handleRitoDrop(slug, cell){
   const r = getRitoBySlug(slug);
   if(!r) return;
   let novoDiaHorario, resumoNovo;
@@ -4111,19 +4126,44 @@ async function handleRitoDrop(slug, cell){
   }
   if(novoDiaHorario === r.dia_horario) return;
   const anterior = r.dia_horario || 'A definir';
+  // Não move nem salva ainda — só pede confirmação. O card volta visualmente
+  // ao lugar de origem (renderAgenda não foi chamado) até o usuário confirmar.
+  pendingReschedule = { slug, novoDiaHorario, resumoNovo, anterior };
+  document.getElementById('ritoRescheduleItemName').textContent = r.nome;
+  document.getElementById('ritoRescheduleFrom').textContent = anterior;
+  document.getElementById('ritoRescheduleTo').textContent = resumoNovo;
+  document.getElementById('ritoRescheduleConfirmOverlay').classList.add('open');
+}
+
+function closeRitoRescheduleConfirm(){
+  pendingReschedule = null;
+  document.getElementById('ritoRescheduleConfirmOverlay').classList.remove('open');
+}
+document.getElementById('ritoRescheduleConfirmClose').addEventListener('click', closeRitoRescheduleConfirm);
+document.getElementById('ritoRescheduleConfirmNo').addEventListener('click', closeRitoRescheduleConfirm);
+document.getElementById('ritoRescheduleConfirmOverlay').addEventListener('click', (e) => {
+  if(e.target.id === 'ritoRescheduleConfirmOverlay') closeRitoRescheduleConfirm();
+});
+document.getElementById('ritoRescheduleConfirmYes').addEventListener('click', async () => {
+  if(!pendingReschedule) return;
+  const { slug, novoDiaHorario, resumoNovo, anterior } = pendingReschedule;
+  const r = getRitoBySlug(slug);
+  document.getElementById('ritoRescheduleConfirmOverlay').classList.remove('open');
+  if(!r){ pendingReschedule = null; return; }
   r.dia_horario = novoDiaHorario;
   renderAgenda();
   const ok = await persistCronograma();
+  pendingReschedule = null;
   if(!ok){
     // Não conseguiu salvar: desfaz visualmente e avisa, para nunca ficar "movido na tela"
     // mas perdido ao recarregar a página.
     r.dia_horario = anterior;
     renderAgenda();
-    showSaveErrorToast('Não foi possível salvar o novo horário de "' + r.nome + '". A reunião voltou para o horário anterior. Verifique sua conexão e tente arrastar novamente.');
+    showSaveErrorToast('Não foi possível salvar o novo horário de "' + r.nome + '". A reunião voltou para o horário anterior. Verifique sua conexão e tente novamente.');
     return;
   }
   logActivity('Reagendamento de reunião', (CURRENT_USER ? CURRENT_USER.nome : '—') + ' moveu "' + r.nome + '" de ' + anterior + ' para ' + resumoNovo + '.');
-}
+});
 
 function onRitoDragMove(e){
   if(!ritoDragState || e.pointerId !== ritoDragState.pointerId) return;
@@ -5432,22 +5472,31 @@ async function persistCronograma(){
   const agora = new Date().toISOString();
   let ok = true;
   try{
-    const { error } = await supa.from('cronograma_estado').upsert({
+    // .select() no final é essencial: sem ele, o Supabase não devolve a linha
+    // afetada, e uma escrita bloqueada silenciosamente por uma política de
+    // segurança (RLS) parece "sucesso" mesmo sem gravar nada. Com .select(),
+    // se vier um array vazio, sabemos com certeza que nada foi gravado.
+    const { data: writtenRows, error } = await supa.from('cronograma_estado').upsert({
       id: 1,
       dados,
       atualizado_em: agora,
       atualizado_por: CURRENT_USER ? CURRENT_USER.nome : null
-    });
+    }).select();
     if(error){
       ok = false;
       console.warn('Falha ao sincronizar cronograma (com atualizado_em/atualizado_por):', error);
       // Se o erro for por causa dessas duas colunas não existirem na tabela, tenta de novo
       // só com o essencial — salvar os dados é mais importante do que salvar a data.
       try{
-        const retry = await supa.from('cronograma_estado').upsert({ id: 1, dados });
-        if(!retry.error) ok = true;
-        else console.warn('Falha ao sincronizar cronograma (só com dados):', retry.error);
+        const retry = await supa.from('cronograma_estado').upsert({ id: 1, dados }).select();
+        if(!retry.error && retry.data && retry.data.length > 0) ok = true;
+        else console.warn('Falha ao sincronizar cronograma (só com dados):', retry.error || 'nenhuma linha retornada (bloqueado por política de segurança / RLS)');
       }catch(e2){ console.warn('Falha ao sincronizar cronograma (só com dados):', e2); }
+    } else if(!writtenRows || writtenRows.length === 0){
+      // Sem erro, mas nenhuma linha voltou: a escrita foi silenciosamente
+      // bloqueada (RLS) — trata como falha para não mentir que salvou.
+      ok = false;
+      console.warn('Upsert retornou sem erro, mas nenhuma linha foi afetada/retornada — provável bloqueio por política de segurança (RLS) na tabela cronograma_estado.');
     }
   }catch(e){ ok = false; console.warn('Falha ao sincronizar cronograma:', e); }
   if(!ok){
