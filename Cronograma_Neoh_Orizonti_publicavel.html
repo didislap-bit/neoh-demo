@@ -2087,6 +2087,13 @@
     .scenario-banner{flex-direction:column; align-items:flex-start; gap:10px;}
     .scenario-banner button{width:100%;}
     .login-card{padding:24px 18px;}
+    /* Plano de Ação: "Quando?" e "Status" ficavam espremidos 50/50 lado a lado
+       (essa tela nunca tinha recebido tratamento mobile) — no celular cada campo
+       passa a ocupar a linha inteira, empilhado, como os demais campos do formulário. */
+    .ap-form-box{padding:20px 16px;}
+    .ap-form-box, .ap-form-box.ap-confirm-box{max-width:94vw; width:94vw;}
+    .ap-field-row{flex-direction:column; gap:0;}
+    .ap-field-row .ap-field{flex:none; width:100%;}
     .cfg-form-row{flex-direction:column;}
     .cfg-field{width:100%;}
     /* Linhas de FILTRO (não de cadastro) ficam com largura natural por campo,
@@ -5364,8 +5371,10 @@ function setHeaderUpdatedAt(iso){
   if(!el || !iso) return;
   const d = new Date(iso);
   if(isNaN(d.getTime())) return;
-  el.textContent = d.toLocaleDateString('pt-BR');
-  el.title = 'Última alteração salva em ' + d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  const dataStr = d.toLocaleDateString('pt-BR');
+  const horaStr = d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  el.textContent = dataStr + ' às ' + horaStr;
+  el.title = 'Última alteração salva no cronograma em ' + dataStr + ' às ' + horaStr;
 }
 
 async function syncCronogramaFromSupabase(){
