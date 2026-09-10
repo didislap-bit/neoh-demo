@@ -29,11 +29,14 @@
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
+  html{overflow-x:hidden; width:100%;}
   body{
     font-family:Arial, "Helvetica Neue", Helvetica, sans-serif;
     background:var(--bg);
     color:var(--text);
     -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+    width:100%;
   }
   a{color:inherit;}
 
@@ -464,10 +467,131 @@
   }
   .btn-validate:hover{background:var(--navy-2);}
   .agenda-heading > div:first-child{margin-bottom:14px;}
+
+  /* ---------- Notificação de presença (reuniões da semana vigente) ---------- */
+  .notify-wrap{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .notify-card{
+    background:var(--amber-soft);
+    border:1px solid #f0c675;
+    border-radius:9px;
+    padding:12px 14px;
+  }
+  .notify-card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:2px;
+  }
+  .notify-card-title{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--navy);
+  }
+  .notify-card-when{
+    font-size:11.5px;
+    color:var(--text-muted);
+    margin-bottom:10px;
+  }
+  .notify-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .notify-btn{
+    font-family:inherit;
+    font-size:12px;
+    font-weight:700;
+    padding:8px 12px;
+    border-radius:7px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:filter .12s, background .12s;
+  }
+  .notify-btn:hover{filter:brightness(0.96);}
+  .notify-btn.confirm{border:none; background:var(--green); color:#fff;}
+  .notify-btn.propose{border:1px solid var(--blue); background:#fff; color:var(--blue);}
+  .notify-btn.decline{border:1px solid var(--red); background:#fff; color:var(--red);}
+  .notify-propose-inline{
+    display:none;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px dashed #e3c07f;
+  }
+  .notify-propose-inline.open{display:flex;}
+  .notify-propose-inline label{
+    font-size:11px;
+    font-weight:700;
+    color:var(--text-muted);
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+  .notify-propose-inline input[type="datetime-local"]{
+    font-family:inherit;
+    font-size:12.5px;
+    padding:7px 9px;
+    border:1px solid var(--border);
+    border-radius:7px;
+  }
+  .notify-answered{
+    font-size:12px;
+    color:var(--green);
+    font-weight:700;
+  }
+  /* Respostas da semana, mostradas no detalhe da reunião */
+  .rito-responses{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--border);
+  }
+  .rito-responses-title{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+    color:var(--text-muted);
+    margin-bottom:8px;
+  }
+  .rito-response-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:7px 0;
+    border-bottom:1px solid var(--border);
+    font-size:12.5px;
+  }
+  .rito-response-item:last-child{border-bottom:none;}
+  .rito-response-name{font-weight:700; color:var(--navy);}
+  .rito-response-meta{font-size:11px; color:var(--text-muted);}
+  .rito-response-badge{
+    display:inline-block;
+    font-size:10.5px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:20px;
+    white-space:nowrap;
+  }
+  .rito-response-badge.confirmado{background:var(--green-soft); color:var(--green);}
+  .rito-response-badge.proposto{background:var(--blue-soft); color:var(--blue);}
+  .rito-response-badge.nao_pode{background:var(--red-soft); color:var(--red);}
+  .rito-responses-empty{font-size:12px; color:var(--text-muted);}
+
   .cal-wrap{
     border:1px solid var(--border);
     border-radius:9px;
-    overflow:hidden;
+    overflow-x:auto;
+    overflow-y:visible;
+    -webkit-overflow-scrolling:touch;
+    max-width:100%;
     margin-bottom:18px;
   }
   .cal-grid{
@@ -476,6 +600,7 @@
     grid-template-rows:44px minmax(40px,auto) repeat(4,44px);
     background:var(--border);
     gap:1px;
+    min-width:640px;
   }
   .cal-cell{
     background:#fff;
@@ -537,7 +662,7 @@
   .cal-hourbg.cal-clickable:hover{background:#eef5fb;}
   .cal-allday-cell.cal-clickable:hover{background:#eef5fb;}
   .cal-hourbg.ondemand.cal-clickable:hover, .cal-allday-cell.ondemand.cal-clickable:hover{background:#f1eefa;}
-  .cal-event{cursor:pointer; -webkit-user-select:none; user-select:none;}
+  .cal-event{cursor:pointer; -webkit-user-select:none; user-select:none; touch-action:none;}
   .cal-event.dragging{opacity:.45; cursor:grabbing;}
   .cal-drop-target{outline:2px dashed var(--blue); outline-offset:-2px; background:#eaf3fb !important;}
   .cal-event{
@@ -1254,6 +1379,7 @@
     table{break-inside:auto;}
     tr{break-inside:avoid; break-after:auto;}
     .cal-wrap{overflow:visible !important;}
+    .table-wrap{overflow:visible !important;}
     #printTimestamp{
       display:block !important;
       text-align:right;
@@ -1362,10 +1488,14 @@
     background:var(--card);
     border:1px solid var(--border);
     border-radius:var(--radius);
-    overflow:hidden;
+    overflow-x:auto;
+    overflow-y:visible;
+    -webkit-overflow-scrolling:touch;
+    max-width:100%;
   }
   table.eap{
     width:100%;
+    min-width:760px;
     border-collapse:collapse;
     font-size:12.5px;
   }
@@ -2448,8 +2578,9 @@
         <h2 class="sec-toggle-title" id="agendaTitle"><button class="toggle-btn" id="agendaToggleBtn" type="button" title="Recolher/expandir">▶</button>Agenda semanal de reuniões<span class="section-toggle-hint" id="agendaToggleHint"></span></h2>
         <p>Rotina de ritos do projeto — use como referência para reservar a agenda e enviar os convites. Esta seção é atualizada a partir da aba "Ritos e Reuniões" da planilha de governança.</p>
       </div>
-      <button class="btn-validate" id="openValidationBtn">Validar agenda com a Intelectah →</button>
     </div>
+
+    <div id="meetingNotifyWrap"></div>
 
     <div class="agenda-body collapsed" id="agendaBody">
       <div class="week-filter">
@@ -3468,8 +3599,11 @@ function syncFilterUI(){
   populateWeekSelect();
   updateWfRange();
 }
+let weekFilterBound = false;
 function initWeekFilter(){
   syncFilterUI();
+  if(weekFilterBound) return; // evita reanexar os mesmos listeners a cada renderAgenda()
+  weekFilterBound = true;
   document.getElementById('wfYear').addEventListener('change', () => { populateWeekSelect(); onWeekChanged(); });
   document.getElementById('wfMonth').addEventListener('change', () => { populateWeekSelect(); onWeekChanged(); });
   document.getElementById('wfWeek').addEventListener('change', (e) => {
@@ -3497,6 +3631,13 @@ function onWeekChanged(){
 function renderAgenda(){
   initWeekFilter();
   renderCalendar();
+  /* No carregamento inicial da página (antes do login), CURRENT_USER ainda não foi
+     declarado nesse ponto do script; o try/catch evita que isso quebre a tela.
+     Depois do login, o applyRoleUI() e as próximas chamadas de renderAgenda()
+     atualizam a notificação normalmente. */
+  try{
+    if(CURRENT_USER) renderMeetingNotifications();
+  }catch(e){ /* login ainda não ocorreu — nada a fazer aqui */ }
 }
 
 function renderCalendar(){
@@ -3593,6 +3734,147 @@ function renderCalendar(){
   attachRitoDragHandlers();
 }
 
+/* ---------------- Notificação de presença — reuniões da semana vigente ----------------
+   Toda semana (Segunda-feira real, independente da semana que o usuário está navegando
+   no calendário), cada reunião com dia fixo pede ao usuário logado para confirmar
+   presença, propor outro horário ou avisar que não poderá participar. A resposta fica
+   registrada por usuário + semana e aparece no detalhe da reunião. */
+const MEETING_RESPONSE_LABELS = {
+  confirmado: 'Confirmou presença',
+  proposto: 'Propôs outro horário',
+  nao_pode: 'Não poderá participar'
+};
+
+function currentWeekKey(){
+  return isoDate(mondayOf(new Date()));
+}
+
+function meetingsOfCurrentWeek(){
+  return (DATA.ritos || [])
+    .map(r => ({ ...r, ...parseDiaHorario(r.dia_horario), slug: ritoSlug(r.nome) }))
+    .filter(r => r.days && r.days.length > 0);
+}
+
+function findMyMeetingResponse(ritoRaw, weekKey){
+  if(!CURRENT_USER) return null;
+  return (ritoRaw.respostas || []).find(x => x.usuario === CURRENT_USER.nome && x.semana === weekKey) || null;
+}
+
+function renderMeetingNotifications(){
+  const wrap = document.getElementById('meetingNotifyWrap');
+  if(!wrap) return;
+  if(!CURRENT_USER || (typeof VIEWING_SCENARIO !== 'undefined' && VIEWING_SCENARIO)){ wrap.innerHTML = ''; return; }
+
+  const weekKey = currentWeekKey();
+  const pending = meetingsOfCurrentWeek().filter(r => !r.interno && !findMyMeetingResponse(r, weekKey));
+
+  if(!pending.length){ wrap.innerHTML = ''; return; }
+
+  wrap.innerHTML = `
+    <div class="notify-wrap">
+      ${pending.map(r => `
+        <div class="notify-card" data-notify-slug="${r.slug}">
+          <div class="notify-card-head">
+            <span class="notify-card-title">📅 Você vai participar de "${r.nome}" esta semana?</span>
+          </div>
+          <div class="notify-card-when">${r.cadencia || ''} · ${r.dia_horario || 'A definir'}</div>
+          <div class="notify-actions">
+            <button class="notify-btn confirm" data-action="confirmar" type="button">✓ Confirmar presença</button>
+            <button class="notify-btn propose" data-action="propor" type="button">🕒 Propor outro horário</button>
+            <button class="notify-btn decline" data-action="recusar" type="button">✕ Não poderei participar</button>
+          </div>
+          <div class="notify-propose-inline" id="notifyPropose-${r.slug}">
+            <label for="notifyProposeInput-${r.slug}">Novo horário sugerido</label>
+            <input type="datetime-local" id="notifyProposeInput-${r.slug}">
+            <button class="notify-btn propose" data-action="enviar-proposta" type="button">Enviar sugestão</button>
+            <button class="notify-btn" style="border:1px solid var(--border); background:#fff; color:var(--text);" data-action="cancelar-proposta" type="button">Cancelar</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  wrap.querySelectorAll('.notify-card').forEach(card => {
+    const slug = card.getAttribute('data-notify-slug');
+    card.querySelector('[data-action="confirmar"]').addEventListener('click', () => respondToMeeting(slug, 'confirmado'));
+    card.querySelector('[data-action="recusar"]').addEventListener('click', () => respondToMeeting(slug, 'nao_pode'));
+    card.querySelector('[data-action="propor"]').addEventListener('click', () => {
+      card.querySelector('.notify-propose-inline').classList.add('open');
+    });
+    card.querySelector('[data-action="cancelar-proposta"]').addEventListener('click', () => {
+      card.querySelector('.notify-propose-inline').classList.remove('open');
+    });
+    card.querySelector('[data-action="enviar-proposta"]').addEventListener('click', () => {
+      const input = card.querySelector('input[type="datetime-local"]');
+      if(!input.value){ input.focus(); return; }
+      const dt = new Date(input.value);
+      const formatted = dt.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      respondToMeeting(slug, 'proposto', formatted);
+    });
+  });
+}
+
+async function respondToMeeting(slug, status, novoHorario){
+  if(!CURRENT_USER) return;
+  const rito = getRitoBySlug(slug);
+  if(!rito) return;
+  const weekKey = currentWeekKey();
+  const previousRespostas = JSON.parse(JSON.stringify(rito.respostas || []));
+  if(!rito.respostas) rito.respostas = [];
+  const existing = rito.respostas.find(x => x.usuario === CURRENT_USER.nome && x.semana === weekKey);
+  const entry = {
+    usuario: CURRENT_USER.nome,
+    semana: weekKey,
+    status,
+    novo_horario: status === 'proposto' ? (novoHorario || null) : null,
+    respondido_em: new Date().toISOString()
+  };
+  if(existing){ Object.assign(existing, entry); }
+  else { rito.respostas.push(entry); }
+
+  renderMeetingNotifications();
+
+  const ok = await persistCronograma();
+  if(!ok){
+    rito.respostas = previousRespostas;
+    renderMeetingNotifications();
+    return;
+  }
+
+  const label = MEETING_RESPONSE_LABELS[status] || status;
+  const detalhe = (status === 'proposto' && novoHorario) ? (' Novo horário sugerido: ' + novoHorario + '.') : '';
+  await logActivity('Resposta de presença em reunião', CURRENT_USER.nome + ' respondeu "' + label + '" para a reunião "' + rito.nome + '".' + detalhe);
+}
+
+/* Lista as respostas da semana vigente para exibir no detalhe da reunião */
+function renderRitoResponsesBlock(rito){
+  const weekKey = currentWeekKey();
+  const respostas = (rito.respostas || []).filter(x => x.semana === weekKey);
+  if(!respostas.length){
+    return `
+      <div class="rito-responses">
+        <div class="rito-responses-title">Respostas desta semana</div>
+        <div class="rito-responses-empty">Ninguém respondeu à notificação de presença ainda.</div>
+      </div>
+    `;
+  }
+  const items = respostas.map(x => `
+    <div class="rito-response-item">
+      <div>
+        <span class="rito-response-name">${x.usuario}</span>
+        ${x.novo_horario ? `<div class="rito-response-meta">Sugeriu: ${x.novo_horario}</div>` : ''}
+      </div>
+      <span class="rito-response-badge ${x.status}">${MEETING_RESPONSE_LABELS[x.status] || x.status}</span>
+    </div>
+  `).join('');
+  return `
+    <div class="rito-responses">
+      <div class="rito-responses-title">Respostas desta semana (${respostas.length})</div>
+      ${items}
+    </div>
+  `;
+}
+
 /* ---------------- Rito detail modal ---------------- */
 function getRitoBySlug(slug){
   return (DATA.ritos || []).find(r => ritoSlug(r.nome) === slug);
@@ -3631,6 +3913,7 @@ function openRitoModal(slug){
         <div class="fieldvalue">${r.responsavel_convocar || '—'}</div>
       </div>
     </div>
+    ${renderRitoResponsesBlock(r)}
     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
       <button class="cfg-btn secondary" id="ritoModalEditBtn" type="button">✎ Editar</button>
       <button class="cfg-btn" style="background:var(--red);" id="ritoModalDeleteBtn" type="button">🗑 Excluir</button>
@@ -3783,11 +4066,12 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* Arrastar-e-soltar: reagendar uma reunião para outro dia/horário da semana.
-   Implementado com mousedown/mousemove/mouseup (mais confiável entre navegadores
-   do que a Drag and Drop API nativa do HTML5). Move a reunião inteira para o dia
-   (e horário, se houver) da célula onde foi solta — para reuniões com mais de um
-   dia fixo (ex: "Terça e quinta"), o arraste substitui todos os dias pelo novo dia
-   único; para ajustes desse tipo, use Editar. */
+   Implementado com Pointer Events (pointerdown/pointermove/pointerup), que unificam
+   mouse, toque (dedo) e caneta numa única API — funciona tanto no computador quanto
+   em celular/tablet. Move a reunião inteira para o dia (e horário, se houver) da
+   célula onde foi solta — para reuniões com mais de um dia fixo (ex: "Terça e
+   quinta"), o arraste substitui todos os dias pelo novo dia único; para ajustes
+   desse tipo, use Editar. */
 let ritoDragState = null;
 let ritoJustDropped = false;
 const RITO_DRAG_THRESHOLD = 6;
@@ -3828,7 +4112,7 @@ async function handleRitoDrop(slug, cell){
 }
 
 function onRitoDragMove(e){
-  if(!ritoDragState) return;
+  if(!ritoDragState || e.pointerId !== ritoDragState.pointerId) return;
   const dx = Math.abs(e.clientX - ritoDragState.startX);
   const dy = Math.abs(e.clientY - ritoDragState.startY);
   if(!ritoDragState.moved && (dx > RITO_DRAG_THRESHOLD || dy > RITO_DRAG_THRESHOLD)){
@@ -3845,15 +4129,16 @@ function onRitoDragMove(e){
 }
 
 function onRitoDragEnd(e){
-  document.removeEventListener('mousemove', onRitoDragMove);
-  document.removeEventListener('mouseup', onRitoDragEnd);
+  if(!ritoDragState || e.pointerId !== ritoDragState.pointerId) return;
+  document.removeEventListener('pointermove', onRitoDragMove);
+  document.removeEventListener('pointerup', onRitoDragEnd);
+  document.removeEventListener('pointercancel', onRitoDragEnd);
   document.body.style.userSelect = '';
-  if(!ritoDragState) return;
   const state = ritoDragState;
   ritoDragState = null;
   state.card.classList.remove('dragging');
   document.querySelectorAll('.cal-drop-target').forEach(c => c.classList.remove('cal-drop-target'));
-  if(!state.moved) return; // não moveu o suficiente — deixa o clique normal (abrir detalhes) acontecer
+  if(!state.moved) return; // não moveu o suficiente — deixa o clique/toque normal (abrir detalhes) acontecer
   const cell = ritoDropCellAt(e.clientX, e.clientY);
   if(cell){
     ritoJustDropped = true;
@@ -3864,12 +4149,13 @@ function onRitoDragEnd(e){
 
 function attachRitoDragHandlers(){
   document.querySelectorAll('.cal-event[data-target]').forEach(card => {
-    card.addEventListener('mousedown', (e) => {
-      if(e.button !== 0) return; // só botão esquerdo
+    card.addEventListener('pointerdown', (e) => {
+      if(!e.isPrimary || e.button > 0) return; // só o toque/clique principal
       if(typeof VIEWING_SCENARIO !== 'undefined' && VIEWING_SCENARIO) return; // somente leitura
-      ritoDragState = { slug: card.getAttribute('data-target'), card, startX: e.clientX, startY: e.clientY, moved: false };
-      document.addEventListener('mousemove', onRitoDragMove);
-      document.addEventListener('mouseup', onRitoDragEnd);
+      ritoDragState = { slug: card.getAttribute('data-target'), card, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, moved: false };
+      document.addEventListener('pointermove', onRitoDragMove);
+      document.addEventListener('pointerup', onRitoDragEnd);
+      document.addEventListener('pointercancel', onRitoDragEnd);
     });
   });
 }
@@ -4299,7 +4585,7 @@ function closeValidationScreen(){
   document.getElementById('validationScreen').classList.remove('open');
 }
 
-document.getElementById('openValidationBtn').addEventListener('click', openValidationScreen);
+document.getElementById('openValidationBtn')?.addEventListener('click', openValidationScreen);
 document.getElementById('closeValidationBtn').addEventListener('click', closeValidationScreen);
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
