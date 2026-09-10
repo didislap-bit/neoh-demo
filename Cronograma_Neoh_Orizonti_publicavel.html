@@ -2071,13 +2071,14 @@
     main{padding:16px 12px 40px 12px;}
     .summary-grid{grid-template-columns:repeat(2,1fr); gap:10px;}
     .rail{grid-template-columns:1fr !important;}
-    .toolbar{flex-direction:column; align-items:stretch;}
-    .controls{flex-direction:column; align-items:stretch;}
+    .toolbar{flex-direction:column; align-items:flex-start;}
+    .controls{flex-wrap:wrap; align-items:center;}
     .search-box{width:100%;}
     table.eap{font-size:11px;}
     .name-cell{max-width:180px;}
     .agenda-heading{flex-direction:column; align-items:flex-start; gap:10px;}
     .week-filter{flex-wrap:wrap;}
+    .wf-range{margin-left:0;}
     .req-head-row{flex-direction:column; align-items:flex-start;}
     .req-head-actions{width:100%;}
     .sec-toggle-title{flex-wrap:wrap; row-gap:4px;}
@@ -2088,7 +2089,11 @@
     .login-card{padding:24px 18px;}
     .cfg-form-row{flex-direction:column;}
     .cfg-field{width:100%;}
-    .hist-filter-row{flex-direction:column; align-items:stretch;}
+    /* Linhas de FILTRO (não de cadastro) ficam com largura natural por campo,
+       lado a lado quando cabe, em vez de empilhar tudo do mesmo tamanho. */
+    .filter-row-mobile-wrap.cfg-form-row{flex-direction:row; flex-wrap:wrap; align-items:flex-end;}
+    .filter-row-mobile-wrap .cfg-field{width:auto; flex:1 1 auto; min-width:110px;}
+    .hist-filter-row{flex-wrap:wrap; align-items:flex-end;}
     table.cfg-table{font-size:11.5px;}
     .modal-box, .modal-box-wide, .modal-box-xwide, .cfg-modal .modal-box, .eap-form-modal .modal-box, .tour-modal .modal-box{
       max-width:96vw !important; width:96vw !important; max-height:88vh; overflow-y:auto;
@@ -2162,7 +2167,7 @@
       </div>
       <div id="cfgUserFormError" class="login-error" style="display:none;"></div>
 
-      <div class="cfg-form-row" style="margin-top:4px;">
+      <div class="cfg-form-row filter-row-mobile-wrap" style="margin-top:4px;">
         <div class="cfg-field" style="max-width:200px;">
           <label>Filtrar por tipo</label>
           <select id="cfgUserFilterPerfil">
@@ -2174,10 +2179,12 @@
         <button class="cfg-btn secondary" id="cfgUserExportBtn" type="button" style="align-self:flex-end;">⭳ Gerar Excel</button>
       </div>
 
-      <table class="cfg-table">
-        <thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Status</th><th>Cadastrado em</th><th>Ações</th></tr></thead>
-        <tbody id="cfgUserTableBody"></tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="cfg-table">
+          <thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Status</th><th>Cadastrado em</th><th>Ações</th></tr></thead>
+          <tbody id="cfgUserTableBody"></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="cfg-panel" id="cfgPanelHistorico">
@@ -2505,7 +2512,7 @@
     <h3 style="color:var(--navy); margin:0 0 6px 0;">Cenários anteriores do cronograma</h3>
     <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 14px 0;">Toda alteração salva no cronograma fica guardada aqui, um registro por dia. Escolha um dia para ver o cronograma como estava naquele momento (somente leitura). Cenários salvos antes desta funcionalidade não aparecem.</p>
 
-    <div class="cfg-form-row" style="align-items:flex-end;">
+    <div class="cfg-form-row filter-row-mobile-wrap" style="align-items:flex-end;">
       <div class="cfg-field" style="max-width:150px;">
         <label>Mês</label>
         <select id="scenarioMonthFilter">
@@ -2541,8 +2548,8 @@
       <p>Instituto Oncomed de Saúde e Longevidade · Visão executiva de acompanhamento</p>
     </div>
     <div class="header-meta">
-      Atualizado em <strong>07/09/2026</strong><br>
-      Fonte: EAP mestre do projeto
+      Atualizado em <strong id="headerUpdatedAt">—</strong><br>
+      Fonte: Cronograma do projeto Orizonti
     </div>
     <div class="header-actions">
       <div class="user-box" id="userBox" style="display:none;">
@@ -5296,21 +5303,23 @@ els('histSearchBtn').addEventListener('click', async () => {
     return;
   }
   wrap.innerHTML = `
-    <table class="cfg-table">
-      <thead><tr><th>Data</th><th>Hora</th><th>Usuário</th><th>Atividade</th><th>Descrição</th></tr></thead>
-      <tbody>
-        ${data.map(h => {
-          const d = new Date(h.data_hora);
-          return `<tr>
-            <td>${d.toLocaleDateString('pt-BR')}</td>
-            <td>${d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})}</td>
-            <td>${h.usuario_nome || '—'}</td>
-            <td>${h.tipo_atividade || '—'}</td>
-            <td>${h.descricao || '—'}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
+    <div class="table-wrap">
+      <table class="cfg-table">
+        <thead><tr><th>Data</th><th>Hora</th><th>Usuário</th><th>Atividade</th><th>Descrição</th></tr></thead>
+        <tbody>
+          ${data.map(h => {
+            const d = new Date(h.data_hora);
+            return `<tr>
+              <td>${d.toLocaleDateString('pt-BR')}</td>
+              <td>${d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})}</td>
+              <td>${h.usuario_nome || '—'}</td>
+              <td>${h.tipo_atividade || '—'}</td>
+              <td>${h.descricao || '—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
   `;
 });
 
@@ -5348,9 +5357,20 @@ els('tourCloseBtn').addEventListener('click', closeTour);
 els('tourCancelBtn').addEventListener('click', closeTour);
 
 /* ---------- 6) Sincronização do cronograma entre dispositivos ---------- */
+/* "Atualizado em", no cabeçalho: reflete a data/hora da última ação salva no
+   cronograma (coluna atualizado_em da tabela cronograma_estado), não uma data fixa. */
+function setHeaderUpdatedAt(iso){
+  const el = document.getElementById('headerUpdatedAt');
+  if(!el || !iso) return;
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return;
+  el.textContent = d.toLocaleDateString('pt-BR');
+  el.title = 'Última alteração salva em ' + d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+}
+
 async function syncCronogramaFromSupabase(){
   if(!SUPABASE_READY) { offlineWarnOnce(); return; }
-  const { data, error } = await supa.from('cronograma_estado').select('dados').eq('id', 1).maybeSingle();
+  const { data, error } = await supa.from('cronograma_estado').select('dados, atualizado_em').eq('id', 1).maybeSingle();
   if(error || !data || !data.dados) return;
   const saved = data.dados;
   if(saved.eap) DATA.eap = saved.eap;
@@ -5363,6 +5383,7 @@ async function syncCronogramaFromSupabase(){
   if(typeof renderSolicitacoes === 'function') renderSolicitacoes();
   if(typeof renderAgenda === 'function') renderAgenda();
   if(typeof renderActionPlanTable === 'function') renderActionPlanTable();
+  setHeaderUpdatedAt(data.atualizado_em);
 }
 
 /* ---------- Cenários anteriores (histórico de estados do cronograma) ---------- */
@@ -5391,12 +5412,13 @@ async function persistCronograma(){
   }
   if(VIEWING_SCENARIO){ console.warn('Bloqueado: tentativa de salvar enquanto visualiza um cenário anterior.'); return false; }
   const dados = { eap: DATA.eap, macro: DATA.macro, solicitacoes: DATA.solicitacoes, ritos: DATA.ritos, actionPlan: actionPlanItems };
+  const agora = new Date().toISOString();
   let ok = true;
   try{
     const { error } = await supa.from('cronograma_estado').upsert({
       id: 1,
       dados,
-      atualizado_em: new Date().toISOString(),
+      atualizado_em: agora,
       atualizado_por: CURRENT_USER ? CURRENT_USER.nome : null
     });
     if(error){ ok = false; console.warn('Falha ao sincronizar cronograma:', error); }
@@ -5405,6 +5427,7 @@ async function persistCronograma(){
     showSaveErrorToast('Não foi possível salvar a alteração no banco de dados. Verifique sua conexão e tente novamente.');
     return false;
   }
+  setHeaderUpdatedAt(agora);
   try{
     await supa.from('cronograma_snapshots').insert({
       dados,
@@ -5468,22 +5491,24 @@ function scenarioRowsHtml(groups){
     return '<p class="hist-empty-hint">Nenhum cenário encontrado para esse período.</p>';
   }
   return `
-    <table class="cfg-table">
-      <thead><tr><th>Dia</th><th>Alterações</th><th>Último salvamento</th><th></th></tr></thead>
-      <tbody>
-        ${groups.map(g => {
-          const d = new Date(g.latest.criado_em);
-          const dataLabel = d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
-          const horaLabel = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + (g.latest.criado_por ? ' · ' + g.latest.criado_por : '');
-          return `<tr>
-            <td>${dataLabel}</td>
-            <td>${g.count} ${g.count === 1 ? 'alteração' : 'alterações'}</td>
-            <td>${horaLabel}</td>
-            <td><button class="cfg-btn" data-scenario-view="${g.latest.id}" type="button">Ver</button></td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
+    <div class="table-wrap">
+      <table class="cfg-table">
+        <thead><tr><th>Dia</th><th>Alterações</th><th>Último salvamento</th><th></th></tr></thead>
+        <tbody>
+          ${groups.map(g => {
+            const d = new Date(g.latest.criado_em);
+            const dataLabel = d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+            const horaLabel = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + (g.latest.criado_por ? ' · ' + g.latest.criado_por : '');
+            return `<tr>
+              <td>${dataLabel}</td>
+              <td>${g.count} ${g.count === 1 ? 'alteração' : 'alterações'}</td>
+              <td>${horaLabel}</td>
+              <td><button class="cfg-btn" data-scenario-view="${g.latest.id}" type="button">Ver</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
   `;
 }
 
