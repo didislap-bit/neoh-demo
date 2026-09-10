@@ -597,11 +597,11 @@
   }
   .cal-grid{
     display:grid;
-    grid-template-columns:60px repeat(5,1fr) 1fr;
-    grid-template-rows:44px minmax(40px,auto) repeat(24,44px);
+    grid-template-columns:60px repeat(5,1fr);
+    grid-template-rows:44px minmax(40px,auto) repeat(22,26px);
     background:var(--border);
     gap:1px;
-    min-width:640px;
+    min-width:560px;
   }
   .cal-cell{
     background:#fff;
@@ -668,6 +668,9 @@
     z-index:1;
   }
   .cal-hourbg{background:#fff;}
+  .cal-hourbg.half{border-top:1px dashed #eef1f5;}
+  .cal-hourbg.lunch{background:#fff6e0;}
+  .cal-timelabel.lunch{background:#fff6e0;}
   .cal-clickable{cursor:pointer; transition:background .1s;}
   .cal-hourbg.cal-clickable:hover{background:#eef5fb;}
   .cal-allday-cell.cal-clickable:hover{background:#eef5fb;}
@@ -800,6 +803,34 @@
     white-space:nowrap;
   }
 
+  .cal-ondemand-row{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    flex-wrap:wrap;
+    background:#f8f7fc;
+    border:1px solid #e4e0f3;
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:12px;
+  }
+  .cal-ondemand-row-label{
+    font-size:11.5px;
+    font-weight:700;
+    color:var(--text-muted);
+    white-space:nowrap;
+    padding-top:4px;
+  }
+  .cal-ondemand-row-chips{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    flex:1;
+  }
+  .cal-ondemand-row-chips .cal-event.allday{
+    margin:0;
+    max-width:260px;
+  }
   .cal-legend{
     display:flex;
     align-items:center;
@@ -1430,6 +1461,17 @@
     font-size:11.5px;
     color:var(--text-muted);
     white-space:nowrap;
+  }
+  .req-confirmed-note{
+    background:#eaf6ee;
+    border:1px solid #bfe3c9;
+    color:#1e6b3a;
+    font-size:12.5px;
+    font-weight:600;
+    line-height:1.5;
+    border-radius:8px;
+    padding:10px 12px;
+    margin:0 0 14px 0;
   }
   .rito-grid{
     display:grid;
@@ -2434,7 +2476,10 @@
       <div class="cfg-form-row">
         <div class="cfg-field">
           <label>Cadência</label>
-          <input type="text" id="ritoFieldCadencia" placeholder="ex: Semanal, Quinzenal, Pontual">
+          <select id="ritoFieldCadencia">
+            <option value="Semanal">Semanal</option>
+            <option value="Pontual">Pontual</option>
+          </select>
         </div>
         <div class="cfg-field">
           <label>Status</label>
@@ -2473,7 +2518,11 @@
         </div>
         <div class="cfg-field" style="max-width:160px;">
           <label>Horário</label>
-          <input type="text" id="ritoFieldHorario" placeholder="ex: 09h">
+          <input type="text" id="ritoFieldHorario" placeholder="ex: 09h ou 15h30">
+        </div>
+        <div class="cfg-field" style="max-width:160px;">
+          <label>Duração (min)</label>
+          <input type="number" id="ritoFieldDuracao" min="15" step="15" placeholder="60">
         </div>
       </div>
       <div class="cfg-form-row" id="ritoQuandoWrap" style="display:none;">
@@ -2644,6 +2693,10 @@
       </div>
       <div class="cal-wrap">
         <div class="cal-grid" id="calGrid"></div>
+      </div>
+      <div class="cal-ondemand-row" id="calOnDemandRow" style="display:none;">
+        <span class="cal-ondemand-row-label">Sob demanda (sem dia fixo):</span>
+        <div class="cal-ondemand-row-chips" id="calOnDemandChips"></div>
       </div>
       <div class="cal-legend">
         <div class="item"><span class="sw" style="background:var(--green)"></span>Ativa</div>
@@ -3554,12 +3607,13 @@ let calScrolledToBusinessHours = false;
 const MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 function parseDiaHorario(text){
-  if(!text) return {days:[], time:null, hour:null};
+  if(!text) return {days:[], time:null, hour:null, minute:0};
   const lower = text.toLowerCase();
   const days = WEEKDAYS.filter(d => lower.includes(d.key)).map(d => d.label);
   const timeMatch = text.match(/(\d{1,2})h(\d{2})?/);
   const hour = timeMatch ? parseInt(timeMatch[1], 10) : null;
-  return {days, time: timeMatch ? timeMatch[0] : null, hour};
+  const minute = timeMatch && timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+  return {days, time: timeMatch ? timeMatch[0] : null, hour, minute};
 }
 
 function statusPillClass(status, interno){
@@ -3706,7 +3760,6 @@ function renderCalendar(){
   WEEKDAYS.forEach((d, i) => {
     cells += `<div class="cal-cell cal-daylabel" style="grid-column:${i+2}; grid-row:1;">${d.label}<span class="ddate">${fmtDDMM(dayDates[i])}</span></div>`;
   });
-  cells += `<div class="cal-cell cal-daylabel ondemand" style="grid-column:7; grid-row:1;">Sob demanda<span class="ddate">sem dia fixo</span></div>`;
 
   // all-day / sem horário row (row 2)
   cells += `<div class="cal-cell cal-allday-label" style="grid-column:1; grid-row:2;">Sem<br>horário</div>`;
@@ -3719,33 +3772,55 @@ function renderCalendar(){
     `).join('');
     cells += `<div class="cal-cell cal-allday-cell cal-clickable" data-day="${d.label}" style="grid-column:${i+2}; grid-row:2;">${chips}</div>`;
   });
-  // "Sob demanda" all-day cell — reuniões pontuais, sempre visíveis independente da semana escolhida
-  const demandChips = onDemand.map(r => `
-    <div class="cal-event allday ${statusPillClass(r.status, r.interno)}" data-target="${r.slug}" title="${r.nome}">
-      <span class="ename">${r.nome}</span>
-    </div>
-  `).join('');
-  cells += `<div class="cal-cell cal-allday-cell ondemand cal-clickable" data-ondemand="1" style="grid-column:7; grid-row:2;">${demandChips}</div>`;
 
-  // hour grid background + labels
+  // "Sob demanda" (reuniões sem dia fixo) — não entram mais no grid do calendário;
+  // aparecem como uma lista de chips logo abaixo dele, sempre visível independente da semana escolhida.
+  const onDemandRow = document.getElementById('calOnDemandRow');
+  const onDemandChipsEl = document.getElementById('calOnDemandChips');
+  if(onDemand.length){
+    onDemandRow.style.display = 'flex';
+    onDemandChipsEl.innerHTML = onDemand.map(r => `
+      <div class="cal-event allday ${statusPillClass(r.status, r.interno)}" data-target="${r.slug}" title="${r.nome}">
+        <span class="ename">${r.nome}</span>
+      </div>
+    `).join('');
+  } else {
+    onDemandRow.style.display = 'none';
+    onDemandChipsEl.innerHTML = '';
+  }
+
+  // hour grid background + labels — cada hora vira 2 blocos de 30 minutos (:00 e :30)
+  const LUNCH_HOURS = [12, 13]; // 12h às 14h — horário de almoço, sinalizado com cor diferente nas células livres
+  const totalSlots = hourRows.length * 2;
   hourRows.forEach((h, rIdx) => {
-    const row = 3 + rIdx;
-    cells += `<div class="cal-cell cal-timelabel" style="grid-column:1; grid-row:${row};">${h}h</div>`;
+    const isLunch = LUNCH_HOURS.includes(h);
+    const rowTop = 3 + rIdx * 2;    // bloco :00
+    const rowBottom = rowTop + 1;   // bloco :30
+    cells += `<div class="cal-cell cal-timelabel${isLunch ? ' lunch' : ''}" style="grid-column:1; grid-row:${rowTop} / span 2;">${h}h</div>`;
     WEEKDAYS.forEach((d, i) => {
-      cells += `<div class="cal-cell cal-hourbg cal-clickable" data-day="${d.label}" data-hour="${h}" style="grid-column:${i+2}; grid-row:${row};"></div>`;
+      cells += `<div class="cal-cell cal-hourbg cal-clickable${isLunch ? ' lunch' : ''}" data-day="${d.label}" data-hour="${h}" data-minute="0" style="grid-column:${i+2}; grid-row:${rowTop};"></div>`;
+      cells += `<div class="cal-cell cal-hourbg cal-clickable half${isLunch ? ' lunch' : ''}" data-day="${d.label}" data-hour="${h}" data-minute="30" style="grid-column:${i+2}; grid-row:${rowBottom};"></div>`;
     });
-    cells += `<div class="cal-cell cal-hourbg ondemand cal-clickable" data-ondemand="1" style="grid-column:7; grid-row:${row};"></div>`;
   });
 
   // timed events, placed on top of the background cells using the same grid coordinates
   timed.forEach(r => {
-    const row = 3 + (r.hour - CAL_START_HOUR);
+    const slotIndex = (r.hour - CAL_START_HOUR) * 2 + (r.minute >= 30 ? 1 : 0);
+    const row = 3 + slotIndex;
+    const lastRow = 3 + totalSlots - 1;
+    const duracao = r.duracao_min && r.duracao_min > 0 ? r.duracao_min : 60;
+    let spanRows = Math.max(1, Math.ceil(duracao / 30));
+    if(row + spanRows - 1 > lastRow) spanRows = Math.max(1, lastRow - row + 1); // não deixa passar do fim do horário comercial
+    const startMinutesTotal = r.hour * 60 + (r.minute || 0);
+    const endMinutesTotal = startMinutesTotal + duracao;
+    const startLabel = String(r.hour).padStart(2,'0') + 'h' + (r.minute ? String(r.minute).padStart(2,'0') : '');
+    const endLabel = String(Math.floor(endMinutesTotal / 60)).padStart(2,'0') + 'h' + (endMinutesTotal % 60 ? String(endMinutesTotal % 60).padStart(2,'0') : '');
     r.days.forEach(dayLabel => {
       const i = WEEKDAYS.findIndex(d => d.label === dayLabel);
       if(i === -1) return;
       cells += `
-        <div class="cal-event ${statusPillClass(r.status, r.interno)}" data-target="${r.slug}" style="grid-column:${i+2}; grid-row:${row};">
-          <span class="etime">${r.time}</span>
+        <div class="cal-event ${statusPillClass(r.status, r.interno)}" data-target="${r.slug}" style="grid-column:${i+2}; grid-row:${row} / span ${spanRows};">
+          <span class="etime">${startLabel}–${endLabel}</span>
           <span class="ename">${r.nome}</span>
         </div>
       `;
@@ -3753,8 +3828,9 @@ function renderCalendar(){
   });
 
   const gridEl = document.getElementById('calGrid');
-  gridEl.style.gridTemplateRows = `44px minmax(40px,auto) repeat(${hourRows.length},44px)`;
+  gridEl.style.gridTemplateRows = `44px minmax(40px,auto) repeat(${totalSlots},26px)`;
   gridEl.innerHTML = cells;
+
 
   document.querySelectorAll('.cal-event[data-target]').forEach(card => {
     card.addEventListener('click', (e) => { e.stopPropagation(); if(ritoJustDropped) return; openRitoModal(card.getAttribute('data-target')); });
@@ -3763,7 +3839,7 @@ function renderCalendar(){
     cell.addEventListener('click', () => {
       if(ritoJustDropped) return;
       if(cell.hasAttribute('data-ondemand')) openRitoForm(null, { onDemand: true });
-      else openRitoForm(null, { days: [cell.getAttribute('data-day')], hour: parseInt(cell.getAttribute('data-hour'), 10) });
+      else openRitoForm(null, { days: [cell.getAttribute('data-day')], hour: parseInt(cell.getAttribute('data-hour'), 10), minute: parseInt(cell.getAttribute('data-minute'), 10) || 0 });
     });
   });
   document.querySelectorAll('.cal-allday-cell.cal-clickable').forEach(cell => {
@@ -3783,7 +3859,7 @@ function renderCalendar(){
     const wrap = document.querySelector('.cal-wrap');
     if(wrap){
       const alvo = 7; // 7h da manhã
-      wrap.scrollTop = Math.max(0, (alvo - CAL_START_HOUR) * 44 - 20);
+      wrap.scrollTop = Math.max(0, (alvo - CAL_START_HOUR) * 2 * 26 - 20);
     }
   }
 }
@@ -3999,6 +4075,24 @@ function updateRitoDiaVisibility(){
 }
 document.getElementById('ritoFieldSemDiaFixo').addEventListener('change', updateRitoDiaVisibility);
 
+/* Regra de cadência: "Pontual" = reunião única, só pode escolher 1 dia da semana (como um rádio).
+   "Semanal" = pode escolher um ou vários dias, como antes. */
+function enforceRitoDiaSingleChoice(){
+  if(document.getElementById('ritoFieldCadencia').value !== 'Pontual') return;
+  const checked = RITO_DAY_IDS.filter(d => document.getElementById(d.id).checked);
+  if(checked.length > 1){
+    checked.slice(1).forEach(d => { document.getElementById(d.id).checked = false; });
+  }
+}
+document.getElementById('ritoFieldCadencia').addEventListener('change', enforceRitoDiaSingleChoice);
+RITO_DAY_IDS.forEach(d => {
+  document.getElementById(d.id).addEventListener('change', (e) => {
+    if(document.getElementById('ritoFieldCadencia').value === 'Pontual' && e.target.checked){
+      RITO_DAY_IDS.forEach(other => { if(other.id !== d.id) document.getElementById(other.id).checked = false; });
+    }
+  });
+});
+
 function openRitoForm(rito, prefill){
   ritoEditingOriginalNome = rito ? rito.nome : null;
   const form = document.getElementById('ritoForm');
@@ -4008,7 +4102,7 @@ function openRitoForm(rito, prefill){
   if(rito){
     document.getElementById('ritoFormTitle').textContent = 'Editar: ' + rito.nome;
     document.getElementById('ritoFieldNome').value = rito.nome || '';
-    document.getElementById('ritoFieldCadencia').value = rito.cadencia || '';
+    document.getElementById('ritoFieldCadencia').value = /pontual/i.test(rito.cadencia || '') ? 'Pontual' : 'Semanal';
     const parsed = parseDiaHorario(rito.dia_horario);
     const semDiaFixo = parsed.days.length === 0;
     document.getElementById('ritoFieldSemDiaFixo').checked = semDiaFixo;
@@ -4020,6 +4114,7 @@ function openRitoForm(rito, prefill){
         if(dayObj) document.getElementById(dayObj.id).checked = true;
       });
       document.getElementById('ritoFieldHorario').value = parsed.time || '';
+      document.getElementById('ritoFieldDuracao').value = rito.duracao_min || 60;
     }
     document.getElementById('ritoFieldStatus').value = rito.status || 'A agendar';
     document.getElementById('ritoFieldInterno').checked = !!rito.interno;
@@ -4030,8 +4125,11 @@ function openRitoForm(rito, prefill){
     document.getElementById('ritoFieldResponsavel').value = rito.responsavel_convocar || '';
   } else {
     document.getElementById('ritoFormTitle').textContent = 'Nova reunião / rito';
+    document.getElementById('ritoFieldCadencia').value = 'Semanal';
     document.getElementById('ritoFieldStatus').value = 'A agendar';
     document.getElementById('ritoFieldInterno').checked = false;
+    if(prefill && prefill.nome) document.getElementById('ritoFieldNome').value = prefill.nome;
+    if(prefill && prefill.objetivo) document.getElementById('ritoFieldObjetivo').value = prefill.objetivo;
     if(prefill && prefill.onDemand){
       document.getElementById('ritoFieldSemDiaFixo').checked = true;
       document.getElementById('ritoFieldQuando').value = '';
@@ -4041,7 +4139,8 @@ function openRitoForm(rito, prefill){
         const dayObj = RITO_DAY_IDS.find(d => d.label === dayLabel);
         if(dayObj) document.getElementById(dayObj.id).checked = true;
       });
-      document.getElementById('ritoFieldHorario').value = (prefill.hour !== undefined && prefill.hour !== null && !isNaN(prefill.hour)) ? (prefill.hour + 'h') : '';
+      document.getElementById('ritoFieldHorario').value = (prefill.hour !== undefined && prefill.hour !== null && !isNaN(prefill.hour)) ? (prefill.hour + 'h' + (prefill.minute ? String(prefill.minute).padStart(2,'0') : '')) : '';
+      document.getElementById('ritoFieldDuracao').value = 60;
     }
   }
   updateRitoDiaVisibility();
@@ -4058,17 +4157,23 @@ document.getElementById('ritoForm').addEventListener('submit', async (e) => {
   if(!nome) return;
   const semDiaFixo = document.getElementById('ritoFieldSemDiaFixo').checked;
   let dia_horario;
+  let duracao_min = 60;
   if(semDiaFixo){
     dia_horario = document.getElementById('ritoFieldQuando').value.trim() || 'A definir';
   } else {
-    const selectedDays = RITO_DAY_IDS.filter(d => document.getElementById(d.id).checked).map(d => d.label);
+    const cadenciaVal = document.getElementById('ritoFieldCadencia').value;
+    let selectedDays = RITO_DAY_IDS.filter(d => document.getElementById(d.id).checked).map(d => d.label);
+    if(cadenciaVal === 'Pontual' && selectedDays.length > 1) selectedDays = [selectedDays[0]]; // reunião pontual: só 1 dia
     const horario = document.getElementById('ritoFieldHorario').value.trim();
     dia_horario = (selectedDays.length ? selectedDays.join(' e ') : 'A definir') + (horario ? ' ' + horario : '');
+    const duracaoInput = parseInt(document.getElementById('ritoFieldDuracao').value, 10);
+    duracao_min = (duracaoInput && duracaoInput > 0) ? duracaoInput : 60;
   }
   const fields = {
     nome,
     cadencia: document.getElementById('ritoFieldCadencia').value.trim(),
     dia_horario,
+    duracao_min,
     objetivo: document.getElementById('ritoFieldObjetivo').value.trim(),
     participantes: document.getElementById('ritoFieldParticipantes').value.trim(),
     preparacao: document.getElementById('ritoFieldPreparacao').value.trim(),
@@ -4148,8 +4253,10 @@ function handleRitoDrop(slug, cell){
     const day = cell.getAttribute('data-day');
     const hasHour = cell.hasAttribute('data-hour');
     const hour = hasHour ? parseInt(cell.getAttribute('data-hour'), 10) : null;
-    novoDiaHorario = day + (hasHour ? ' ' + hour + 'h' : '');
-    resumoNovo = day + (hasHour ? ', ' + hour + 'h' : ' (sem horário)');
+    const minute = hasHour ? (parseInt(cell.getAttribute('data-minute'), 10) || 0) : 0;
+    const horaTexto = hasHour ? hour + 'h' + (minute ? String(minute).padStart(2,'0') : '') : '';
+    novoDiaHorario = day + (hasHour ? ' ' + horaTexto : '');
+    resumoNovo = day + (hasHour ? ', ' + horaTexto : ' (sem horário)');
   }
   if(novoDiaHorario === r.dia_horario) return;
   const anterior = r.dia_horario || 'A definir';
@@ -4233,7 +4340,7 @@ function onRitoDragEnd(e){
 }
 
 function attachRitoDragHandlers(){
-  document.querySelectorAll('.cal-event[data-target]').forEach(card => {
+  document.querySelectorAll('#calGrid .cal-event[data-target]').forEach(card => {
     card.addEventListener('pointerdown', (e) => {
       if(!e.isPrimary || e.button > 0) return; // só o toque/clique principal
       if(typeof VIEWING_SCENARIO !== 'undefined' && VIEWING_SCENARIO) return; // somente leitura
@@ -4391,6 +4498,9 @@ document.getElementById('reqForm').addEventListener('submit', async (e) => {
   };
 
   DATA.solicitacoes = DATA.solicitacoes || [];
+  const statusAnterior = reqEditingItem !== null
+    ? (DATA.solicitacoes.find(s => String(s.item) === String(reqEditingItem)) || {}).status
+    : null;
   if(reqEditingItem !== null){
     const idx = DATA.solicitacoes.findIndex(s => String(s.item) === String(reqEditingItem));
     if(idx !== -1) DATA.solicitacoes[idx] = Object.assign({ item: DATA.solicitacoes[idx].item }, fields);
@@ -4404,6 +4514,15 @@ document.getElementById('reqForm').addEventListener('submit', async (e) => {
   renderSolicitacoes();
   closeReqForm();
   persistCronograma();
+
+  // Reunião recém-confirmada: pede pro usuário já cadastrar na agenda do calendário,
+  // já que "Solicitações" e o calendário de ritos são duas listas separadas no sistema.
+  if(isMeeting && fields.status === 'Confirmado' && statusAnterior !== 'Confirmado'){
+    const querCadastrar = confirm('Reunião "' + titulo + '" marcada como Confirmado.\n\nDeseja cadastrar esta reunião agora na Agenda de reuniões do calendário do cronograma (dia, horário e duração)?');
+    if(querCadastrar){
+      openRitoForm(null, { nome: titulo, objetivo: fields.detalhamento });
+    }
+  }
 });
 
 let reqDeletingItem = null;
@@ -4548,6 +4667,7 @@ document.getElementById('exportMaterialsBtn').addEventListener('click', () => ex
 
 function openSolicitacaoModal(s){
   const isMeeting = (s.tipo||'').toLowerCase() === 'reunião';
+  const isConfirmedMeeting = isMeeting && (s.status||'').toLowerCase() === 'confirmado';
   document.getElementById('ritoModalContent').innerHTML = `
     <div class="rito-top">
       <div class="rito-title-block">
@@ -4556,6 +4676,10 @@ function openSolicitacaoModal(s){
       </div>
       <div class="rito-when">${isMeeting ? 'Reunião a agendar' : 'Solicitação de material'}</div>
     </div>
+    ${isConfirmedMeeting ? `
+    <div class="req-confirmed-note">
+      📅 Esta reunião já está confirmada — ela se encontra na <strong>Agenda de reuniões</strong> do calendário do cronograma. Confira o dia e horário por lá.
+    </div>` : ''}
     <div class="rito-grid">
       <div>
         <div class="fieldlabel">Frente</div>
