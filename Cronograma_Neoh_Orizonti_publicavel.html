@@ -4909,8 +4909,6 @@ syncTheadOffset();
      entre pessoas) para permitir testar as telas. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-(function(){
-
 /* ---------- 1) Configuração Supabase ---------- */
 const SUPABASE_URL = 'https://mgtawmvuabqlxthailvn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ndGF3bXZ1YWJxbHh0aGFpbHZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5OTA0NDIsImV4cCI6MjEwNDU2NjQ0Mn0.4nAecWv3vZwuj9x7bVAGCCULNBgR2Yz_OR6P284bfkU';
@@ -5422,6 +5420,25 @@ function setHeaderUpdatedAt(iso){
   el.title = 'Última alteração salva no cronograma em ' + dataStr + ' às ' + horaStr;
 }
 
+/* ---------- Reforço local (localStorage) ----------
+   Rede de segurança: toda vez que tentamos salvar no Supabase, guardamos
+   também uma cópia local no navegador. Se por qualquer motivo o Supabase não
+   gravar (mesmo sem erro visível), ao recarregar a página nesta MESMA máquina
+   a alteração não se perde — e o sistema tenta salvar no banco de novo
+   silenciosamente em segundo plano. */
+const LOCAL_BACKUP_KEY = 'cronograma_dados_backup_v1';
+function saveLocalBackup(dados){
+  try{
+    localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify({ dados, ts: Date.now() }));
+  }catch(e){ console.warn('Falha ao salvar backup local:', e); }
+}
+function readLocalBackup(){
+  try{
+    const raw = localStorage.getItem(LOCAL_BACKUP_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
 async function syncCronogramaFromSupabase(){
   if(!SUPABASE_READY) { offlineWarnOnce(); return; }
   // Busca dados + atualizado_em; se a coluna atualizado_em não existir por algum motivo no banco,
@@ -5439,7 +5456,19 @@ async function syncCronogramaFromSupabase(){
     return;
   }
   if(data.atualizado_em) setHeaderUpdatedAt(data.atualizado_em); // atualiza o cabeçalho já aqui, antes de qualquer renderização que possa falhar
-  const saved = data.dados;
+  let saved = data.dados;
+  // Se existir um backup local MAIS NOVO do que o que veio do banco, usa o
+  // backup local em cima (o Supabase pode não ter gravado a última alteração)
+  // e tenta salvar esse backup no banco de novo, em segundo plano.
+  const backup = readLocalBackup();
+  if(backup && backup.dados){
+    const servidorEm = data.atualizado_em ? new Date(data.atualizado_em).getTime() : 0;
+    if(backup.ts > servidorEm){
+      console.warn('Usando backup local (mais recente que o servidor) e tentando salvar de novo no banco.');
+      saved = backup.dados;
+      setTimeout(() => { persistCronograma(); }, 1500);
+    }
+  }
   if(saved.eap) DATA.eap = saved.eap;
   if(saved.macro) DATA.macro = saved.macro;
   if(saved.solicitacoes) DATA.solicitacoes = saved.solicitacoes;
@@ -5497,6 +5526,7 @@ async function persistCronograma(){
   }
   if(VIEWING_SCENARIO){ console.warn('Bloqueado: tentativa de salvar enquanto visualiza um cenário anterior.'); return false; }
   const dados = { eap: DATA.eap, macro: DATA.macro, solicitacoes: DATA.solicitacoes, ritos: DATA.ritos, actionPlan: actionPlanItems };
+  saveLocalBackup(dados); // salva localmente JÁ, antes de tentar o Supabase — nunca se perde nesta máquina
   const agora = new Date().toISOString();
   let ok = true;
   try{
@@ -5729,6 +5759,50 @@ function rebuildEapDerived(){
   childrenMap = buildChildrenMap();
 }
 
+/* ---------- Recálculo automático de % Ideal / % Real (macroetapas e resumo) ----------
+   Regra (confirmada batendo com os dados originais do cronograma):
+   - Nó com filhos diretos na EAP: seu % = média simples do % dos filhos diretos
+     (recursivo — cada filho já entra com o próprio valor recalculado, se também tiver filhos).
+   - Cada macroetapa (DATA.macro) = o % do item de nível 1 da EAP com o mesmo código.
+   - Resumo geral do topo (%IDEAL DO PROJETO / %REALIZADO) = média das macroetapas
+     ponderada pelo "peso" de cada uma.
+   Chamada sempre que uma atividade da EAP é criada, editada ou cancelada, antes de salvar. */
+function recalcEapRollup(){
+  const memo = {};
+  function pctOf(code){
+    if(memo[code]) return memo[code];
+    const node = DATA.eap.find(e => e.eap === code);
+    if(!node) return { ideal: 0, real: 0 };
+    const kids = childrenMap[code] || [];
+    let result;
+    if(kids.length === 0){
+      result = { ideal: node.pct_ideal || 0, real: node.pct_real || 0 };
+    } else {
+      let sumIdeal = 0, sumReal = 0;
+      kids.forEach(k => {
+        const p = pctOf(k.eap);
+        sumIdeal += p.ideal;
+        sumReal += p.real;
+      });
+      result = { ideal: sumIdeal / kids.length, real: sumReal / kids.length };
+      // Também atualiza o próprio nó da EAP (nós "Tarefa-resumo" mostram esse % na tabela).
+      node.pct_ideal = result.ideal;
+      node.pct_real = result.real;
+    }
+    memo[code] = result;
+    return result;
+  }
+  const raizes = DATA.eap.filter(e => !e.pai);
+  raizes.forEach(r => {
+    const p = pctOf(r.eap);
+    const macroItem = DATA.macro.find(m => m.codigo === r.eap);
+    if(macroItem){ macroItem.pct_ideal = p.ideal; macroItem.pct_real = p.real; }
+  });
+  const totalPeso = DATA.macro.reduce((s, m) => s + m.peso, 0) || 1;
+  DATA.resumo.pct_ideal = DATA.macro.reduce((s, m) => s + m.pct_ideal * m.peso, 0) / totalPeso;
+  DATA.resumo.pct_real = DATA.macro.reduce((s, m) => s + m.pct_real * m.peso, 0) / totalPeso;
+}
+
 /* ---------- 7) Edição / adição / cancelamento de itens do cronograma (EAP) ---------- */
 function populateEapParentSelect(selectedCode){
   const sel = els('eapFieldPai');
@@ -5825,7 +5899,8 @@ els('eapForm').addEventListener('submit', async (e) => {
   }
 
   rebuildEapDerived();
-  renderTable();
+  recalcEapRollup();
+  renderSummary(); renderRail(); renderTable();
   closeEapForm();
   persistCronograma();
 });
@@ -5848,7 +5923,8 @@ els('eapCancelConfirmYes').addEventListener('click', async () => {
     node.situacao = 'Cancelada';
     await logActivity('Cancelamento de item do cronograma', (CURRENT_USER ? CURRENT_USER.nome : '—') + ' cancelou o item ' + node.eap + ' — "' + node.nome + '".');
     rebuildEapDerived();
-    renderTable();
+    recalcEapRollup();
+    renderSummary(); renderRail(); renderTable();
     persistCronograma();
   }
   closeEapCancelConfirm();
@@ -5873,7 +5949,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-})();
 </script>
 
 </body>
