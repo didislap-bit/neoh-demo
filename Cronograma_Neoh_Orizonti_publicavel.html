@@ -5375,9 +5375,21 @@ function setHeaderUpdatedAt(iso){
 
 async function syncCronogramaFromSupabase(){
   if(!SUPABASE_READY) { offlineWarnOnce(); return; }
-  const { data, error } = await supa.from('cronograma_estado').select('dados, atualizado_em').eq('id', 1).maybeSingle();
-  if(error || !data || !data.dados) return;
-  setHeaderUpdatedAt(data.atualizado_em); // atualiza o cabeçalho já aqui, antes de qualquer renderização que possa falhar
+  // Busca dados + atualizado_em; se a coluna atualizado_em não existir por algum motivo no banco,
+  // a consulta cai no fallback abaixo (só "dados") em vez de falhar por inteiro e deixar a tela
+  // presa nos dados estáticos originais do arquivo.
+  let data, error;
+  ({ data, error } = await supa.from('cronograma_estado').select('dados, atualizado_em').eq('id', 1).maybeSingle());
+  if(error){
+    console.warn('Falha ao buscar "dados, atualizado_em" — tentando novamente só com "dados":', error);
+    ({ data, error } = await supa.from('cronograma_estado').select('dados').eq('id', 1).maybeSingle());
+  }
+  if(error || !data || !data.dados){
+    console.warn('Não foi possível carregar o cronograma do banco de dados:', error);
+    showSaveErrorToast('Não foi possível carregar os dados mais recentes do banco. Mostrando a última versão disponível nesta tela.');
+    return;
+  }
+  if(data.atualizado_em) setHeaderUpdatedAt(data.atualizado_em); // atualiza o cabeçalho já aqui, antes de qualquer renderização que possa falhar
   const saved = data.dados;
   if(saved.eap) DATA.eap = saved.eap;
   if(saved.macro) DATA.macro = saved.macro;
@@ -5426,7 +5438,17 @@ async function persistCronograma(){
       atualizado_em: agora,
       atualizado_por: CURRENT_USER ? CURRENT_USER.nome : null
     });
-    if(error){ ok = false; console.warn('Falha ao sincronizar cronograma:', error); }
+    if(error){
+      ok = false;
+      console.warn('Falha ao sincronizar cronograma (com atualizado_em/atualizado_por):', error);
+      // Se o erro for por causa dessas duas colunas não existirem na tabela, tenta de novo
+      // só com o essencial — salvar os dados é mais importante do que salvar a data.
+      try{
+        const retry = await supa.from('cronograma_estado').upsert({ id: 1, dados });
+        if(!retry.error) ok = true;
+        else console.warn('Falha ao sincronizar cronograma (só com dados):', retry.error);
+      }catch(e2){ console.warn('Falha ao sincronizar cronograma (só com dados):', e2); }
+    }
   }catch(e){ ok = false; console.warn('Falha ao sincronizar cronograma:', e); }
   if(!ok){
     showSaveErrorToast('Não foi possível salvar a alteração no banco de dados. Verifique sua conexão e tente novamente.');
