@@ -464,14 +464,133 @@
   }
   .btn-validate:hover{background:var(--navy-2);}
   .agenda-heading > div:first-child{margin-bottom:14px;}
+
+  /* ---------- Notificação de presença (reuniões da semana vigente) ---------- */
+  .notify-wrap{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .notify-card{
+    background:var(--amber-soft);
+    border:1px solid #f0c675;
+    border-radius:9px;
+    padding:12px 14px;
+  }
+  .notify-card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:2px;
+  }
+  .notify-card-title{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--navy);
+  }
+  .notify-card-when{
+    font-size:11.5px;
+    color:var(--text-muted);
+    margin-bottom:10px;
+  }
+  .notify-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .notify-btn{
+    font-family:inherit;
+    font-size:12px;
+    font-weight:700;
+    padding:8px 12px;
+    border-radius:7px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:filter .12s, background .12s;
+  }
+  .notify-btn:hover{filter:brightness(0.96);}
+  .notify-btn.confirm{border:none; background:var(--green); color:#fff;}
+  .notify-btn.propose{border:1px solid var(--blue); background:#fff; color:var(--blue);}
+  .notify-btn.decline{border:1px solid var(--red); background:#fff; color:var(--red);}
+  .notify-propose-inline{
+    display:none;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px dashed #e3c07f;
+  }
+  .notify-propose-inline.open{display:flex;}
+  .notify-propose-inline label{
+    font-size:11px;
+    font-weight:700;
+    color:var(--text-muted);
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+  .notify-propose-inline input[type="datetime-local"]{
+    font-family:inherit;
+    font-size:12.5px;
+    padding:7px 9px;
+    border:1px solid var(--border);
+    border-radius:7px;
+  }
+  .notify-answered{
+    font-size:12px;
+    color:var(--green);
+    font-weight:700;
+  }
+  /* Respostas da semana, mostradas no detalhe da reunião */
+  .rito-responses{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--border);
+  }
+  .rito-responses-title{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+    color:var(--text-muted);
+    margin-bottom:8px;
+  }
+  .rito-response-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:7px 0;
+    border-bottom:1px solid var(--border);
+    font-size:12.5px;
+  }
+  .rito-response-item:last-child{border-bottom:none;}
+  .rito-response-name{font-weight:700; color:var(--navy);}
+  .rito-response-meta{font-size:11px; color:var(--text-muted);}
+  .rito-response-badge{
+    display:inline-block;
+    font-size:10.5px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:20px;
+    white-space:nowrap;
+  }
+  .rito-response-badge.confirmado{background:var(--green-soft); color:var(--green);}
+  .rito-response-badge.proposto{background:var(--blue-soft); color:var(--blue);}
+  .rito-response-badge.nao_pode{background:var(--red-soft); color:var(--red);}
+  .rito-responses-empty{font-size:12px; color:var(--text-muted);}
+
   .cal-wrap{
     border:1px solid var(--border);
     border-radius:9px;
     overflow:hidden;
     margin-bottom:18px;
-    /* Garante que o gesto de arrastar com o dedo seja tratado como rolagem nativa
-       pelo navegador, mesmo com os cliques/arrastes de reunião dentro da grade */
-    touch-action:pan-x pan-y;
+    /* Deixa o gesto vertical passar para a rolagem normal da página, mas assume o
+       controle do gesto horizontal via JavaScript (abaixo) para um arraste mais
+       ágil e previsível no celular */
+    touch-action:pan-y;
   }
   .cal-grid{
     display:grid;
@@ -1366,7 +1485,7 @@
     border:1px solid var(--border);
     border-radius:var(--radius);
     overflow:hidden;
-    touch-action:pan-x pan-y;
+    touch-action:pan-y;
   }
   table.eap{
     width:100%;
@@ -1975,13 +2094,14 @@
     .hist-filter-row .cfg-field{flex:1 1 140px; min-width:130px; width:auto;}
     .hist-filter-row .cfg-btn{flex:none; width:auto; margin-left:auto;}
     table.cfg-table{font-size:11.5px;}
-    /* Plano de ação: campos "Quando?" e "Status" lado a lado com proporções
-       diferentes (a data ocupa menos espaço, o status um pouco mais) em vez de
-       dividir a linha ao meio de forma simétrica */
-    .ap-field-row{flex-wrap:wrap; gap:10px;}
-    .ap-field-row .ap-field{flex:none;}
-    .ap-field-row .ap-field:first-child{flex:1 1 42%; min-width:120px;}
-    .ap-field-row .ap-field:last-child{flex:1 1 54%; min-width:140px;}
+    /* Plano de ação: campos "Quando?" e "Status" lado a lado, com larguras
+       diferentes e alinhados pela base (evita que o rótulo mais longo de
+       "Quando?" empurre o campo para baixo de forma desalinhada com "Status") */
+    .ap-field-row{flex-wrap:wrap; gap:10px; align-items:flex-end;}
+    .ap-field-row .ap-field{flex:none; margin-bottom:13px;}
+    .ap-field-row .ap-field:first-child{flex:1 1 48%; min-width:135px;}
+    .ap-field-row .ap-field:last-child{flex:1 1 46%; min-width:125px;}
+    .ap-field-row .ap-field label{font-size:9.5px; letter-spacing:0.1px;}
     .modal-box, .modal-box-wide, .modal-box-xwide, .cfg-modal .modal-box, .eap-form-modal .modal-box, .tour-modal .modal-box{
       max-width:96vw !important; width:96vw !important; max-height:88vh; overflow-y:auto;
     }
@@ -2505,8 +2625,9 @@
         <h2 class="sec-toggle-title" id="agendaTitle"><button class="toggle-btn" id="agendaToggleBtn" type="button" title="Recolher/expandir">▶</button>Agenda semanal de reuniões<span class="section-toggle-hint" id="agendaToggleHint"></span></h2>
         <p>Rotina de ritos do projeto — use como referência para reservar a agenda e enviar os convites. Esta seção é atualizada a partir da aba "Ritos e Reuniões" da planilha de governança.</p>
       </div>
-      <button class="btn-validate" id="openValidationBtn">Validar agenda com a Intelectah →</button>
     </div>
+
+    <div id="meetingNotifyWrap"></div>
 
     <div class="agenda-body collapsed" id="agendaBody">
       <div class="week-filter">
@@ -3554,6 +3675,13 @@ function onWeekChanged(){
 function renderAgenda(){
   initWeekFilter();
   renderCalendar();
+  try{
+    /* No carregamento inicial da página (antes do login), CURRENT_USER ainda não foi
+       declarado nesse ponto do script; o try/catch evita que isso quebre a tela.
+       Depois do login, o applyRoleUI() e as próximas chamadas de renderAgenda()
+       atualizam a notificação normalmente. */
+    if(CURRENT_USER) renderMeetingNotifications();
+  }catch(e){ /* login ainda não ocorreu — nada a fazer aqui */ }
 }
 
 function renderCalendar(){
@@ -3655,6 +3783,147 @@ function getRitoBySlug(slug){
   return (DATA.ritos || []).find(r => ritoSlug(r.nome) === slug);
 }
 
+/* ---------------- Notificação de presença — reuniões da semana vigente ----------------
+   Toda semana (Segunda-feira real, independente da semana que o usuário está navegando
+   no calendário), cada reunião com dia fixo pede ao usuário logado para confirmar
+   presença, propor outro horário ou avisar que não poderá participar. A resposta fica
+   registrada por usuário + semana e aparece no detalhe da reunião. */
+const MEETING_RESPONSE_LABELS = {
+  confirmado: 'Confirmou presença',
+  proposto: 'Propôs outro horário',
+  nao_pode: 'Não poderá participar'
+};
+
+function currentWeekKey(){
+  return isoDate(mondayOf(new Date()));
+}
+
+function meetingsOfCurrentWeek(){
+  return (DATA.ritos || [])
+    .map(r => ({ ...r, ...parseDiaHorario(r.dia_horario), slug: ritoSlug(r.nome) }))
+    .filter(r => r.days && r.days.length > 0);
+}
+
+function findMyMeetingResponse(ritoRaw, weekKey){
+  if(!CURRENT_USER) return null;
+  return (ritoRaw.respostas || []).find(x => x.usuario === CURRENT_USER.nome && x.semana === weekKey) || null;
+}
+
+function renderMeetingNotifications(){
+  const wrap = document.getElementById('meetingNotifyWrap');
+  if(!wrap) return;
+  if(!CURRENT_USER || (typeof VIEWING_SCENARIO !== 'undefined' && VIEWING_SCENARIO)){ wrap.innerHTML = ''; return; }
+
+  const weekKey = currentWeekKey();
+  const pending = meetingsOfCurrentWeek().filter(r => !r.interno && !findMyMeetingResponse(r, weekKey));
+
+  if(!pending.length){ wrap.innerHTML = ''; return; }
+
+  wrap.innerHTML = `
+    <div class="notify-wrap">
+      ${pending.map(r => `
+        <div class="notify-card" data-notify-slug="${r.slug}">
+          <div class="notify-card-head">
+            <span class="notify-card-title">📅 Você vai participar de "${r.nome}" esta semana?</span>
+          </div>
+          <div class="notify-card-when">${r.cadencia || ''} · ${r.dia_horario || 'A definir'}</div>
+          <div class="notify-actions">
+            <button class="notify-btn confirm" data-action="confirmar" type="button">✓ Confirmar presença</button>
+            <button class="notify-btn propose" data-action="propor" type="button">🕒 Propor outro horário</button>
+            <button class="notify-btn decline" data-action="recusar" type="button">✕ Não poderei participar</button>
+          </div>
+          <div class="notify-propose-inline" id="notifyPropose-${r.slug}">
+            <label for="notifyProposeInput-${r.slug}">Novo horário sugerido</label>
+            <input type="datetime-local" id="notifyProposeInput-${r.slug}">
+            <button class="notify-btn propose" data-action="enviar-proposta" type="button">Enviar sugestão</button>
+            <button class="notify-btn" style="border:1px solid var(--border); background:#fff; color:var(--text);" data-action="cancelar-proposta" type="button">Cancelar</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  wrap.querySelectorAll('.notify-card').forEach(card => {
+    const slug = card.getAttribute('data-notify-slug');
+    card.querySelector('[data-action="confirmar"]').addEventListener('click', () => respondToMeeting(slug, 'confirmado'));
+    card.querySelector('[data-action="recusar"]').addEventListener('click', () => respondToMeeting(slug, 'nao_pode'));
+    card.querySelector('[data-action="propor"]').addEventListener('click', () => {
+      card.querySelector('.notify-propose-inline').classList.add('open');
+    });
+    card.querySelector('[data-action="cancelar-proposta"]').addEventListener('click', () => {
+      card.querySelector('.notify-propose-inline').classList.remove('open');
+    });
+    card.querySelector('[data-action="enviar-proposta"]').addEventListener('click', () => {
+      const input = card.querySelector('input[type="datetime-local"]');
+      if(!input.value){ input.focus(); return; }
+      const dt = new Date(input.value);
+      const formatted = dt.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      respondToMeeting(slug, 'proposto', formatted);
+    });
+  });
+}
+
+async function respondToMeeting(slug, status, novoHorario){
+  if(!CURRENT_USER) return;
+  const rito = getRitoBySlug(slug);
+  if(!rito) return;
+  const weekKey = currentWeekKey();
+  const previousRespostas = JSON.parse(JSON.stringify(rito.respostas || []));
+  if(!rito.respostas) rito.respostas = [];
+  const existing = rito.respostas.find(x => x.usuario === CURRENT_USER.nome && x.semana === weekKey);
+  const entry = {
+    usuario: CURRENT_USER.nome,
+    semana: weekKey,
+    status,
+    novo_horario: status === 'proposto' ? (novoHorario || null) : null,
+    respondido_em: new Date().toISOString()
+  };
+  if(existing){ Object.assign(existing, entry); }
+  else { rito.respostas.push(entry); }
+
+  renderMeetingNotifications();
+
+  const ok = await persistCronograma();
+  if(!ok){
+    rito.respostas = previousRespostas;
+    renderMeetingNotifications();
+    return;
+  }
+
+  const label = MEETING_RESPONSE_LABELS[status] || status;
+  const detalhe = (status === 'proposto' && novoHorario) ? (' Novo horário sugerido: ' + novoHorario + '.') : '';
+  await logActivity('Resposta de presença em reunião', CURRENT_USER.nome + ' respondeu "' + label + '" para a reunião "' + rito.nome + '".' + detalhe);
+}
+
+/* Lista as respostas da semana vigente para exibir no detalhe da reunião */
+function renderRitoResponsesBlock(rito){
+  const weekKey = currentWeekKey();
+  const respostas = (rito.respostas || []).filter(x => x.semana === weekKey);
+  if(!respostas.length){
+    return `
+      <div class="rito-responses">
+        <div class="rito-responses-title">Respostas desta semana</div>
+        <div class="rito-responses-empty">Ninguém respondeu à notificação de presença ainda.</div>
+      </div>
+    `;
+  }
+  const items = respostas.map(x => `
+    <div class="rito-response-item">
+      <div>
+        <span class="rito-response-name">${x.usuario}</span>
+        ${x.novo_horario ? `<div class="rito-response-meta">Sugeriu: ${x.novo_horario}</div>` : ''}
+      </div>
+      <span class="rito-response-badge ${x.status}">${MEETING_RESPONSE_LABELS[x.status] || x.status}</span>
+    </div>
+  `).join('');
+  return `
+    <div class="rito-responses">
+      <div class="rito-responses-title">Respostas desta semana (${respostas.length})</div>
+      ${items}
+    </div>
+  `;
+}
+
 function openRitoModal(slug){
   const r = getRitoBySlug(slug);
   if(!r) return;
@@ -3688,6 +3957,7 @@ function openRitoModal(slug){
         <div class="fieldvalue">${r.responsavel_convocar || '—'}</div>
       </div>
     </div>
+    ${renderRitoResponsesBlock(r)}
     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
       <button class="cfg-btn secondary" id="ritoModalEditBtn" type="button">✎ Editar</button>
       <button class="cfg-btn" style="background:var(--red);" id="ritoModalDeleteBtn" type="button">🗑 Excluir</button>
@@ -4356,7 +4626,7 @@ function closeValidationScreen(){
   document.getElementById('validationScreen').classList.remove('open');
 }
 
-document.getElementById('openValidationBtn').addEventListener('click', openValidationScreen);
+document.getElementById('openValidationBtn')?.addEventListener('click', openValidationScreen);
 document.getElementById('closeValidationBtn').addEventListener('click', closeValidationScreen);
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -4651,6 +4921,7 @@ function applyRoleUI(){
   els('userBox').style.display = 'flex';
   els('userNameLabel').innerHTML = '<b>' + CURRENT_USER.nome + '</b> · ' + (CURRENT_USER.perfil === 'intelectah' ? 'Intelectah' : 'Hospital');
   els('settingsBtn').style.display = CURRENT_USER.perfil === 'intelectah' ? 'flex' : 'none';
+  if(typeof renderMeetingNotifications === 'function') renderMeetingNotifications();
 }
 
 function showLoginError(msg){
@@ -5483,6 +5754,63 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+})();
+</script>
+
+<script>
+(function(){
+  // Arraste horizontal por toque (celular/tablet) para a tabela EAP e o calendário
+  // semanal. Funciona junto com a rolagem nativa vertical da página (que continua
+  // livre) e evita conflito com o arraste de reuniões (mousedown em .cal-event).
+  function enableDragScroll(el){
+    if(!el || el.dataset.dragScrollBound) return;
+    el.dataset.dragScrollBound = '1';
+
+    var dragging = false, moved = false, startX = 0, startScroll = 0, pointerId = null;
+    var THRESHOLD = 6;
+
+    el.addEventListener('pointerdown', function(e){
+      if(e.pointerType === 'mouse') return; // mouse continua com o comportamento nativo
+      if(e.target.closest && e.target.closest('.cal-event')) return; // não atrapalha o arraste de reunião
+      dragging = true;
+      moved = false;
+      startX = e.clientX;
+      startScroll = el.scrollLeft;
+      pointerId = e.pointerId;
+    }, {passive:true});
+
+    el.addEventListener('pointermove', function(e){
+      if(!dragging || e.pointerId !== pointerId) return;
+      var dx = e.clientX - startX;
+      if(!moved && Math.abs(dx) > THRESHOLD){
+        moved = true;
+        try{ el.setPointerCapture(pointerId); }catch(err){}
+      }
+      if(moved){
+        el.scrollLeft = startScroll - dx;
+      }
+    }, {passive:true});
+
+    function endDrag(e){
+      if(pointerId !== null && e.pointerId !== undefined && e.pointerId !== pointerId) return;
+      dragging = false;
+      moved = false;
+      pointerId = null;
+    }
+    el.addEventListener('pointerup', endDrag);
+    el.addEventListener('pointercancel', endDrag);
+    el.addEventListener('pointerleave', endDrag);
+  }
+
+  function initDragScrollAreas(){
+    document.querySelectorAll('.cal-wrap, .table-wrap, .ap-table-wrap').forEach(enableDragScroll);
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', initDragScrollAreas);
+  } else {
+    initDragScrollAreas();
+  }
 })();
 </script>
 
