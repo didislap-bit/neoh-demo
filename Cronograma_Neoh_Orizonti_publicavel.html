@@ -1337,6 +1337,11 @@
     opacity:1;
     transform:translateX(-50%) translateY(0);
   }
+  .save-success-toast{
+    border-color:var(--green);
+    color:var(--green);
+    bottom:80px;
+  }
 
   /* ---------- Print snapshot ---------- */
   #printTimestamp{display:none;}
@@ -4162,6 +4167,10 @@ document.getElementById('ritoRescheduleConfirmYes').addEventListener('click', as
     showSaveErrorToast('Não foi possível salvar o novo horário de "' + r.nome + '". A reunião voltou para o horário anterior. Verifique sua conexão e tente novamente.');
     return;
   }
+  const debugInfo = lastPersistDebug && lastPersistDebug.writtenRows && lastPersistDebug.writtenRows[0]
+    ? ' (banco confirmou: id=' + lastPersistDebug.writtenRows[0].id + ', atualizado_em=' + lastPersistDebug.writtenRows[0].atualizado_em + ')'
+    : ' (aviso: nenhum detalhe de confirmação veio do banco)';
+  showSaveSuccessToast('Novo horário de "' + r.nome + '" salvo no banco de dados.' + debugInfo);
   logActivity('Reagendamento de reunião', (CURRENT_USER ? CURRENT_USER.nome : '—') + ' moveu "' + r.nome + '" de ' + anterior + ' para ' + resumoNovo + '.');
 });
 
@@ -4904,7 +4913,7 @@ syncTheadOffset();
 
 /* ---------- 1) Configuração Supabase ---------- */
 const SUPABASE_URL = 'https://mgtawmvuabqlxthailvn.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_N9zs0OTq36nR08UF0FInsQ_vZRlahxX';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ndGF3bXZ1YWJxbHh0aGFpbHZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5OTA0NDIsImV4cCI6MjEwNDU2NjQ0Mn0.4nAecWv3vZwuj9x7bVAGCCULNBgR2Yz_OR6P284bfkU';
 
 let supa = null;
 let SUPABASE_READY = false;
@@ -5462,6 +5471,25 @@ function showSaveErrorToast(msg){
   toast._hideTimer = setTimeout(() => toast.classList.remove('open'), 8000);
 }
 
+/* Aviso verde de sucesso — usado só em pontos críticos (como o reagendamento
+   de reunião) para deixar claro, sem precisar abrir o console, que o app
+   realmente confirmou a gravação no banco (e não só moveu na tela). */
+function showSaveSuccessToast(msg){
+  let toast = document.getElementById('saveSuccessToast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'saveSuccessToast';
+    toast.className = 'save-error-toast save-success-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = '✓ ' + msg;
+  toast.classList.add('open');
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => toast.classList.remove('open'), 4000);
+}
+
+let lastPersistDebug = null; // guarda o retorno cru do Supabase da última tentativa de salvar, para diagnóstico visível na tela
+
 async function persistCronograma(){
   if(!SUPABASE_READY){
     showSaveErrorToast('Sem conexão com o banco de dados. A alteração não foi salva.');
@@ -5482,6 +5510,7 @@ async function persistCronograma(){
       atualizado_em: agora,
       atualizado_por: CURRENT_USER ? CURRENT_USER.nome : null
     }).select();
+    lastPersistDebug = { fase: 'principal', writtenRows, error, urlUsada: SUPABASE_URL };
     if(error){
       ok = false;
       console.warn('Falha ao sincronizar cronograma (com atualizado_em/atualizado_por):', error);
@@ -5489,6 +5518,7 @@ async function persistCronograma(){
       // só com o essencial — salvar os dados é mais importante do que salvar a data.
       try{
         const retry = await supa.from('cronograma_estado').upsert({ id: 1, dados }).select();
+        lastPersistDebug = { fase: 'retry (só dados)', writtenRows: retry.data, error: retry.error, urlUsada: SUPABASE_URL };
         if(!retry.error && retry.data && retry.data.length > 0) ok = true;
         else console.warn('Falha ao sincronizar cronograma (só com dados):', retry.error || 'nenhuma linha retornada (bloqueado por política de segurança / RLS)');
       }catch(e2){ console.warn('Falha ao sincronizar cronograma (só com dados):', e2); }
@@ -5498,7 +5528,7 @@ async function persistCronograma(){
       ok = false;
       console.warn('Upsert retornou sem erro, mas nenhuma linha foi afetada/retornada — provável bloqueio por política de segurança (RLS) na tabela cronograma_estado.');
     }
-  }catch(e){ ok = false; console.warn('Falha ao sincronizar cronograma:', e); }
+  }catch(e){ ok = false; lastPersistDebug = { fase: 'exceção', erro: String(e) }; console.warn('Falha ao sincronizar cronograma:', e); }
   if(!ok){
     showSaveErrorToast('Não foi possível salvar a alteração no banco de dados. Verifique sua conexão e tente novamente.');
     return false;
