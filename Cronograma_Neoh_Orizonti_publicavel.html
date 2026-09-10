@@ -469,6 +469,9 @@
     border-radius:9px;
     overflow:hidden;
     margin-bottom:18px;
+    /* Garante que o gesto de arrastar com o dedo seja tratado como rolagem nativa
+       pelo navegador, mesmo com os cliques/arrastes de reunião dentro da grade */
+    touch-action:pan-x pan-y;
   }
   .cal-grid{
     display:grid;
@@ -1363,6 +1366,7 @@
     border:1px solid var(--border);
     border-radius:var(--radius);
     overflow:hidden;
+    touch-action:pan-x pan-y;
   }
   table.eap{
     width:100%;
@@ -1942,8 +1946,12 @@
     .summary-grid{grid-template-columns:repeat(2,1fr); gap:10px;}
     .rail{grid-template-columns:1fr !important;}
     .toolbar{flex-direction:column; align-items:stretch;}
-    .controls{flex-direction:column; align-items:stretch;}
+    /* Controles do EAP (buscar/expandir/recolher/adicionar): mantém em linha, quebrando
+       apenas o necessário, com tamanhos naturais (assimétricos) em vez de empilhar tudo
+       com a mesma largura. Só a busca ocupa a largura toda, numa linha própria. */
+    .controls{flex-wrap:wrap; row-gap:8px;}
     .search-box{width:100%;}
+    .search-box input{width:100%;}
     table.eap{font-size:11px;}
     .name-cell{max-width:180px;}
     .agenda-heading{flex-direction:column; align-items:flex-start; gap:10px;}
@@ -1952,11 +1960,28 @@
     .req-head-actions{width:100%; flex-wrap:wrap;}
     .req-list-item{flex-wrap:wrap; row-gap:6px;}
     .req-list-item-right{flex-wrap:wrap;}
+    /* Título + tags de status das solicitações: quebra em linha própria em vez de
+       espremer o texto ao lado das tags */
+    .sec-toggle-title{flex-wrap:wrap; row-gap:4px;}
+    .req-status-counts{width:100%; margin-left:0; margin-top:2px;}
     .login-card{padding:24px 18px;}
-    .cfg-form-row{flex-direction:column;}
-    .cfg-field{width:100%;}
-    .hist-filter-row{flex-direction:column; align-items:stretch;}
+    /* Filtros com botão (Cenários anteriores, Histórico, etc.): campos quebram em
+       largura flexível e o botão mantém tamanho próprio, alinhado ao lado, em vez de
+       todos os itens ficarem com a mesma largura total da tela */
+    .cfg-form-row{row-gap:8px;}
+    .cfg-field{flex:1 1 140px; min-width:130px; width:auto;}
+    .cfg-form-row .cfg-btn{flex:none; width:auto; margin-left:auto;}
+    .hist-filter-row{row-gap:8px;}
+    .hist-filter-row .cfg-field{flex:1 1 140px; min-width:130px; width:auto;}
+    .hist-filter-row .cfg-btn{flex:none; width:auto; margin-left:auto;}
     table.cfg-table{font-size:11.5px;}
+    /* Plano de ação: campos "Quando?" e "Status" lado a lado com proporções
+       diferentes (a data ocupa menos espaço, o status um pouco mais) em vez de
+       dividir a linha ao meio de forma simétrica */
+    .ap-field-row{flex-wrap:wrap; gap:10px;}
+    .ap-field-row .ap-field{flex:none;}
+    .ap-field-row .ap-field:first-child{flex:1 1 42%; min-width:120px;}
+    .ap-field-row .ap-field:last-child{flex:1 1 54%; min-width:140px;}
     .modal-box, .modal-box-wide, .modal-box-xwide, .cfg-modal .modal-box, .eap-form-modal .modal-box, .tour-modal .modal-box{
       max-width:96vw !important; width:96vw !important; max-height:88vh; overflow-y:auto;
     }
