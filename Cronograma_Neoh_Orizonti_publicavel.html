@@ -327,6 +327,9 @@
     margin:0 0 14px 0;
     color:var(--navy);
     font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:6px;
   }
   .rail{
     display:grid;
@@ -2659,7 +2662,7 @@
   <section class="summary-grid" id="summaryGrid"></section>
 
   <section class="rail-section">
-    <h2>Macroetapas do projeto</h2>
+    <h2>Macroetapas do projeto <button class="info-tag" id="macroInfoBtn" data-explain="macroetapas" title="Como isso é calculado?">i</button></h2>
     <div class="rail" id="railGrid"></div>
   </section>
 
@@ -3133,6 +3136,37 @@ function indicatorExplainHtml(type){
       ${weightNote}
     `;
   }
+  if(type === 'macroetapas'){
+    const rows = DATA.macro.map(m => {
+      const idealPct = Math.round((m.pct_ideal||0)*100);
+      const realPct = Math.round((m.pct_real||0)*100);
+      const dev = realPct - idealPct;
+      const color = macroStatusColor(m.situacao);
+      return `
+        <tr class="ind-row" data-macro="${m.codigo}">
+          <td><span class="status-dot" style="background:${color}"></span>${m.nome}</td>
+          <td class="num">${m.peso}</td>
+          <td class="num ideal-c">${idealPct}%</td>
+          <td class="num real-c">${realPct}%</td>
+          <td class="num" style="color:${dev < -5 ? 'var(--red)' : (dev >= 0 ? 'var(--green)' : 'var(--amber)')}">${dev>=0?'+':''}${dev}p.p.</td>
+        </tr>
+      `;
+    }).join('');
+    const html = `
+      <h3>Macroetapas do projeto</h3>
+      <div class="ind-section-label">O que é o "peso"</div>
+      <p>Cada uma das 9 macroetapas do projeto tem um <strong>peso</strong> fixo, que reflete o quanto ela importa no cronograma geral — vai de 2 a 30 pontos, e a soma das 9 dá sempre <strong>${TOTAL_PESO} pontos</strong>. É esse peso que decide o quanto cada etapa "puxa" o % Ideal e o % Realizado do topo da tela: uma etapa com peso 30 (como Desenvolvimento e Customização) influencia o resultado geral bem mais do que uma etapa com peso 2 (como Encerramento), mesmo que as duas estejam com o mesmo percentual de atraso.</p>
+      <div class="ind-section-label">Como o % de cada macroetapa é calculado</div>
+      <p>O % de cada macroetapa vem <strong>de baixo para cima</strong>: primeiro se calcula o % de cada atividade específica (o que realmente foi feito), depois isso sobe pra fase, depois pro módulo, e só então vira o % da macroetapa. Na maioria das etapas, essa conta é ponderada pelo esforço de cada atividade (atividades maiores pesam mais); na etapa de Barramento, é uma média simples de cada integração.</p>
+      <div class="ind-section-label">Peso e percentual de cada macroetapa</div>
+      <table class="ind-table">
+        <thead><tr><th>Macroetapa</th><th class="num">Peso</th><th class="num">% Ideal</th><th class="num">% Real</th><th class="num">Desvio</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="ind-note">Clique em qualquer linha da tabela para ir direto para aquela macroetapa.</p>
+    `;
+    return html;
+  }
   // desvio
   const idealPct = Math.round(DATA.resumo.pct_ideal * 100);
   const realPct = Math.round(DATA.resumo.pct_real * 100);
@@ -3169,6 +3203,13 @@ function openIndicatorExplain(type){
     <div class="ind-explain">${indicatorExplainHtml(type)}</div>
   `;
   document.getElementById('indicatorModalOverlay').classList.add('open');
+  document.querySelectorAll('#indicatorModalContent .ind-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const code = row.getAttribute('data-macro');
+      closeIndicatorModal();
+      handleMacroClick(code);
+    });
+  });
 }
 
 let PAI_CODES = new Set(DATA.eap.filter(e => e.pai).map(e => e.pai));
@@ -5939,6 +5980,10 @@ function openScenarioModal(){
   loadScenarioList();
 }
 document.getElementById('scenarioBtn').addEventListener('click', openScenarioModal);
+document.getElementById('macroInfoBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  openIndicatorExplain('macroetapas');
+});
 document.getElementById('scenarioModalClose').addEventListener('click', () => document.getElementById('scenarioModalOverlay').classList.remove('open'));
 document.getElementById('scenarioModalOverlay').addEventListener('click', (e) => { if(e.isTrusted && e.target.id === 'scenarioModalOverlay') document.getElementById('scenarioModalOverlay').classList.remove('open'); });
 document.getElementById('scenarioSearchBtn').addEventListener('click', loadScenarioList);
