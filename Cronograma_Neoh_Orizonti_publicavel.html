@@ -4149,7 +4149,7 @@ function openRitoForm(rito, prefill){
 function closeRitoForm(){ document.getElementById('ritoFormOverlay').classList.remove('open'); }
 document.getElementById('ritoFormClose').addEventListener('click', closeRitoForm);
 document.getElementById('ritoFormCancel').addEventListener('click', closeRitoForm);
-document.getElementById('ritoFormOverlay').addEventListener('click', (e) => { if(e.target.id === 'ritoFormOverlay') closeRitoForm(); });
+document.getElementById('ritoFormOverlay').addEventListener('click', (e) => { if(e.isTrusted && e.target.id === 'ritoFormOverlay') closeRitoForm(); });
 
 document.getElementById('ritoForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -4207,7 +4207,7 @@ function openRitoDeleteConfirm(rito){
 function closeRitoDeleteConfirm(){ ritoDeletingNome = null; document.getElementById('ritoDeleteConfirmOverlay').classList.remove('open'); }
 document.getElementById('ritoDeleteConfirmClose').addEventListener('click', closeRitoDeleteConfirm);
 document.getElementById('ritoDeleteConfirmNo').addEventListener('click', closeRitoDeleteConfirm);
-document.getElementById('ritoDeleteConfirmOverlay').addEventListener('click', (e) => { if(e.target.id === 'ritoDeleteConfirmOverlay') closeRitoDeleteConfirm(); });
+document.getElementById('ritoDeleteConfirmOverlay').addEventListener('click', (e) => { if(e.isTrusted && e.target.id === 'ritoDeleteConfirmOverlay') closeRitoDeleteConfirm(); });
 document.getElementById('ritoDeleteConfirmYes').addEventListener('click', async () => {
   const idx = (DATA.ritos || []).findIndex(r => r.nome === ritoDeletingNome);
   if(idx !== -1){
@@ -4276,7 +4276,7 @@ function closeRitoRescheduleConfirm(){
 document.getElementById('ritoRescheduleConfirmClose').addEventListener('click', closeRitoRescheduleConfirm);
 document.getElementById('ritoRescheduleConfirmNo').addEventListener('click', closeRitoRescheduleConfirm);
 document.getElementById('ritoRescheduleConfirmOverlay').addEventListener('click', (e) => {
-  if(e.target.id === 'ritoRescheduleConfirmOverlay') closeRitoRescheduleConfirm();
+  if(e.isTrusted && e.target.id === 'ritoRescheduleConfirmOverlay') closeRitoRescheduleConfirm();
 });
 document.getElementById('ritoRescheduleConfirmYes').addEventListener('click', async () => {
   if(!pendingReschedule) return;
@@ -4478,7 +4478,7 @@ wireCollapsibleSection('reqMeetingsTitle', 'reqMeetingsGrid', 'reqMeetingsToggle
 wireCollapsibleSection('reqMaterialsTitle', 'reqMaterialsGrid', 'reqMaterialsToggleHint', false);
 document.getElementById('reqFormClose').addEventListener('click', closeReqForm);
 document.getElementById('reqFormCancel').addEventListener('click', closeReqForm);
-document.getElementById('reqFormOverlay').addEventListener('click', (e) => { if(e.target.id === 'reqFormOverlay') closeReqForm(); });
+document.getElementById('reqFormOverlay').addEventListener('click', (e) => { if(e.isTrusted && e.target.id === 'reqFormOverlay') closeReqForm(); });
 
 document.getElementById('reqForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -4534,7 +4534,7 @@ function openReqDeleteConfirm(item){
 function closeReqDeleteConfirm(){ reqDeletingItem = null; document.getElementById('reqDeleteConfirmOverlay').classList.remove('open'); }
 document.getElementById('reqDeleteConfirmClose').addEventListener('click', closeReqDeleteConfirm);
 document.getElementById('reqDeleteConfirmNo').addEventListener('click', closeReqDeleteConfirm);
-document.getElementById('reqDeleteConfirmOverlay').addEventListener('click', (e) => { if(e.target.id === 'reqDeleteConfirmOverlay') closeReqDeleteConfirm(); });
+document.getElementById('reqDeleteConfirmOverlay').addEventListener('click', (e) => { if(e.isTrusted && e.target.id === 'reqDeleteConfirmOverlay') closeReqDeleteConfirm(); });
 document.getElementById('reqDeleteConfirmYes').addEventListener('click', async () => {
   const idx = (DATA.solicitacoes || []).findIndex(s => String(s.item) === String(reqDeletingItem));
   if(idx !== -1){
@@ -4708,11 +4708,11 @@ function openSolicitacaoModal(s){
 
 document.getElementById('ritoModalClose').addEventListener('click', closeRitoModal);
 document.getElementById('ritoModalOverlay').addEventListener('click', (e) => {
-  if(e.target.id === 'ritoModalOverlay') closeRitoModal();
+  if(e.isTrusted && e.target.id === 'ritoModalOverlay') closeRitoModal();
 });
 document.getElementById('indicatorModalClose').addEventListener('click', closeIndicatorModal);
 document.getElementById('indicatorModalOverlay').addEventListener('click', (e) => {
-  if(e.target.id === 'indicatorModalOverlay') closeIndicatorModal();
+  if(e.isTrusted && e.target.id === 'indicatorModalOverlay') closeIndicatorModal();
 });
 document.addEventListener('keydown', (e) => {
   if(e.key === 'Escape'){ closeRitoModal(); closeIndicatorModal(); }
@@ -4971,13 +4971,13 @@ function closeActionPlanConfirmDelete(){
 document.getElementById('actionPlanAddBtn').addEventListener('click', () => openActionPlanForm(null));
 document.getElementById('actionPlanModalClose').addEventListener('click', closeActionPlanModal);
 document.getElementById('actionPlanModalOverlay').addEventListener('click', (e) => {
-  if(e.target.id === 'actionPlanModalOverlay') closeActionPlanModal();
+  if(e.isTrusted && e.target.id === 'actionPlanModalOverlay') closeActionPlanModal();
 });
 
 document.getElementById('apFormClose').addEventListener('click', closeActionPlanForm);
 document.getElementById('apFormCancel').addEventListener('click', closeActionPlanForm);
 document.getElementById('apFormOverlay').addEventListener('click', (e) => {
-  if(e.target.id === 'apFormOverlay') closeActionPlanForm();
+  if(e.isTrusted && e.target.id === 'apFormOverlay') closeActionPlanForm();
 });
 
 document.getElementById('apForm').addEventListener('submit', (e) => {
@@ -5010,7 +5010,7 @@ document.getElementById('apForm').addEventListener('submit', (e) => {
 document.getElementById('apConfirmClose').addEventListener('click', closeActionPlanConfirmDelete);
 document.getElementById('apConfirmCancel').addEventListener('click', closeActionPlanConfirmDelete);
 document.getElementById('apConfirmOverlay').addEventListener('click', (e) => {
-  if(e.target.id === 'apConfirmOverlay') closeActionPlanConfirmDelete();
+  if(e.isTrusted && e.target.id === 'apConfirmOverlay') closeActionPlanConfirmDelete();
 });
 document.getElementById('apConfirmDelete').addEventListener('click', () => {
   if(apDeletingId !== null){
@@ -5236,7 +5236,7 @@ els('settingsBtn').addEventListener('click', () => {
   loadUsersList();
 });
 els('cfgModalClose').addEventListener('click', () => els('cfgModalOverlay').classList.remove('open'));
-els('cfgModalOverlay').addEventListener('click', (e) => { if(e.target.id === 'cfgModalOverlay') els('cfgModalOverlay').classList.remove('open'); });
+els('cfgModalOverlay').addEventListener('click', (e) => { if(e.isTrusted && e.target.id === 'cfgModalOverlay') els('cfgModalOverlay').classList.remove('open'); });
 
 els('cfgExpandBtn').addEventListener('click', () => {
   els('cfgModalOverlay').classList.toggle('expanded');
@@ -5398,7 +5398,7 @@ function closeUserBlockConfirm(){
 }
 els('userBlockConfirmClose').addEventListener('click', closeUserBlockConfirm);
 els('userBlockConfirmNo').addEventListener('click', closeUserBlockConfirm);
-els('userBlockConfirmOverlay').addEventListener('click', (e) => { if(e.target.id === 'userBlockConfirmOverlay') closeUserBlockConfirm(); });
+els('userBlockConfirmOverlay').addEventListener('click', (e) => { if(e.isTrusted && e.target.id === 'userBlockConfirmOverlay') closeUserBlockConfirm(); });
 els('userBlockConfirmYes').addEventListener('click', async () => {
   const u = usersCache.find(x => String(x.id) === String(userBlockTargetId));
   if(!u) return closeUserBlockConfirm();
@@ -5847,7 +5847,7 @@ function openScenarioModal(){
 }
 document.getElementById('scenarioBtn').addEventListener('click', openScenarioModal);
 document.getElementById('scenarioModalClose').addEventListener('click', () => document.getElementById('scenarioModalOverlay').classList.remove('open'));
-document.getElementById('scenarioModalOverlay').addEventListener('click', (e) => { if(e.target.id === 'scenarioModalOverlay') document.getElementById('scenarioModalOverlay').classList.remove('open'); });
+document.getElementById('scenarioModalOverlay').addEventListener('click', (e) => { if(e.isTrusted && e.target.id === 'scenarioModalOverlay') document.getElementById('scenarioModalOverlay').classList.remove('open'); });
 document.getElementById('scenarioSearchBtn').addEventListener('click', loadScenarioList);
 /* Escolher um dia específico limpa o filtro de mês/ano, e vice-versa, para não confundir qual filtro vale */
 document.getElementById('scenarioDateFilter').addEventListener('change', () => {
@@ -6015,7 +6015,7 @@ function closeEapForm(){ els('eapFormOverlay').classList.remove('open'); }
 els('eapAddBtn').addEventListener('click', () => openEapForm(null));
 els('eapFormClose').addEventListener('click', closeEapForm);
 els('eapFormCancel').addEventListener('click', closeEapForm);
-els('eapFormOverlay').addEventListener('click', (e) => { if(e.target.id === 'eapFormOverlay') closeEapForm(); });
+els('eapFormOverlay').addEventListener('click', (e) => { if(e.isTrusted && e.target.id === 'eapFormOverlay') closeEapForm(); });
 
 els('eapForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -6069,7 +6069,7 @@ function openEapCancelConfirm(code){
 function closeEapCancelConfirm(){ eapCancelingCode = null; els('eapCancelConfirmOverlay').classList.remove('open'); }
 els('eapCancelConfirmClose').addEventListener('click', closeEapCancelConfirm);
 els('eapCancelConfirmNo').addEventListener('click', closeEapCancelConfirm);
-els('eapCancelConfirmOverlay').addEventListener('click', (e) => { if(e.target.id === 'eapCancelConfirmOverlay') closeEapCancelConfirm(); });
+els('eapCancelConfirmOverlay').addEventListener('click', (e) => { if(e.isTrusted && e.target.id === 'eapCancelConfirmOverlay') closeEapCancelConfirm(); });
 els('eapCancelConfirmYes').addEventListener('click', async () => {
   const node = DATA.eap.find(x => x.eap === eapCancelingCode);
   if(node){
