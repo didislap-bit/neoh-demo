@@ -1,6 +1,15 @@
 // Lê o JSON embutido no <script id="eapData"> do cronograma publicado
 // e grava esse conteúdo na tabela cronograma_estado do Supabase.
 // Roda automaticamente via GitHub Actions a cada push que altere o HTML.
+//
+// IMPORTANTE: este script faz MESCLAGEM, não sobrescrita total.
+// O arquivo HTML publicado só conhece eap/macro/resumo/generated/ritos/solicitacoes
+// (o que veio das planilhas). Ele NUNCA contém o "plano de ação" (actionPlan) nem
+// as confirmações de presença em reunião (o campo "respostas" dentro de cada rito),
+// porque essas coisas só existem quando alguém usa o app ao vivo. Se a gente
+// simplesmente sobrescrevesse a linha do Supabase com o que está no arquivo,
+// perderíamos o plano de ação inteiro e todas as confirmações de reunião a cada
+// publicação — foi exatamente isso que aconteceu antes desta correção.
 
 import { readFileSync } from "node:fs";
 
@@ -29,9 +38,9 @@ if (!match) {
   process.exit(1);
 }
 
-let dados;
+let fileDados;
 try {
-  dados = JSON.parse(match[1]);
+  fileDados = JSON.parse(match[1]);
 } catch (err) {
   console.error("O conteúdo da tag eapData não é um JSON válido:", err.message);
   process.exit(1);
@@ -45,8 +54,57 @@ const headers = {
   Prefer: "return=representation",
 };
 
+function slug(nome) {
+  return String(nome || "")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+// Junta os ritos novos (vindos do arquivo/planilha) com as respostas de presença
+// que já existiam no banco, casando por nome do rito. Assim a definição do rito
+// (dia, horário, cadência) vem sempre do arquivo mais recente, mas quem já
+// confirmou presença continua confirmado.
+function mergeRitos(fileRitos, dbRitos) {
+  const dbByNome = new Map((dbRitos || []).map((r) => [slug(r.nome), r]));
+  return (fileRitos || []).map((r) => {
+    const dbMatch = dbByNome.get(slug(r.nome));
+    if (dbMatch && Array.isArray(dbMatch.respostas) && dbMatch.respostas.length > 0) {
+      return { ...r, respostas: dbMatch.respostas };
+    }
+    return r;
+  });
+}
+
 async function publish() {
-  // 1) tenta atualizar a linha id=1 existente
+  // 1) busca o que já está salvo, para não perder plano de ação / confirmações
+  const getResp = await fetch(`${endpoint}?id=eq.1&select=dados`, {
+    method: "GET",
+    headers,
+  });
+
+  let dbDados = null;
+  if (getResp.ok) {
+    const rows = await getResp.json();
+    if (Array.isArray(rows) && rows.length > 0) {
+      dbDados = rows[0].dados || null;
+    }
+  } else {
+    console.warn("Não consegui ler o estado atual do Supabase antes de publicar (seguindo mesmo assim):", getResp.status);
+  }
+
+  const dados = {
+    ...fileDados,
+    ritos: mergeRitos(fileDados.ritos, dbDados ? dbDados.ritos : null),
+    solicitacoes:
+      dbDados && Array.isArray(dbDados.solicitacoes) && dbDados.solicitacoes.length > 0
+        ? dbDados.solicitacoes
+        : fileDados.solicitacoes,
+    actionPlan: dbDados && Array.isArray(dbDados.actionPlan) ? dbDados.actionPlan : [],
+  };
+
+  // 2) tenta atualizar a linha id=1 existente
   const updateResp = await fetch(`${endpoint}?id=eq.1`, {
     method: "PATCH",
     headers,
@@ -61,11 +119,11 @@ async function publish() {
 
   const updated = await updateResp.json();
   if (Array.isArray(updated) && updated.length > 0) {
-    console.log("✅ Linha atualizada com sucesso (id=1).");
+    console.log("✅ Linha atualizada com sucesso (id=1) — plano de ação e confirmações de reunião preservados.");
     return;
   }
 
-  // 2) nenhuma linha existente ainda: cria (upsert)
+  // 3) nenhuma linha existente ainda: cria (upsert)
   console.log("Nenhuma linha existente com id=1 — criando...");
   const upsertResp = await fetch(endpoint, {
     method: "POST",
