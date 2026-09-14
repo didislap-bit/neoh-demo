@@ -5633,6 +5633,14 @@ async function syncCronogramaFromSupabase(){
   if(saved.solicitacoes) DATA.solicitacoes = saved.solicitacoes;
   if(saved.ritos) DATA.ritos = saved.ritos;
   if(saved.actionPlan) { actionPlanItems = saved.actionPlan; actionPlanNextId = (Math.max(0, ...actionPlanItems.map(i => i.id)) + 1); }
+  // Registra a "foto" do eap/macro que esta aba acabou de carregar, para que
+  // persistCronograma() consiga perceber depois se o cronograma mudou no
+  // servidor enquanto esta aba ficou aberta.
+  lastSyncedSnapshot = {
+    atualizado_em: data.atualizado_em || null,
+    eapJson: JSON.stringify(DATA.eap || []),
+    macroJson: JSON.stringify(DATA.macro || [])
+  };
   rebuildEapDerived();
   renderSummary(); renderRail(); renderTable();
   if(typeof renderSolicitacoes === 'function') renderSolicitacoes();
@@ -5678,58 +5686,130 @@ function showSaveSuccessToast(msg){
 
 let lastPersistDebug = null; // guarda o retorno cru do Supabase da última tentativa de salvar, para diagnóstico visível na tela
 
+// Guarda uma "foto" do eap/macro (e o atualizado_em) da última vez que esta aba
+// leu ou gravou o cronograma com sucesso. Usado por persistCronograma() para
+// perceber se o cronograma (não o plano de ação/reuniões/solicitações, só o
+// eap/macro que vem das planilhas) mudou no servidor — por uma nova publicação
+// ou por outra pessoa — desde a última vez que esta aba soube de alguma coisa.
+// Sem isso, uma aba aberta há um tempo poderia, ao salvar qualquer coisinha
+// (mesmo sem tocar no cronograma), reenviar um eap/macro antigo da própria
+// memória e apagar sem querer uma atualização de planilha mais recente.
+let lastSyncedSnapshot = null; // { atualizado_em, eapJson, macroJson }
+
 async function persistCronograma(){
   if(!SUPABASE_READY){
     showSaveErrorToast('Sem conexão com o banco de dados. A alteração não foi salva.');
     return false;
   }
   if(VIEWING_SCENARIO){ console.warn('Bloqueado: tentativa de salvar enquanto visualiza um cenário anterior.'); return false; }
-  const dados = { eap: DATA.eap, macro: DATA.macro, solicitacoes: DATA.solicitacoes, ritos: DATA.ritos, actionPlan: actionPlanItems };
-  saveLocalBackup(dados); // salva localmente JÁ, antes de tentar o Supabase — nunca se perde nesta máquina
-  const agora = new Date().toISOString();
-  let ok = true;
-  try{
-    // .select() no final é essencial: sem ele, o Supabase não devolve a linha
-    // afetada, e uma escrita bloqueada silenciosamente por uma política de
-    // segurança (RLS) parece "sucesso" mesmo sem gravar nada. Com .select(),
-    // se vier um array vazio, sabemos com certeza que nada foi gravado.
-    const { data: writtenRows, error } = await supa.from('cronograma_estado').upsert({
-      id: 1,
-      dados,
-      atualizado_em: agora,
-      atualizado_por: CURRENT_USER ? CURRENT_USER.nome : null
-    }).select();
-    lastPersistDebug = { fase: 'principal', writtenRows, error, urlUsada: SUPABASE_URL };
+
+  const MAX_TENTATIVAS = 5;
+  for(let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++){
+    // Antes de gravar, confere o que está no servidor agora. Isso é o que
+    // permite perceber se o cronograma (eap/macro — o que vem das planilhas)
+    // mudou desde a última vez que esta aba soube de alguma coisa: por uma
+    // nova publicação via GitHub, ou por outra pessoa editando em outra aba.
+    let serverRow = null;
+    try{
+      const { data: row } = await supa.from('cronograma_estado').select('dados, atualizado_em').eq('id', 1).maybeSingle();
+      serverRow = row || null;
+    }catch(e){ console.warn('Não consegui checar o estado atual do servidor antes de salvar:', e); }
+
+    let eapParaGravar = DATA.eap;
+    let macroParaGravar = DATA.macro;
+
+    if(serverRow && serverRow.dados && lastSyncedSnapshot){
+      const serverEapJson = JSON.stringify(serverRow.dados.eap || []);
+      const serverMacroJson = JSON.stringify(serverRow.dados.macro || []);
+      const cronogramaMudouNoServidor = serverEapJson !== lastSyncedSnapshot.eapJson || serverMacroJson !== lastSyncedSnapshot.macroJson;
+      if(cronogramaMudouNoServidor){
+        // O cronograma (datas/percentuais da EAP) foi atualizado no servidor
+        // enquanto esta aba estava aberta — por uma publicação de planilha ou
+        // por outra pessoa. Para nunca decidir sozinho qual versão "vale mais",
+        // adotamos a versão mais recente do servidor para o eap/macro, e
+        // mantemos só a alteração que esta pessoa realmente fez agora (plano
+        // de ação, reunião, solicitação, ou um item específico da EAP que ela
+        // tenha acabado de editar já fica refletido em cima dos dados novos
+        // quando fizer sentido).
+        eapParaGravar = serverRow.dados.eap || DATA.eap;
+        macroParaGravar = serverRow.dados.macro || DATA.macro;
+        DATA.eap = eapParaGravar;
+        DATA.macro = macroParaGravar;
+        rebuildEapDerived();
+        renderSummary(); renderRail(); renderTable();
+        showSaveErrorToast('O cronograma foi atualizado (nova planilha ou outra pessoa) enquanto você editava. A tela foi atualizada com a versão mais recente. O que você alterou agora (plano de ação, reunião, solicitação etc.) foi salvo normalmente — se você tinha editado algo direto na EAP, confira e refaça essa parte específica se ainda for necessária.');
+      }
+    }
+
+    const dados = { eap: eapParaGravar, macro: macroParaGravar, solicitacoes: DATA.solicitacoes, ritos: DATA.ritos, actionPlan: actionPlanItems };
+    saveLocalBackup(dados); // salva localmente JÁ, antes de tentar o Supabase — nunca se perde nesta máquina
+    const agora = new Date().toISOString();
+
+    let writtenRows, error;
+    try{
+      // .select() no final é essencial: sem ele, o Supabase não devolve a linha
+      // afetada, e uma escrita bloqueada silenciosamente por uma política de
+      // segurança (RLS) parece "sucesso" mesmo sem gravar nada.
+      let query = supa.from('cronograma_estado').update({
+        dados,
+        atualizado_em: agora,
+        atualizado_por: CURRENT_USER ? CURRENT_USER.nome : null
+      }).eq('id', 1);
+      // Gravação condicional: só grava se atualizado_em ainda for exatamente o
+      // que acabamos de ler agora mesmo (ninguém mexeu entre a leitura logo
+      // acima e esta gravação). Se alguém mexeu nesse intervalo de milissegundos,
+      // o filtro não bate com nenhuma linha e tentamos de novo, desta vez já
+      // teria detectado a mudança na próxima volta do laço.
+      if(serverRow && serverRow.atualizado_em){
+        query = query.eq('atualizado_em', serverRow.atualizado_em);
+      }
+      const resp = await query.select();
+      writtenRows = resp.data; error = resp.error;
+      lastPersistDebug = { fase: `principal (tentativa ${tentativa})`, writtenRows, error, urlUsada: SUPABASE_URL };
+    }catch(e){ error = e; lastPersistDebug = { fase: `exceção (tentativa ${tentativa})`, erro: String(e) }; }
+
     if(error){
-      ok = false;
-      console.warn('Falha ao sincronizar cronograma (com atualizado_em/atualizado_por):', error);
-      // Se o erro for por causa dessas duas colunas não existirem na tabela, tenta de novo
-      // só com o essencial — salvar os dados é mais importante do que salvar a data.
+      console.warn(`Falha ao salvar (tentativa ${tentativa}/${MAX_TENTATIVAS}):`, error);
+      // Se o erro for por causa da coluna atualizado_em não existir (esquema
+      // antigo), tenta de novo sem condição nenhuma — salvar os dados é mais
+      // importante do que a checagem de concorrência.
       try{
         const retry = await supa.from('cronograma_estado').upsert({ id: 1, dados }).select();
-        lastPersistDebug = { fase: 'retry (só dados)', writtenRows: retry.data, error: retry.error, urlUsada: SUPABASE_URL };
-        if(!retry.error && retry.data && retry.data.length > 0) ok = true;
-        else console.warn('Falha ao sincronizar cronograma (só com dados):', retry.error || 'nenhuma linha retornada (bloqueado por política de segurança / RLS)');
+        lastPersistDebug = { fase: 'retry (só dados, sem condição)', writtenRows: retry.data, error: retry.error, urlUsada: SUPABASE_URL };
+        if(!retry.error && retry.data && retry.data.length > 0){
+          setHeaderUpdatedAt(agora);
+          lastSyncedSnapshot = { atualizado_em: null, eapJson: JSON.stringify(eapParaGravar), macroJson: JSON.stringify(macroParaGravar) };
+          try{ await supa.from('cronograma_snapshots').insert({ dados, criado_por: CURRENT_USER ? CURRENT_USER.nome : null }); }catch(e3){ console.warn('Falha ao salvar cenário histórico:', e3); }
+          return true;
+        }
+        console.warn('Falha ao sincronizar cronograma (só com dados):', retry.error || 'nenhuma linha retornada (bloqueado por política de segurança / RLS)');
       }catch(e2){ console.warn('Falha ao sincronizar cronograma (só com dados):', e2); }
-    } else if(!writtenRows || writtenRows.length === 0){
-      // Sem erro, mas nenhuma linha voltou: a escrita foi silenciosamente
-      // bloqueada (RLS) — trata como falha para não mentir que salvou.
-      ok = false;
-      console.warn('Upsert retornou sem erro, mas nenhuma linha foi afetada/retornada — provável bloqueio por política de segurança (RLS) na tabela cronograma_estado.');
+      showSaveErrorToast('Não foi possível salvar a alteração no banco de dados. Verifique sua conexão e tente novamente.');
+      return false;
     }
-  }catch(e){ ok = false; lastPersistDebug = { fase: 'exceção', erro: String(e) }; console.warn('Falha ao sincronizar cronograma:', e); }
-  if(!ok){
-    showSaveErrorToast('Não foi possível salvar a alteração no banco de dados. Verifique sua conexão e tente novamente.');
-    return false;
+
+    if(writtenRows && writtenRows.length > 0){
+      setHeaderUpdatedAt(agora);
+      lastSyncedSnapshot = { atualizado_em: agora, eapJson: JSON.stringify(eapParaGravar), macroJson: JSON.stringify(macroParaGravar) };
+      try{
+        await supa.from('cronograma_snapshots').insert({
+          dados,
+          criado_por: CURRENT_USER ? CURRENT_USER.nome : null
+        });
+      }catch(e){ console.warn('Falha ao salvar cenário histórico:', e); }
+      return true;
+    }
+
+    // Nenhuma linha afetada: ou foi bloqueado por política de segurança (RLS),
+    // ou — mais provavelmente — atualizado_em mudou entre a leitura e esta
+    // gravação (conflito de concorrência genuíno). Espera um instante e tenta
+    // de novo, desta vez já vendo a mudança mais recente.
+    console.warn(`Nenhuma linha afetada ao salvar (tentativa ${tentativa}/${MAX_TENTATIVAS}) — pode ser concorrência ou bloqueio de segurança. Tentando de novo...`);
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
-  setHeaderUpdatedAt(agora);
-  try{
-    await supa.from('cronograma_snapshots').insert({
-      dados,
-      criado_por: CURRENT_USER ? CURRENT_USER.nome : null
-    });
-  }catch(e){ console.warn('Falha ao salvar cenário histórico:', e); }
-  return true;
+
+  showSaveErrorToast('Não foi possível salvar depois de várias tentativas — o cronograma está sendo atualizado com muita frequência agora. Tente novamente em instantes.');
+  return false;
 }
 
 
