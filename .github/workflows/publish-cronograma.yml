@@ -1,0 +1,31 @@
+name: Publicar cronograma no Supabase
+
+# Roda automaticamente sempre que o HTML do cronograma for alterado
+# na branch principal (ajuste "main" para "master" se for o nome
+# da sua branch padrão).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Cronograma_Neoh_Orizonti_publicavel.html"
+  # Permite rodar manualmente também, se precisar (aba Actions -> Run workflow)
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Publicar dados no Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          CRONOGRAMA_HTML_PATH: "Cronograma_Neoh_Orizonti_publicavel.html"
+        run: node scripts/publish-cronograma.mjs
