@@ -4285,9 +4285,11 @@ document.getElementById('ritoForm').addEventListener('submit', async (e) => {
     if(idx !== -1){
       const respostasExistentes = DATA.ritos[idx].respostas;
       DATA.ritos[idx] = respostasExistentes ? { ...fields, respostas: respostasExistentes } : fields;
+      DATA.ritos[idx].editado_em = new Date().toISOString();
     }
     await logActivity('Edição de reunião de agenda', (CURRENT_USER ? CURRENT_USER.nome : '—') + ' editou a reunião "' + nome + '".');
   } else {
+    fields.editado_em = new Date().toISOString();
     DATA.ritos.push(fields);
     await logActivity('Nova reunião de agenda', (CURRENT_USER ? CURRENT_USER.nome : '—') + ' adicionou a reunião "' + nome + '".');
   }
@@ -4384,6 +4386,7 @@ document.getElementById('ritoRescheduleConfirmYes').addEventListener('click', as
   document.getElementById('ritoRescheduleConfirmOverlay').classList.remove('open');
   if(!r){ pendingReschedule = null; return; }
   r.dia_horario = novoDiaHorario;
+  r.editado_em = new Date().toISOString();
   renderAgenda();
   const ok = await persistCronograma();
   pendingReschedule = null;
