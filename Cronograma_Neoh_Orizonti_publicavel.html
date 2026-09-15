@@ -5720,13 +5720,17 @@ async function syncCronogramaFromSupabase(){
   if(saved.solicitacoes) DATA.solicitacoes = saved.solicitacoes;
   if(saved.ritos) DATA.ritos = saved.ritos;
   if(saved.actionPlan) { actionPlanItems = saved.actionPlan; actionPlanNextId = (Math.max(0, ...actionPlanItems.map(i => i.id)) + 1); }
-  // Registra a "foto" do eap/macro que esta aba acabou de carregar, para que
-  // persistCronograma() consiga perceber depois se o cronograma mudou no
-  // servidor enquanto esta aba ficou aberta.
+  // Registra a "foto" de tudo que esta aba acabou de carregar (eap, macro,
+  // plano de ação, ritos, solicitações), para que persistCronograma()
+  // consiga perceber depois se QUALQUER um desses campos mudou no servidor
+  // enquanto esta aba ficou aberta — não só o cronograma.
   lastSyncedSnapshot = {
     atualizado_em: data.atualizado_em || null,
     eapJson: JSON.stringify(DATA.eap || []),
-    macroJson: JSON.stringify(DATA.macro || [])
+    macroJson: JSON.stringify(DATA.macro || []),
+    actionPlanJson: JSON.stringify(actionPlanItems || []),
+    ritosJson: JSON.stringify(DATA.ritos || []),
+    solicitacoesJson: JSON.stringify(DATA.solicitacoes || [])
   };
   rebuildEapDerived();
   renderSummary(); renderRail(); renderTable();
@@ -5793,9 +5797,10 @@ async function persistCronograma(){
   const MAX_TENTATIVAS = 5;
   for(let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++){
     // Antes de gravar, confere o que está no servidor agora. Isso é o que
-    // permite perceber se o cronograma (eap/macro — o que vem das planilhas)
-    // mudou desde a última vez que esta aba soube de alguma coisa: por uma
-    // nova publicação via GitHub, ou por outra pessoa editando em outra aba.
+    // permite perceber se ALGUMA COISA (não só o cronograma/EAP, mas também
+    // o plano de ação, as reuniões ou as solicitações) mudou desde a última
+    // vez que esta aba soube de alguma coisa — por uma nova publicação via
+    // GitHub, ou por outra pessoa editando em outra aba/dispositivo.
     let serverRow = null;
     try{
       const { data: row } = await supa.from('cronograma_estado').select('dados, atualizado_em').eq('id', 1).maybeSingle();
@@ -5804,31 +5809,61 @@ async function persistCronograma(){
 
     let eapParaGravar = DATA.eap;
     let macroParaGravar = DATA.macro;
+    let actionPlanParaGravar = actionPlanItems;
+    let ritosParaGravar = DATA.ritos;
+    let solicitacoesParaGravar = DATA.solicitacoes;
+    const avisos = [];
 
     if(serverRow && serverRow.dados && lastSyncedSnapshot){
       const serverEapJson = JSON.stringify(serverRow.dados.eap || []);
       const serverMacroJson = JSON.stringify(serverRow.dados.macro || []);
-      const cronogramaMudouNoServidor = serverEapJson !== lastSyncedSnapshot.eapJson || serverMacroJson !== lastSyncedSnapshot.macroJson;
-      if(cronogramaMudouNoServidor){
-        // O cronograma (datas/percentuais da EAP) foi atualizado no servidor
-        // enquanto esta aba estava aberta — por uma publicação de planilha ou
-        // por outra pessoa. Para nunca decidir sozinho qual versão "vale mais",
-        // adotamos a versão mais recente do servidor para o eap/macro, e
-        // mantemos só a alteração que esta pessoa realmente fez agora (plano
-        // de ação, reunião, solicitação, ou um item específico da EAP que ela
-        // tenha acabado de editar já fica refletido em cima dos dados novos
-        // quando fizer sentido).
+      const serverActionPlanJson = JSON.stringify(serverRow.dados.actionPlan || []);
+      const serverRitosJson = JSON.stringify(serverRow.dados.ritos || []);
+      const serverSolicitacoesJson = JSON.stringify(serverRow.dados.solicitacoes || []);
+
+      // Cada um destes quatro campos é comparado e adotado de forma
+      // INDEPENDENTE. Isso é essencial: são coisas editadas por pessoas
+      // diferentes, em telas diferentes, em momentos diferentes. Uma aba
+      // aberta há um tempo tem sua própria cópia em memória de cada um
+      // desses campos — se a gente gravasse tudo direto da memória desta
+      // aba sem checar, qualquer salvamento (mesmo de uma coisa pequena,
+      // tipo confirmar presença numa reunião) reenviaria uma versão antiga
+      // dos OUTROS campos por cima da versão mais nova de outra pessoa —
+      // foi exatamente isso que apagou o plano de ação da equipe antes.
+      if(serverEapJson !== lastSyncedSnapshot.eapJson || serverMacroJson !== lastSyncedSnapshot.macroJson){
         eapParaGravar = serverRow.dados.eap || DATA.eap;
         macroParaGravar = serverRow.dados.macro || DATA.macro;
         DATA.eap = eapParaGravar;
         DATA.macro = macroParaGravar;
         rebuildEapDerived();
         renderSummary(); renderRail(); renderTable();
-        showSaveErrorToast('O cronograma foi atualizado (nova planilha ou outra pessoa) enquanto você editava. A tela foi atualizada com a versão mais recente. O que você alterou agora (plano de ação, reunião, solicitação etc.) foi salvo normalmente — se você tinha editado algo direto na EAP, confira e refaça essa parte específica se ainda for necessária.');
+        avisos.push('o cronograma (nova planilha ou outra pessoa editando a EAP)');
+      }
+      if(serverActionPlanJson !== lastSyncedSnapshot.actionPlanJson){
+        actionPlanParaGravar = serverRow.dados.actionPlan || [];
+        actionPlanItems = actionPlanParaGravar;
+        actionPlanNextId = (Math.max(0, ...actionPlanItems.map(i => i.id)) + 1);
+        if(document.getElementById('actionPlanModalOverlay') && document.getElementById('actionPlanModalOverlay').classList.contains('open')){
+          renderActionPlanTable();
+        }
+        avisos.push('o plano de ação (outra pessoa editou)');
+      }
+      if(serverRitosJson !== lastSyncedSnapshot.ritosJson){
+        ritosParaGravar = serverRow.dados.ritos || DATA.ritos;
+        DATA.ritos = ritosParaGravar;
+        avisos.push('as reuniões/confirmações (outra pessoa editou)');
+      }
+      if(serverSolicitacoesJson !== lastSyncedSnapshot.solicitacoesJson){
+        solicitacoesParaGravar = serverRow.dados.solicitacoes || DATA.solicitacoes;
+        DATA.solicitacoes = solicitacoesParaGravar;
+        avisos.push('as solicitações (outra pessoa editou)');
+      }
+      if(avisos.length > 0){
+        showSaveErrorToast('Antes de salvar, percebemos que ' + avisos.join('; ') + ' mudou no servidor enquanto esta tela estava aberta. Atualizamos com a versão mais recente antes de gravar, para não perder o que a outra pessoa salvou. O que você alterou agora foi salvo normalmente.');
       }
     }
 
-    const dados = { eap: eapParaGravar, macro: macroParaGravar, solicitacoes: DATA.solicitacoes, ritos: DATA.ritos, actionPlan: actionPlanItems };
+    const dados = { eap: eapParaGravar, macro: macroParaGravar, solicitacoes: solicitacoesParaGravar, ritos: ritosParaGravar, actionPlan: actionPlanParaGravar };
     saveLocalBackup(dados); // salva localmente JÁ, antes de tentar o Supabase — nunca se perde nesta máquina
     const agora = new Date().toISOString();
 
@@ -5865,7 +5900,7 @@ async function persistCronograma(){
         lastPersistDebug = { fase: 'retry (só dados, sem condição)', writtenRows: retry.data, error: retry.error, urlUsada: SUPABASE_URL };
         if(!retry.error && retry.data && retry.data.length > 0){
           setHeaderUpdatedAt(agora);
-          lastSyncedSnapshot = { atualizado_em: null, eapJson: JSON.stringify(eapParaGravar), macroJson: JSON.stringify(macroParaGravar) };
+          lastSyncedSnapshot = { atualizado_em: null, eapJson: JSON.stringify(eapParaGravar), macroJson: JSON.stringify(macroParaGravar), actionPlanJson: JSON.stringify(actionPlanParaGravar), ritosJson: JSON.stringify(ritosParaGravar), solicitacoesJson: JSON.stringify(solicitacoesParaGravar) };
           try{ await supa.from('cronograma_snapshots').insert({ dados, criado_por: CURRENT_USER ? CURRENT_USER.nome : null }); }catch(e3){ console.warn('Falha ao salvar cenário histórico:', e3); }
           return true;
         }
@@ -5877,7 +5912,7 @@ async function persistCronograma(){
 
     if(writtenRows && writtenRows.length > 0){
       setHeaderUpdatedAt(agora);
-      lastSyncedSnapshot = { atualizado_em: agora, eapJson: JSON.stringify(eapParaGravar), macroJson: JSON.stringify(macroParaGravar) };
+      lastSyncedSnapshot = { atualizado_em: agora, eapJson: JSON.stringify(eapParaGravar), macroJson: JSON.stringify(macroParaGravar), actionPlanJson: JSON.stringify(actionPlanParaGravar), ritosJson: JSON.stringify(ritosParaGravar), solicitacoesJson: JSON.stringify(solicitacoesParaGravar) };
       try{
         await supa.from('cronograma_snapshots').insert({
           dados,
