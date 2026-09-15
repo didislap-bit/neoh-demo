@@ -93,15 +93,44 @@ function slug(nome) {
     .replace(/(^-|-$)/g, "");
 }
 
-function mergeRitos(fileRitos, dbRitos) {
+function mergeRitos(fileRitos, dbRitos, fileGeneratedAt) {
   const dbByNome = new Map((dbRitos || []).map((r) => [slug(r.nome), r]));
-  return (fileRitos || []).map((r) => {
+  const generatedAtMs = fileGeneratedAt ? Date.parse(fileGeneratedAt) : 0;
+  const fileNomes = new Set((fileRitos || []).map((r) => slug(r.nome)));
+
+  const merged = (fileRitos || []).map((r) => {
     const dbMatch = dbByNome.get(slug(r.nome));
-    if (dbMatch && Array.isArray(dbMatch.respostas) && dbMatch.respostas.length > 0) {
+    if (!dbMatch) return r;
+
+    // Se o rito foi editado pelo app (arrastar horário, formulário) DEPOIS
+    // que este arquivo foi gerado, a edição do app vence por completo —
+    // igual à regra usada para a EAP. Isso cobre horário, cadência etc.,
+    // não só as confirmações de presença.
+    if (dbMatch.editado_em) {
+      const editadoMs = Date.parse(dbMatch.editado_em);
+      if (!isNaN(editadoMs) && editadoMs > generatedAtMs) {
+        return dbMatch;
+      }
+    }
+
+    // Caso contrário, a planilha/arquivo manda na definição do rito, mas as
+    // confirmações de presença (que só existem no banco) são sempre
+    // preservadas por cima.
+    if (Array.isArray(dbMatch.respostas) && dbMatch.respostas.length > 0) {
       return { ...r, respostas: dbMatch.respostas };
     }
     return r;
   });
+
+  // Ritos criados só pelo app (nunca vieram de nenhuma planilha) não são
+  // descartados por uma publicação.
+  (dbRitos || []).forEach((dbRito) => {
+    if (!fileNomes.has(slug(dbRito.nome))) {
+      merged.push(dbRito);
+    }
+  });
+
+  return merged;
 }
 
 // Mescla a árvore eap nó a nó: edições manuais mais recentes que a geração
@@ -224,7 +253,7 @@ function montarDadosMesclados(dbDados) {
     eap: eapMesclado,
     macro: macroMesclado,
     resumo: resumoRecalculado,
-    ritos: mergeRitos(fileDados.ritos, dbDados ? dbDados.ritos : null),
+    ritos: mergeRitos(fileDados.ritos, dbDados ? dbDados.ritos : null, fileDados.generated_at),
     solicitacoes:
       dbDados && Array.isArray(dbDados.solicitacoes) && dbDados.solicitacoes.length > 0
         ? dbDados.solicitacoes
