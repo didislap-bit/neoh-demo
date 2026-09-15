@@ -2,25 +2,44 @@
 // e grava esse conteúdo na tabela cronograma_estado do Supabase.
 // Roda automaticamente via GitHub Actions a cada push que altere o HTML.
 //
-// IMPORTANTE #1 — MESCLAGEM, não sobrescrita total.
+// IMPORTANTE #1 — MESCLAGEM de actionPlan / ritos / solicitações.
 // O arquivo HTML publicado só conhece eap/macro/resumo/generated/ritos/solicitacoes
 // (o que veio das planilhas). Ele NUNCA contém o "plano de ação" (actionPlan) nem
 // as confirmações de presença em reunião (o campo "respostas" dentro de cada rito),
-// porque essas coisas só existem quando alguém usa o app ao vivo. Se a gente
-// simplesmente sobrescrevesse a linha do Supabase com o que está no arquivo,
-// perderíamos o plano de ação inteiro e todas as confirmações de reunião a cada
-// publicação.
+// porque essas coisas só existem quando alguém usa o app ao vivo. O script sempre
+// preserva o que já estiver salvo no Supabase para esses campos.
 //
-// IMPORTANTE #2 — CONCORRÊNCIA: e se alguém estiver salvando uma alteração no
-// app bem no instante em que esta Action publica? Sem proteção, a sequência
-// "ler → mesclar → gravar" corre o risco de gravar por cima de um salvamento
-// que aconteceu logo depois da leitura, apagando silenciosamente o que a
-// pessoa acabou de fazer. Para evitar isso, a gravação é CONDICIONAL: só
-// grava se a coluna atualizado_em ainda for exatamente igual à que foi lida
-// no início (ninguém mexeu enquanto isso). Se alguém mexeu no meio do
-// caminho, a gravação não afeta nenhuma linha (0 rows) — nesse caso,
-// lemos de novo (agora já com a alteração da pessoa) e tentamos publicar
-// de novo, até algumas vezes.
+// IMPORTANTE #2 — CONCORRÊNCIA. A gravação é CONDICIONAL: só grava se
+// atualizado_em ainda for exatamente igual ao que foi lido no início. Se
+// mudou, lê de novo e tenta publicar de novo, até algumas vezes.
+//
+// IMPORTANTE #3 — MERGE NÓ A NÓ DA EAP (esta é a parte nova). Antes desta
+// versão, TODA a árvore eap/macro do arquivo sobrescrevia o que estava no
+// Supabase — inclusive atividades que alguém tinha acabado de editar pelo
+// app (por exemplo, marcar uma atividade como 100% concluída). Isso já
+// causou perda de dados reais e de credibilidade com o cliente.
+//
+// Agora, cada nó da EAP que já existe no Supabase carrega um campo
+// "editado_em" (a hora exata em que alguém editou aquele item específico
+// pelo app). O arquivo carrega um "generated_at" (a hora em que este
+// arquivo foi gerado a partir das planilhas). A regra de mesclagem é:
+//
+//   Para cada código de item da EAP:
+//     - Se o item existe no Supabase E foi editado pelo app DEPOIS que
+//       este arquivo foi gerado → mantém a versão do Supabase (a edição
+//       manual é mais recente que a planilha, então ela "vence").
+//     - Caso contrário → usa a versão do arquivo (a planilha é mais
+//       recente, ou o item nunca foi editado manualmente).
+//     - Itens que existem SÓ no Supabase (adicionados pelo app, nunca
+//       vieram de nenhuma planilha) são mantidos também — nunca são
+//       apagados por uma publicação.
+//
+// Depois da mesclagem, os percentuais de cada nível "resumo" da EAP (fase,
+// módulo, macroetapa) e o resumo geral do topo são recalculados a partir
+// das atividades-folha, para que tudo continue matematicamente consistente
+// mesmo depois da mesclagem — exatamente com a mesma fórmula que o app usa
+// ao vivo (peso_rollup quando existir, ideal_fixo preservado quando
+// marcado, excluir_do_rollup_pai para rotinas recorrentes).
 
 import { readFileSync } from "node:fs";
 
@@ -74,8 +93,6 @@ function slug(nome) {
     .replace(/(^-|-$)/g, "");
 }
 
-// Junta os ritos novos (vindos do arquivo/planilha) com as respostas de presença
-// que já existiam no banco, casando por nome do rito.
 function mergeRitos(fileRitos, dbRitos) {
   const dbByNome = new Map((dbRitos || []).map((r) => [slug(r.nome), r]));
   return (fileRitos || []).map((r) => {
@@ -87,29 +104,126 @@ function mergeRitos(fileRitos, dbRitos) {
   });
 }
 
+// Mescla a árvore eap nó a nó: edições manuais mais recentes que a geração
+// do arquivo vencem; o resto vem do arquivo; itens só-do-banco são mantidos.
+function mergeEap(fileEap, dbEap, fileGeneratedAt) {
+  const dbByCode = new Map((dbEap || []).map((n) => [n.eap, n]));
+  const fileCodesUsados = new Set();
+  const generatedAtMs = fileGeneratedAt ? Date.parse(fileGeneratedAt) : 0;
+
+  const merged = (fileEap || []).map((fileNode) => {
+    fileCodesUsados.add(fileNode.eap);
+    const dbNode = dbByCode.get(fileNode.eap);
+    if (dbNode && dbNode.editado_em) {
+      const editadoMs = Date.parse(dbNode.editado_em);
+      if (!isNaN(editadoMs) && editadoMs > generatedAtMs) {
+        return dbNode; // edição manual é mais recente que a planilha — vence
+      }
+    }
+    return fileNode;
+  });
+
+  // Itens que só existem no banco (criados pelo app, nunca vieram de
+  // nenhuma planilha) — nunca são descartados por uma publicação.
+  (dbEap || []).forEach((dbNode) => {
+    if (!fileCodesUsados.has(dbNode.eap)) {
+      merged.push(dbNode);
+    }
+  });
+
+  return merged;
+}
+
+// Recalcula os percentuais de cima a baixo → de baixo a cima, com a MESMA
+// regra usada pelo app ao vivo (recalcEapRollup), para que o arquivo
+// publicado fique consistente mesmo depois da mesclagem.
+function recalcRollup(eap, macroList) {
+  const byCode = new Map(eap.map((n) => [n.eap, n]));
+  const childrenByPai = new Map();
+  eap.forEach((n) => {
+    if (n.pai) {
+      if (!childrenByPai.has(n.pai)) childrenByPai.set(n.pai, []);
+      childrenByPai.get(n.pai).push(n);
+    }
+  });
+
+  const memo = new Map();
+  function pctOf(code) {
+    if (memo.has(code)) return memo.get(code);
+    const node = byCode.get(code);
+    if (!node) return { ideal: 0, real: 0 };
+    const kids = childrenByPai.get(code) || [];
+    let result;
+    if (kids.length === 0) {
+      result = { ideal: node.pct_ideal || 0, real: node.pct_real || 0 };
+    } else {
+      const countableKids = kids.filter((k) => !k.excluir_do_rollup_pai);
+      const kidsForAvg = countableKids.length ? countableKids : kids;
+      let sumIdeal = 0, sumReal = 0, sumPeso = 0;
+      kidsForAvg.forEach((k) => {
+        const p = pctOf(k.eap);
+        const peso = typeof k.peso_rollup === "number" && k.peso_rollup > 0 ? k.peso_rollup : 1;
+        sumIdeal += p.ideal * peso;
+        sumReal += p.real * peso;
+        sumPeso += peso;
+      });
+      const idealCalculado = sumIdeal / sumPeso;
+      const realCalculado = sumReal / sumPeso;
+      result = {
+        ideal: node.ideal_fixo ? node.pct_ideal || 0 : idealCalculado,
+        real: realCalculado,
+      };
+      node.pct_ideal = result.ideal;
+      node.pct_real = result.real;
+    }
+    memo.set(code, result);
+    return result;
+  }
+
+  const raizes = eap.filter((n) => !n.pai);
+  raizes.forEach((r) => {
+    const p = pctOf(r.eap);
+    const macroItem = macroList.find((m) => m.codigo === r.eap);
+    if (macroItem) {
+      macroItem.pct_ideal = p.ideal;
+      macroItem.pct_real = p.real;
+      if (macroItem.pct_ideal === 0 && macroItem.pct_real === 0) macroItem.situacao = "Futura";
+      else if (macroItem.pct_real >= macroItem.pct_ideal) macroItem.situacao = "Verde";
+      else macroItem.situacao = "Vermelho";
+    }
+  });
+
+  const totalPeso = macroList.reduce((s, m) => s + m.peso, 0) || 1;
+  const resumoIdeal = macroList.reduce((s, m) => s + m.pct_ideal * m.peso, 0) / totalPeso;
+  const resumoReal = macroList.reduce((s, m) => s + m.pct_real * m.peso, 0) / totalPeso;
+  return { pct_ideal: resumoIdeal, pct_real: resumoReal };
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function lerEstadoAtual() {
-  const resp = await fetch(`${endpoint}?id=eq.1&select=dados,atualizado_em`, {
-    method: "GET",
-    headers,
-  });
+  const resp = await fetch(`${endpoint}?id=eq.1&select=dados,atualizado_em`, { method: "GET", headers });
   if (!resp.ok) {
     console.warn("Não consegui ler o estado atual do Supabase:", resp.status);
     return { dados: null, atualizado_em: null };
   }
   const rows = await resp.json();
-  if (!Array.isArray(rows) || rows.length === 0) {
-    return { dados: null, atualizado_em: null };
-  }
+  if (!Array.isArray(rows) || rows.length === 0) return { dados: null, atualizado_em: null };
   return { dados: rows[0].dados || null, atualizado_em: rows[0].atualizado_em ?? null };
 }
 
 function montarDadosMesclados(dbDados) {
+  const eapMesclado = mergeEap(fileDados.eap, dbDados ? dbDados.eap : null, fileDados.generated_at);
+  const macroMesclado = (fileDados.macro || []).map((m) => ({ ...m }));
+  const resumoRecalculado = recalcRollup(eapMesclado, macroMesclado);
+
   return {
     ...fileDados,
+    eap: eapMesclado,
+    macro: macroMesclado,
+    resumo: resumoRecalculado,
     ritos: mergeRitos(fileDados.ritos, dbDados ? dbDados.ritos : null),
     solicitacoes:
       dbDados && Array.isArray(dbDados.solicitacoes) && dbDados.solicitacoes.length > 0
@@ -125,11 +239,6 @@ async function publish() {
     const dados = montarDadosMesclados(dbDados);
     const agora = new Date().toISOString();
 
-    // Gravação condicional: só afeta a linha se atualizado_em ainda for exatamente
-    // o valor que acabamos de ler. Se alguém salvou algo entre a leitura e esta
-    // gravação, o filtro não bate com nenhuma linha e o Supabase devolve um array
-    // vazio — sinal de que precisamos ler de novo (já com a alteração da pessoa)
-    // e tentar publicar mais uma vez, em vez de gravar por cima.
     let url = `${endpoint}?id=eq.1`;
     if (atualizadoEmLido) {
       url += `&atualizado_em=eq.${encodeURIComponent(atualizadoEmLido)}`;
@@ -151,14 +260,12 @@ async function publish() {
     if (Array.isArray(updated) && updated.length > 0) {
       console.log(
         `✅ Linha atualizada com sucesso (tentativa ${tentativa}/${MAX_TENTATIVAS}) — ` +
-        `plano de ação e confirmações de reunião preservados, sem conflito de concorrência.`
+        `plano de ação, confirmações de reunião e edições manuais recentes na EAP preservados.`
       );
       return;
     }
 
     if (!atualizadoEmLido) {
-      // Não havia linha id=1 ainda (primeira publicação) — cria via upsert, sem
-      // necessidade de checar concorrência.
       console.log("Nenhuma linha existente com id=1 — criando...");
       const upsertResp = await fetch(endpoint, {
         method: "POST",
@@ -174,8 +281,6 @@ async function publish() {
       return;
     }
 
-    // atualizado_em mudou entre a leitura e a gravação: alguém salvou algo no
-    // meio do caminho. Espera um instante e tenta de novo com dados frescos.
     console.warn(
       `⚠️ Conflito de concorrência detectado (tentativa ${tentativa}/${MAX_TENTATIVAS}): ` +
       `alguém salvou uma alteração no app durante a publicação. Lendo de novo e tentando novamente...`
