@@ -3024,8 +3024,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 const DATA = JSON.parse(document.getElementById('eapData').textContent);
 
 function fmtPct(v){
-  if(v===null || v===undefined) return '0%';
-  return Math.round(v*100) + '%';
+  if(v===null || v===undefined) return '0,00%';
+  // Sem arredondar para número inteiro — o indicador geral do topo mostra o
+  // percentual preciso (2 casas decimais), porque uma variação pequena
+  // (menos de 1 ponto percentual) pode ficar escondida se arredondar para
+  // o número inteiro mais próximo.
+  return (v*100).toFixed(2).replace('.', ',') + '%';
 }
 function fmtDateShort(iso){
   if(!iso) return null;
@@ -3090,7 +3094,7 @@ function renderSummary(){
     </div>
     <div class="stat-card clickable" data-indicator="desvio">
       <div class="label">Desvio <button class="info-tag" data-explain="desvio" title="O que é isso?">i</button></div>
-      <div class="value" style="color:${desvio < -0.05 ? 'var(--red)':'var(--navy)'}">${desvio>=0?'+':''}${Math.round(desvio*100)}p.p.</div>
+      <div class="value" style="color:${desvio < -0.05 ? 'var(--red)':'var(--navy)'}">${desvio>=0?'+':''}${(desvio*100).toFixed(2).replace('.', ',')}p.p.</div>
       <div class="sub">Realizado em relação ao ideal</div>
       <button class="desvio-action-btn" id="desvioActionPlanBtn" type="button">📋 Plano de Ação <span class="ap-count" id="apCountBadge">0</span></button>
     </div>
